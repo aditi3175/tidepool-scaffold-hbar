@@ -1,0 +1,48 @@
+{
+  "name": "tidepool",
+  "description": "SaucerSwap V2 liquidity vault: an HTS share token over a concentrated-liquidity position that compounds fees and re-centres on the pool TWAP.",
+  "version": "1.0.0",
+  "create-scaffold-hbar": {
+    "capabilities": {
+      "frontend": ["nextjs-app"],
+      "solidityFramework": ["hardhat"],
+      "packageManager": ["npm", "yarn"]
+    },
+    "defaults": {
+      "frontend": "nextjs-app",
+      "solidityFramework": "hardhat",
+      "packageManager": "npm"
+    },
+    "requirements": {
+      "node": ">=20.18.3"
+    },
+    "outro": {
+      "sections": [
+        {
+          "steps": [
+            {
+              "text": "Tidepool manages a live SaucerSwap V2 position, so it runs against Hedera testnet, not a local chain. The frontend already points at the published testnet vault."
+            }
+          ]
+        },
+        {
+          "title": "See it working",
+          "steps": [
+            { "label": "Start the frontend", "command": "{run:next:dev}" },
+            { "label": "Run the unit tests", "command": "{run:hardhat:test}" }
+          ]
+        },
+        {
+          "title": "Deploy your own vault",
+          "steps": [
+            { "label": "Generate or import a deployer account", "command": "{run:hardhat:account:generate}" },
+            { "label": "Fund it with testnet HBAR", "url": "https://portal.hedera.com/faucet" },
+            { "label": "Deploy and initialize the vault", "command": "{run:hardhat:deploy} --network hederaTestnet" },
+            { "label": "Deposit, open the position, and print HashScan links", "command": "{run:hardhat:smoke}" },
+            { "label": "Verify on Sourcify / HashScan", "command": "{run:hardhat:verify:sourcify}" }
+          ]
+        }
+      ]
+    }
+  }
+}
