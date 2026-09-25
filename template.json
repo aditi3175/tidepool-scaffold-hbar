@@ -37,9 +37,17 @@
           "steps": [
             { "label": "Generate or import a deployer account", "command": "{run:hardhat:account:generate}" },
             { "label": "Fund it with testnet HBAR", "url": "https://portal.hedera.com/faucet" },
-            { "label": "Deploy and initialize the vault", "command": "{run:hardhat:deploy} --network hederaTestnet" },
+            { "label": "Deploy and initialize the vault", "command": "{run:hardhat:deploy:testnet}" },
             { "label": "Deposit, open the position, and print HashScan links", "command": "{run:hardhat:smoke}" },
             { "label": "Verify on Sourcify / HashScan", "command": "{run:hardhat:verify:sourcify}" }
+          ]
+        },
+        {
+          "title": "Optional: demonstrate a TWAP-triggered rebalance",
+          "steps": [
+            {
+              "text": "Use the separate narrow test vault (hardhat:deploy:narrow, hardhat:deposit, hardhat:move-price, hardhat:rebalance). It moves the shared testnet pool price; read the README section 'Optional: narrow-vault rebalance demo' first."
+            }
           ]
         }
       ]

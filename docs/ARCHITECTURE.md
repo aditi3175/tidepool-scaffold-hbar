@@ -26,6 +26,9 @@ bottom without outside context.
 | **[BUILD]** | Proven by running it: compile, unit tests, lint, `next build`, route checks, Zod validation. |
 | **[SPIKE]** | **Not yet proven on a live network.** Must be confirmed on Day 1 (section 15). Treat it as a risk until then. |
 
+All items originally tagged [SPIKE] were proven on Hedera testnet on 25 Sep 2026 and are now tagged [CHAIN]; the
+transactions are listed in section 17a.
+
 - If reality disagrees with this document (an address changed, a package version moved), **reality wins**:
   re-verify with the commands given, fix the document, and continue.
 
@@ -107,10 +110,10 @@ withdraw, compound and rebalance, and shows history read from the Hedera mirror 
 |---|---|---|
 | Scaffolds via `npm create scaffold-hbar@latest --template owner/repo` | Repo root has the same shape as the official blank template (yarn-form scripts, `template.json`, `packages/hardhat`, `packages/nextjs`). Dry run from GitHub on Day 9. | [SRC] CLI downloads `owner/repo[#ref]` with giget |
 | Valid `template.json` | Section 9.1; validated against the CLI's own Zod schema. | [BUILD] |
-| `README.md` and `AGENTS.md` | Section 13 (AGENTS.md full text; README outline). | — |
+| `README.md` and `AGENTS.md` | Both in the repo root (AGENTS.md full text in 13.1). | [SRC] |
 | Install, lint, build pass from a fresh scaffold | Root `.npmrc` with `legacy-peer-deps=true`; webpack alias for x402 optional peers; CI workflow. | [BUILD] |
 | App boots, core routes OK | `/`, `/debug`, `/blockexplorer`, `/api/hedera/account` → 200. | [BUILD] |
-| One verifiable testnet transaction + HashScan link | `npm run hardhat:smoke` prints HashScan links for deposit and compound. | [SPIKE] |
+| One verifiable testnet transaction + HashScan link | Many, listed in section 17a and the README (e.g. deposit `0x0bf5cee5…4947`, rebalance `0x890be6b4…08aa`). | [CHAIN] |
 | No secrets / `.env` committed | Deployer key is encrypted into `packages/hardhat/.env` by the template's own scripts; `.env` is gitignored. | [SRC] |
 | MIT licence, original work | All Tidepool code is original MIT. Third-party code is **imported as npm dependencies**, never copied: `@uniswap/v4-core` (only files whose SPDX header is MIT), `@hiero-ledger/hiero-contracts` (Apache-2.0), OpenZeppelin (MIT). | [SRC] |
 | Harness spec + validators if the Harness was used | Only if you use Hedera Harness. If you do, commit its spec and validators. | — |
@@ -303,7 +306,9 @@ share token auto-renew period 7 776 000 s (90 days).
 2. `createFungibleToken` with treasury = vault, supply key = `contractId(vault)`, auto-renew account = vault,
    initial supply 0, decimals 8. `msg.value` is forwarded (HederaTokenService helper does `call{value: msg.value}`).
 3. Any HBAR left in the vault is refunded to the deployer. Deploy script sends **30 HBAR**
-   (TokenCreate $1.00 + 20% ≈ 15.4 HBAR at 7.8 ¢/HBAR, with headroom). [SPIKE]: record the actual charge and whether surplus is refunded.
+   (TokenCreate $1.00 + 20% ≈ 15.4 HBAR at 7.8 ¢/HBAR, with headroom). [CHAIN]: the token creation kept 15.27009466 HBAR
+   and the vault refunded 14.72990534 HBAR, on both testnet vaults. `initialize` needs ~2.31M gas (three associations);
+   the deploy scripts use a 5M limit.
 
 **`deposit(amount0Max, amount1Max, minShares, receiver)`**
 1. Requires initialized; `_checkedPrices()` (spot within `maxTwapDeviation` of TWAP).
@@ -429,7 +434,8 @@ tidepool/                                 (GitHub: <you>/tidepool, public, MIT)
 ├── AGENTS.md                             section 13.1 (replaces the blank one)
 ├── CLAUDE.md                             unchanged ("@AGENTS.md")
 ├── LICENCE                               MIT, your name
-├── README.md                             section 13.2
+├── README.md                             submission README (section 13.2)
+├── docs/ARCHITECTURE.md                  this document
 ├── package.json                          section 9.2 (yarn form)
 ├── template.json                         section 9.1
 └── packages/
@@ -443,8 +449,11 @@ tidepool/                                 (GitHub: <you>/tidepool, public, MIT)
     │   │   ├── interfaces/ISaucerSwapV2.sol
     │   │   ├── libraries/RangeMath.sol
     │   │   └── test/Mocks.sol
-    │   ├── deploy/00_deploy_tidepool_vault.ts
-    │   ├── scripts/                      template scripts + runScriptWithPK, tidepoolSmoke, simulateTraders, verifySourcify
+    │   ├── deploy/00_deploy_tidepool_vault.ts            main vault
+    │   ├── deploy/01_deploy_tidepool_vault_narrow.ts     rebalance demo vault (opt-in: TIDEPOOL_DEPLOY_NARROW=true)
+    │   ├── scripts/                      template account scripts + runScriptWithPK, tidepoolScriptUtils, tidepoolSmoke,
+    │   │                                 tidepoolCompound, tidepoolWithdraw, tidepoolDeposit, tidepoolMovePrice,
+    │   │                                 tidepoolRebalance, simulateTraders, verifySourcify
     │   ├── test/TidepoolVault.test.ts
     │   └── utils/getDeployGasPrice.ts    (unchanged)
     └── nextjs/
@@ -512,9 +521,17 @@ tidepool/                                 (GitHub: <you>/tidepool, public, MIT)
           "steps": [
             { "label": "Generate or import a deployer account", "command": "{run:hardhat:account:generate}" },
             { "label": "Fund it with testnet HBAR", "url": "https://portal.hedera.com/faucet" },
-            { "label": "Deploy and initialize the vault", "command": "{run:hardhat:deploy} --network hederaTestnet" },
+            { "label": "Deploy and initialize the vault", "command": "{run:hardhat:deploy:testnet}" },
             { "label": "Deposit, open the position, and print HashScan links", "command": "{run:hardhat:smoke}" },
             { "label": "Verify on Sourcify / HashScan", "command": "{run:hardhat:verify:sourcify}" }
+          ]
+        },
+        {
+          "title": "Optional: demonstrate a TWAP-triggered rebalance",
+          "steps": [
+            {
+              "text": "Use the separate narrow test vault (hardhat:deploy:narrow, hardhat:deposit, hardhat:move-price, hardhat:rebalance). It moves the shared testnet pool price; read the README section 'Optional: narrow-vault rebalance demo' first."
+            }
           ]
         }
       ]
@@ -547,15 +564,21 @@ tidepool/                                 (GitHub: <you>/tidepool, public, MIT)
     "hardhat:check-types": "yarn workspace @sh/hardhat check-types",
     "hardhat:clean": "yarn workspace @sh/hardhat clean",
     "hardhat:compile": "yarn workspace @sh/hardhat compile",
+    "hardhat:compound": "yarn workspace @sh/hardhat compound",
+    "hardhat:deposit": "yarn workspace @sh/hardhat deposit",
     "hardhat:deploy": "yarn workspace @sh/hardhat deploy",
+    "hardhat:deploy:narrow": "yarn workspace @sh/hardhat deploy:narrow",
     "hardhat:deploy:testnet": "yarn workspace @sh/hardhat deploy --network hederaTestnet",
     "hardhat:format": "yarn workspace @sh/hardhat format",
     "hardhat:lint": "yarn workspace @sh/hardhat lint",
     "hardhat:lint-staged": "yarn workspace @sh/hardhat lint-staged",
+    "hardhat:move-price": "yarn workspace @sh/hardhat move-price",
+    "hardhat:rebalance": "yarn workspace @sh/hardhat rebalance",
     "hardhat:simulate-traders": "yarn workspace @sh/hardhat simulate-traders",
     "hardhat:smoke": "yarn workspace @sh/hardhat smoke",
     "hardhat:test": "yarn workspace @sh/hardhat test",
     "hardhat:verify:sourcify": "yarn workspace @sh/hardhat verify:sourcify",
+    "hardhat:withdraw": "yarn workspace @sh/hardhat withdraw",
     "lint": "yarn next:lint && yarn hardhat:lint",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
@@ -607,6 +630,7 @@ legacy-peer-deps=true
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "deploy": "ts-node scripts/runHardhatDeployWithPK.ts",
+    "deploy:narrow": "ts-node scripts/runNarrowDeployWithPK.ts",
     "flatten": "hardhat flatten",
     "fork": "MAINNET_FORKING_ENABLED=true HEDERA_FORKING=true hardhat node --network hardhat --no-deploy",
     "format": "prettier --write './**/*.(ts|sol)'",
@@ -614,6 +638,11 @@ legacy-peer-deps=true
     "lint-staged": "eslint",
     "test": "hardhat test",
     "smoke": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolSmoke.ts --network hederaTestnet",
+    "compound": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolCompound.ts --network hederaTestnet",
+    "withdraw": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolWithdraw.ts --network hederaTestnet",
+    "deposit": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolDeposit.ts --network hederaTestnet",
+    "move-price": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolMovePrice.ts --network hederaTestnet",
+    "rebalance": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolRebalance.ts --network hederaTestnet",
     "simulate-traders": "ts-node scripts/runScriptWithPK.ts scripts/simulateTraders.ts --network hederaTestnet",
     "verify:sourcify": "hardhat run scripts/verifySourcify.ts --network hederaTestnet"
   },
@@ -677,7 +706,7 @@ import "@nomicfoundation/hardhat-verify";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-// Only load the Hedera forking plugin when starting the local node (npm run hardhat:chain / npm run hardhat:fork).
+// Only load the Hedera forking plugin when starting the local node (yarn hardhat:chain / yarn hardhat:fork).
 // Deploying to an already-running node doesn't need it and would fail with EADDRINUSE.
 if (process.env.HEDERA_FORKING === "true") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional plugin load
@@ -691,7 +720,7 @@ import generateTsAbis from "./scripts/generateTsAbis";
 // Hedera JSON-RPC URL (testnet default). Set HEDERA_RPC_URL in .env for mainnet.
 const hederaRpcUrl = process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api";
 
-// Deployer key: run `npm run account:generate` or `npm run account:import`, or set __RUNTIME_DEPLOYER_PRIVATE_KEY at runtime.
+// Deployer key: run `yarn account:generate` or `yarn account:import`, or set __RUNTIME_DEPLOYER_PRIVATE_KEY at runtime.
 const deployerPrivateKey =
   process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
@@ -1658,6 +1687,28 @@ export const TIDEPOOL: Record<string, VaultParams> = {
     initializeHbar: "30",
   },
 };
+
+/**
+ * Separate, narrow-range vault used only to exercise rebalance() on testnet. Same pool, manager and router
+ * as the main vault; +/- 60 ticks and a 10-minute cooldown so a small, temporary price move takes it out of
+ * range. Deployed under the name "TidepoolVaultNarrow" by deploy/01_deploy_tidepool_vault_narrow.ts, which is
+ * skipped unless TIDEPOOL_DEPLOY_NARROW=true. The main TIDEPOOL entry above is unaffected.
+ */
+export const TIDEPOOL_NARROW: Record<string, VaultParams> = {
+  hederaTestnet: {
+    pool: "0x37814eDc1ae88cf27c0C346648721FB04e7E0AE7", // same WHBAR/SAUCE 0.30% pool as the main vault
+    positionManager: "0x000000000000000000000000000000000013f618", // 0.0.1308184
+    swapRouter: "0x0000000000000000000000000000000000159398", // 0.0.1414040
+    halfWidth: 60, // +/- 60 ticks (one tick spacing), about +/- 0.6% in price
+    twapWindow: 600,
+    maxTwapDeviation: 50,
+    rebalanceCooldown: 600,
+    swapSlippageBps: 100,
+    shareName: "Tidepool Narrow Test",
+    shareSymbol: "tpNARROW",
+    initializeHbar: "30",
+  },
+};
 ```
 
 `packages/hardhat/deploy/00_deploy_tidepool_vault.ts`
@@ -1725,6 +1776,105 @@ const deployTidepoolVault: DeployFunction = async function (hre: HardhatRuntimeE
 
 deployTidepoolVault.tags = ["TidepoolVault"];
 export default deployTidepoolVault;
+```
+
+Optional narrow test vault for the rebalance demo (skipped unless `TIDEPOOL_DEPLOY_NARROW=true`; run it with `hardhat:deploy:narrow`):
+
+`packages/hardhat/deploy/01_deploy_tidepool_vault_narrow.ts`
+
+```ts
+import type { HardhatRuntimeEnvironment } from "hardhat/types";
+import type { DeployFunction } from "hardhat-deploy/types";
+
+import { TIDEPOOL_NARROW } from "../tidepool.config";
+import { getDeployGasPrice } from "../utils/getDeployGasPrice";
+
+const DEPLOYMENT_NAME = "TidepoolVaultNarrow";
+
+/**
+ * Deploys a SECOND TidepoolVault, recorded as "TidepoolVaultNarrow", with the narrow test parameters, then
+ * initializes it. It never touches the main "TidepoolVault" deployment record.
+ *
+ * Opt-in only: skipped unless TIDEPOOL_DEPLOY_NARROW=true, so a plain `hardhat:deploy:testnet` cannot deploy it.
+ * Intended entry point: `hardhat:deploy:narrow` (sets the flag and runs only this script's tag).
+ */
+const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const params = TIDEPOOL_NARROW[hre.network.name];
+  if (!params) {
+    console.log(`No narrow-vault config for network "${hre.network.name}" - skipping ${DEPLOYMENT_NAME}.`);
+    return;
+  }
+
+  const { deployer } = await hre.getNamedAccounts();
+  const { deploy, read, execute } = hre.deployments;
+  const gasPrice = await getDeployGasPrice(hre);
+
+  await deploy(DEPLOYMENT_NAME, {
+    contract: "TidepoolVault",
+    from: deployer,
+    args: [
+      {
+        pool: params.pool,
+        positionManager: params.positionManager,
+        swapRouter: params.swapRouter,
+        halfWidth: params.halfWidth,
+        twapWindow: params.twapWindow,
+        maxTwapDeviation: params.maxTwapDeviation,
+        rebalanceCooldown: params.rebalanceCooldown,
+        swapSlippageBps: params.swapSlippageBps,
+      },
+    ],
+    log: true,
+    autoMine: true,
+    gasLimit: 6_000_000,
+    gasPrice,
+  });
+
+  const shareToken: string = await read(DEPLOYMENT_NAME, "shareToken");
+  if (shareToken !== hre.ethers.ZeroAddress) {
+    console.log(`${DEPLOYMENT_NAME} already initialized, share token ${shareToken}`);
+    return;
+  }
+
+  // Same initialize() as the main vault: three HTS associations (~2M gas) plus share-token creation.
+  await execute(
+    DEPLOYMENT_NAME,
+    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 5_000_000, gasPrice },
+    "initialize",
+    params.shareName,
+    params.shareSymbol,
+  );
+  console.log(`${DEPLOYMENT_NAME} share token: ${await read(DEPLOYMENT_NAME, "shareToken")}`);
+};
+
+deployTidepoolVaultNarrow.tags = ["TidepoolVaultNarrow"];
+deployTidepoolVaultNarrow.skip = async () => process.env.TIDEPOOL_DEPLOY_NARROW !== "true";
+export default deployTidepoolVaultNarrow;
+```
+
+Its entry point, `hardhat:deploy:narrow`, sets the opt-in flag inside Node so it works under Yarn and npm on every OS:
+
+`packages/hardhat/scripts/runNarrowDeployWithPK.ts`
+
+```ts
+import { spawn } from "child_process";
+
+/**
+ * Entry point for `deploy:narrow`. Sets the TIDEPOOL_DEPLOY_NARROW opt-in inside Node (no shell-specific
+ * `VAR=value` syntax, so it works under Yarn and npm on Windows, macOS and Linux) and then runs the normal
+ * deploy wrapper for ONLY the narrow vault's tag. deploy/01_deploy_tidepool_vault_narrow.ts stays skipped for
+ * every other deploy command, because nothing else sets the flag.
+ */
+const child = spawn(
+  "ts-node",
+  ["scripts/runHardhatDeployWithPK.ts", "--network", "hederaTestnet", "--tags", "TidepoolVaultNarrow"],
+  {
+    stdio: "inherit",
+    env: { ...process.env, TIDEPOOL_DEPLOY_NARROW: "true" },
+    shell: process.platform === "win32",
+  },
+);
+child.on("exit", code => process.exit(code || 0));
 ```
 
 ### 9.7 Tests and mocks
@@ -2340,14 +2490,16 @@ main().catch(error => {
  *   2. wrap HBAR through SaucerSwap's WhbarHelper (never the WHBAR contract directly)
  *   3. buy SAUCE through the SaucerSwap V2 router
  *   4. approve + deposit into the vault
- *   5. compound() - mints the first position, paying SaucerSwap's HBAR position fee
+ *   5. compound() - mints the first position, paying SaucerSwap's HBAR position fee (fixed 8M gas: a position
+ *      mint cannot be simulated on Hedera, see tidepoolCompound.ts)
  *
  * Run: npm run hardhat:smoke   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolSmoke.ts --network hederaTestnet)
  */
 import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, gasLimitFor, hashscan } from "./tidepoolScriptUtils";
 
 const WHBAR_HELPER = "0x000000000000000000000000000000000050a8a7"; // testnet 0.0.5286055
-const TINYBAR_TO_WEIBAR = 10_000_000_000n; // JSON-RPC value is 18 decimals, the EVM sees 8
+const COMPOUND_GAS_LIMIT = 8_000_000n; // first compound on testnet used 5,128,563
 const HTS_FACADE_ABI = [
   "function isAssociated() view returns (bool)",
   "function associate() returns (uint256)",
@@ -2359,8 +2511,6 @@ const ROUTER_ABI = [
   "function refundETH() payable",
   "function multicall(bytes[]) payable returns (bytes[])",
 ];
-
-const hashscan = (hash: string) => `https://hashscan.io/testnet/transaction/${hash}`;
 
 async function main() {
   if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
@@ -2379,14 +2529,16 @@ async function main() {
   for (const token of [token0, token1, shareToken]) {
     const facade = new ethers.Contract(token, HTS_FACADE_ABI, signer);
     if (!(await facade.isAssociated())) {
-      const tx = await facade.associate({ gasLimit: 1_000_000 });
+      const gasLimit = await gasLimitFor(`associate ${token}`, facade.associate.estimateGas());
+      const tx = await facade.associate({ gasLimit });
       console.log(`associate ${token}: ${hashscan((await tx.wait())!.hash)}`);
     }
   }
 
   const wrapHbar = ethers.parseEther(process.env.WRAP_HBAR ?? "20");
   const helper = new ethers.Contract(WHBAR_HELPER, ["function deposit() payable"], signer);
-  const wrapTx = await helper.deposit({ value: wrapHbar, gasLimit: 200_000 });
+  const wrapGas = await gasLimitFor("wrap HBAR", helper.deposit.estimateGas({ value: wrapHbar }));
+  const wrapTx = await helper.deposit({ value: wrapHbar, gasLimit: wrapGas });
   console.log(`wrap HBAR -> WHBAR: ${hashscan((await wrapTx.wait())!.hash)}`);
 
   // Buy SAUCE with HBAR: the router wraps msg.value itself when tokenIn is WHBAR; refundETH returns the rest.
@@ -2404,10 +2556,9 @@ async function main() {
       sqrtPriceLimitX96: 0,
     },
   ]);
-  const buyTx = await r.multicall([swapData, r.interface.encodeFunctionData("refundETH")], {
-    value: buyHbar,
-    gasLimit: 1_000_000,
-  });
+  const buyCalls = [swapData, r.interface.encodeFunctionData("refundETH")];
+  const buyGas = await gasLimitFor("buy SAUCE", r.multicall.estimateGas(buyCalls, { value: buyHbar }));
+  const buyTx = await r.multicall(buyCalls, { value: buyHbar, gasLimit: buyGas });
   console.log(`buy SAUCE: ${hashscan((await buyTx.wait())!.hash)}`);
 
   const t0 = new ethers.Contract(token0, HTS_FACADE_ABI, signer);
@@ -2417,17 +2568,21 @@ async function main() {
     [t0, bal0],
     [t1, bal1],
   ] as const) {
-    await (await token.approve(await vault.getAddress(), amount, { gasLimit: 1_000_000 })).wait();
+    const spender = await vault.getAddress();
+    const gasLimit = await gasLimitFor(
+      `approve ${await token.getAddress()}`,
+      token.approve.estimateGas(spender, amount),
+    );
+    await (await token.approve(spender, amount, { gasLimit })).wait();
   }
 
-  const depositTx = await vault.deposit(bal0, bal1, 0, signer.address, { gasLimit: 1_500_000 });
+  const depositGas = await gasLimitFor("deposit", vault.deposit.estimateGas(bal0, bal1, 0, signer.address));
+  const depositTx = await vault.deposit(bal0, bal1, 0, signer.address, { gasLimit: depositGas });
   console.log(`deposit: ${hashscan((await depositTx.wait())!.hash)}`);
 
   const feeTinybars = await vault.quoteMintFee.staticCall();
-  const compoundTx = await vault.compound({
-    value: (feeTinybars + 100_000_000n) * TINYBAR_TO_WEIBAR, // fee + 1 HBAR headroom, refunded
-    gasLimit: 3_000_000,
-  });
+  const compoundValue = (feeTinybars + 100_000_000n) * TINYBAR_TO_WEIBAR; // fee + 1 HBAR headroom, refunded
+  const compoundTx = await vault.compound({ value: compoundValue, gasLimit: COMPOUND_GAS_LIMIT });
   console.log(`compound (first position): ${hashscan((await compoundTx.wait())!.hash)}`);
   console.log(
     `position serial: ${await vault.positionSerial()}, range [${await vault.tickLower()}, ${await vault.tickUpper()})`,
@@ -2576,6 +2731,757 @@ async function main() {
     return;
   }
   throw new Error(`Timed out waiting for Sourcify job ${submitted.verificationId}`);
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Shared helpers for the operator scripts (nothing here sends a transaction):
+
+`packages/hardhat/scripts/tidepoolScriptUtils.ts`
+
+```ts
+/**
+ * Shared helpers for the Tidepool testnet operator scripts (deposit, move-price, rebalance).
+ * Nothing here sends a transaction.
+ */
+import { createInterface } from "readline/promises";
+
+export const HEDERA_MAX_GAS = 15_000_000n; // per-transaction gas limit on Hedera
+export const TINYBAR_TO_WEIBAR = 10_000_000_000n; // JSON-RPC value is 18 decimals, the EVM sees 8
+const MIRROR_NODE = "https://testnet.mirrornode.hedera.com/api/v1";
+
+export const hashscan = (hash: string) => `https://hashscan.io/testnet/transaction/${hash}`;
+
+/** Reads a required environment variable or stops the script before anything is sent. */
+export function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.trim() === "") throw new Error(`Set ${name} before running this script (nothing was sent).`);
+  return value.trim();
+}
+
+/** Asks on the terminal; only an explicit "yes" continues. */
+export async function confirm(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question(question);
+  rl.close();
+  return answer.trim().toLowerCase() === "yes";
+}
+
+/** eth_estimateGas x 1.3, capped at Hedera's limit. Never guesses: a failed estimate stops the script. */
+export async function gasLimitFor(label: string, estimate: Promise<bigint>): Promise<bigint> {
+  let estimated: bigint;
+  try {
+    estimated = await estimate;
+  } catch (error) {
+    throw new Error(`${label}: eth_estimateGas failed, so nothing was sent. Cause: ${(error as Error).message}`);
+  }
+  const limit = (estimated * 130n) / 100n;
+  const capped = limit > HEDERA_MAX_GAS ? HEDERA_MAX_GAS : limit;
+  console.log(`${label}: estimated ${estimated} gas, sending with limit ${capped}`);
+  return capped;
+}
+
+/**
+ * Hedera ID ("0.0.N") for an EVM address. HTS facades may report a contract as its EVM address or as its
+ * long-zero form (0x000...N), so ownership checks compare Hedera IDs, resolved through the mirror node.
+ */
+export async function hederaIdOf(address: string): Promise<string> {
+  const hex = address.toLowerCase().replace(/^0x/, "");
+  if (/^0{24}/.test(hex)) return `0.0.${BigInt("0x" + hex)}`;
+  for (const kind of ["contracts", "accounts"]) {
+    const res = await fetch(`${MIRROR_NODE}/${kind}/0x${hex}`);
+    if (!res.ok) continue;
+    const body = (await res.json()) as { contract_id?: string; account?: string };
+    const id = body.contract_id ?? body.account;
+    if (id) return id;
+  }
+  throw new Error(`Mirror node could not resolve ${address} to a Hedera ID`);
+}
+
+/** Largest multiple of `spacing` <= tick (matches RangeMath.floorToSpacing). */
+export function floorToSpacing(tick: number, spacing: number): number {
+  return Math.floor(tick / spacing) * spacing;
+}
+
+/** Range the vault will mint around `centerTick` (matches RangeMath.rangeAround, including the clamp). */
+export function rangeAround(centerTick: number, spacing: number, halfWidth: number): [number, number] {
+  const MAX_TICK = 887272;
+  const maxUsable = Math.trunc(MAX_TICK / spacing) * spacing;
+  const center = floorToSpacing(centerTick, spacing);
+  return [Math.max(center - halfWidth, -maxUsable), Math.min(center + halfWidth, maxUsable)];
+}
+
+/** Tick for a sqrtPriceX96 (floor of log base 1.0001 of the price). Display only. */
+export function tickAtSqrtPrice(sqrtPriceX96: bigint): number {
+  return Math.floor(Math.log(Number(sqrtPriceX96) ** 2 / 2 ** 192) / Math.log(1.0001));
+}
+```
+
+Compound only (fixed 8M gas; `TIDEPOOL_VAULT` selects the vault, default the main one):
+
+`packages/hardhat/scripts/tidepoolCompound.ts`
+
+```ts
+/**
+ * Sends only compound() to the live testnet vault (opens the first position when none exists).
+ *
+ * The gas limit is fixed because compound() cannot be pre-checked with eth_estimateGas / eth_call on Hedera:
+ * SaucerSwap's position manager mints the LP NFT through HTS and then transfers that serial, and the
+ * network's simulation returns INVALID_NFT_ID for that sequence even for mints that succeed on-chain.
+ *
+ * Run: npm run hardhat:compound   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolCompound.ts --network hederaTestnet)
+ *      TIDEPOOL_VAULT selects the hardhat-deploy deployment name (default "TidepoolVault", the main vault).
+ */
+import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, hashscan } from "./tidepoolScriptUtils";
+
+const COMPOUND_GAS_LIMIT = 8_000_000n;
+const FEE_HEADROOM_TINYBARS = 100_000_000n; // 1 HBAR on top of the position fee; the vault refunds the surplus
+
+async function main() {
+  if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
+  const { ethers, deployments } = hre;
+  const [signer] = await ethers.getSigners();
+  const vaultName = process.env.TIDEPOOL_VAULT ?? "TidepoolVault";
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
+  console.log(`vault: ${vaultName} at ${await vault.getAddress()}`);
+
+  const feeTinybars = await vault.quoteMintFee.staticCall();
+  const value = (feeTinybars + FEE_HEADROOM_TINYBARS) * TINYBAR_TO_WEIBAR;
+  console.log(`position serial before: ${await vault.positionSerial()}`);
+  console.log(`position fee: ${ethers.formatUnits(feeTinybars, 8)} HBAR, sending ${ethers.formatEther(value)} HBAR`);
+  console.log(`gas limit: ${COMPOUND_GAS_LIMIT} (fixed; see the note at the top of this file)`);
+
+  const tx = await vault.compound({ value, gasLimit: COMPOUND_GAS_LIMIT });
+  console.log(`compound sent: ${hashscan(tx.hash)}`);
+  const receipt = await tx.wait();
+  console.log(`compound mined: status ${receipt!.status}, gas used ${receipt!.gasUsed}`);
+  console.log(
+    `position serial: ${await vault.positionSerial()}, range [${await vault.tickLower()}, ${await vault.tickUpper()})`,
+  );
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Partial withdraw with two confirmations:
+
+`packages/hardhat/scripts/tidepoolWithdraw.ts`
+
+```ts
+/**
+ * Withdraws a slice of the deployer's vault shares from the live testnet vault (default 10%).
+ *
+ * Flow: show the plan (preview from getTotalAmounts) -> ask for confirmation -> approve the vault to pull the
+ * shares (only if the allowance is short) -> exact preview with a static withdraw() call -> send withdraw()
+ * with minimum amounts 1% under that preview. Both transactions get eth_estimateGas x 1.3; if estimation
+ * fails the script stops instead of guessing a gas limit. Unlike a position mint, withdraw() simulates fine
+ * on Hedera once the share allowance exists.
+ *
+ * Run: npm run hardhat:withdraw   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolWithdraw.ts --network hederaTestnet)
+ *      WITHDRAW_BPS=1000 by default (10% of your shares, in basis points)
+ *      TIDEPOOL_VAULT selects the hardhat-deploy deployment name (default "TidepoolVault", the main vault).
+ */
+import hre from "hardhat";
+import { confirm, gasLimitFor, hashscan } from "./tidepoolScriptUtils";
+
+const SHARE_DECIMALS = 8;
+const SLIPPAGE_BPS = 100n; // min amounts are 1% below the exact preview
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+];
+const POSITION_MANAGER_ABI = [
+  "function positions(uint256) view returns (address,address,uint24,int24,int24,uint128 liquidity,uint256,uint256,uint128 tokensOwed0,uint128 tokensOwed1)",
+];
+
+async function main() {
+  if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
+  const { ethers, deployments } = hre;
+  const [signer] = await ethers.getSigners();
+  const vaultName = process.env.TIDEPOOL_VAULT ?? "TidepoolVault";
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
+  const vaultAddress = await vault.getAddress();
+  console.log(`vault: ${vaultName} at ${vaultAddress}`);
+
+  const [token0, token1, shareTokenAddress, managerAddress] = await Promise.all([
+    vault.token0(),
+    vault.token1(),
+    vault.shareToken(),
+    vault.positionManager(),
+  ]);
+  const t0 = new ethers.Contract(token0, ERC20_ABI, signer);
+  const t1 = new ethers.Contract(token1, ERC20_ABI, signer);
+  const shareToken = new ethers.Contract(shareTokenAddress, ERC20_ABI, signer);
+  const manager = new ethers.Contract(managerAddress, POSITION_MANAGER_ABI, signer);
+  const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
+    new ethers.Contract(token0, ["function symbol() view returns (string)"], signer).symbol(),
+    new ethers.Contract(token1, ["function symbol() view returns (string)"], signer).symbol(),
+    new ethers.Contract(token0, ["function decimals() view returns (uint8)"], signer).decimals(),
+    new ethers.Contract(token1, ["function decimals() view returns (uint8)"], signer).decimals(),
+  ]);
+
+  const printState = async (label: string) => {
+    const serial = await vault.positionSerial();
+    const liquidity = serial === 0n ? 0n : (await manager.positions(serial)).liquidity;
+    console.log(`--- ${label}`);
+    console.log(`  your shares: ${ethers.formatUnits(await shareToken.balanceOf(signer.address), SHARE_DECIMALS)}`);
+    console.log(`  total shares: ${ethers.formatUnits(await vault.totalShares(), SHARE_DECIMALS)}`);
+    console.log(`  position: serial ${serial}, liquidity ${liquidity}`);
+    console.log(
+      `  vault idle: ${ethers.formatUnits(await t0.balanceOf(vaultAddress), decimals0)} ${symbol0}, ` +
+        `${ethers.formatUnits(await t1.balanceOf(vaultAddress), decimals1)} ${symbol1}`,
+    );
+    console.log(
+      `  your wallet: ${ethers.formatUnits(await t0.balanceOf(signer.address), decimals0)} ${symbol0}, ` +
+        `${ethers.formatUnits(await t1.balanceOf(signer.address), decimals1)} ${symbol1}`,
+    );
+  };
+
+  const bps = BigInt(process.env.WITHDRAW_BPS ?? "1000");
+  if (bps <= 0n || bps > 10_000n) throw new Error("WITHDRAW_BPS must be between 1 and 10000");
+  const userShares: bigint = await shareToken.balanceOf(signer.address);
+  const shares = (userShares * bps) / 10_000n;
+  if (shares === 0n) throw new Error("You have no vault shares to withdraw");
+
+  await printState("before");
+  const supply = await vault.totalShares();
+  const [total0, total1] = await vault.getTotalAmounts();
+  console.log(`\nPlan: withdraw ${ethers.formatUnits(shares, SHARE_DECIMALS)} shares (${Number(bps) / 100}% of yours)`);
+  console.log(
+    `  rough preview (getTotalAmounts, excludes uncollected fees): ` +
+      `${ethers.formatUnits((total0 * shares) / supply, decimals0)} ${symbol0} + ` +
+      `${ethers.formatUnits((total1 * shares) / supply, decimals1)} ${symbol1}`,
+  );
+  console.log(`  receiver: ${signer.address}`);
+
+  if (!(await confirm("Send the approval (if needed) and the withdrawal? Type 'yes' to continue: "))) {
+    console.log("Aborted. Nothing was sent.");
+    return;
+  }
+
+  const allowance: bigint = await shareToken.allowance(signer.address, vaultAddress);
+  if (allowance < shares) {
+    const gasLimit = await gasLimitFor("approve shares", shareToken.approve.estimateGas(vaultAddress, shares));
+    const approveTx = await shareToken.approve(vaultAddress, shares, { gasLimit });
+    console.log(`approve sent: ${hashscan(approveTx.hash)}`);
+    const approveReceipt = await approveTx.wait();
+    console.log(`approve mined: status ${approveReceipt!.status}, gas used ${approveReceipt!.gasUsed}`);
+  } else {
+    console.log(
+      `share allowance already covers ${ethers.formatUnits(shares, SHARE_DECIMALS)} shares; no approval sent`,
+    );
+  }
+
+  // Exact preview: simulate the real call (collect, remove liquidity, collect) against current state.
+  const [preview0, preview1] = await vault.withdraw.staticCall(shares, 0, 0, signer.address);
+  const min0 = (preview0 * (10_000n - SLIPPAGE_BPS)) / 10_000n;
+  const min1 = (preview1 * (10_000n - SLIPPAGE_BPS)) / 10_000n;
+  console.log(
+    `exact preview: ${ethers.formatUnits(preview0, decimals0)} ${symbol0} + ${ethers.formatUnits(preview1, decimals1)} ${symbol1}`,
+  );
+  console.log(
+    `minimums (1% below): ${ethers.formatUnits(min0, decimals0)} ${symbol0}, ${ethers.formatUnits(min1, decimals1)} ${symbol1}`,
+  );
+
+  if (!(await confirm("Proceed with the withdrawal? Type 'yes' to continue: "))) {
+    console.log("Aborted before withdraw(). Any share approval sent above stays in place for this exact amount.");
+    return;
+  }
+
+  const withdrawGas = await gasLimitFor("withdraw", vault.withdraw.estimateGas(shares, min0, min1, signer.address));
+  const tx = await vault.withdraw(shares, min0, min1, signer.address, { gasLimit: withdrawGas });
+  console.log(`withdraw sent: ${hashscan(tx.hash)}`);
+  const receipt = await tx.wait();
+  console.log(`withdraw mined: status ${receipt!.status}, gas used ${receipt!.gasUsed}`);
+
+  await printState("after");
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Exact-amount deposit into a named vault:
+
+`packages/hardhat/scripts/tidepoolDeposit.ts`
+
+```ts
+/**
+ * Deposits EXACT token amounts into a chosen Tidepool vault. Unlike tidepoolSmoke.ts it never wraps HBAR,
+ * never buys tokens and never deposits your whole balance.
+ *
+ * Flow: show the plan -> "yes" -> associate the vault's share token (only if needed) -> approve each token
+ * for its exact amount (only if the allowance is short) -> exact share preview via a static deposit() call ->
+ * second "yes" -> deposit(). Every transaction uses eth_estimateGas x 1.3 and stops if estimation fails.
+ *
+ * Run (PowerShell):
+ *   $env:TIDEPOOL_VAULT="TidepoolVaultNarrow"; $env:DEPOSIT0="2"; $env:DEPOSIT1="93"
+ *   node .yarn/releases/yarn-3.2.3.cjs hardhat:deposit
+ * DEPOSIT0 / DEPOSIT1 are in whole tokens of the vault's token0 / token1 (for WHBAR/SAUCE: WHBAR, SAUCE).
+ * For a vault that already holds assets, the vault takes at most these amounts, in its current ratio.
+ */
+import hre from "hardhat";
+import { confirm, gasLimitFor, hashscan, requireEnv } from "./tidepoolScriptUtils";
+
+const SHARE_DECIMALS = 8;
+const SLIPPAGE_BPS = 100n; // minShares is 1% below the exact preview
+const TOKEN_ABI = [
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+  "function isAssociated() view returns (bool)",
+  "function associate() returns (uint256)",
+];
+
+async function main() {
+  if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
+  const vaultName = requireEnv("TIDEPOOL_VAULT");
+  const deposit0Input = requireEnv("DEPOSIT0");
+  const deposit1Input = requireEnv("DEPOSIT1");
+
+  const { ethers, deployments } = hre;
+  const [signer] = await ethers.getSigners();
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
+  const vaultAddress = await vault.getAddress();
+  const shareTokenAddress = await vault.shareToken();
+  if (shareTokenAddress === ethers.ZeroAddress) throw new Error(`${vaultName} is not initialized (nothing was sent).`);
+
+  const t0 = new ethers.Contract(await vault.token0(), TOKEN_ABI, signer);
+  const t1 = new ethers.Contract(await vault.token1(), TOKEN_ABI, signer);
+  const shareToken = new ethers.Contract(shareTokenAddress, TOKEN_ABI, signer);
+  const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
+    t0.symbol(),
+    t1.symbol(),
+    t0.decimals(),
+    t1.decimals(),
+  ]);
+  const amount0 = ethers.parseUnits(deposit0Input, decimals0);
+  const amount1 = ethers.parseUnits(deposit1Input, decimals1);
+
+  const printState = async (label: string) => {
+    const [total0, total1] = await vault.getTotalAmounts();
+    console.log(`--- ${label}`);
+    console.log(
+      `  vault: shares ${ethers.formatUnits(await vault.totalShares(), SHARE_DECIMALS)}, position serial ${await vault.positionSerial()}, ` +
+        `holds ${ethers.formatUnits(total0, decimals0)} ${symbol0} + ${ethers.formatUnits(total1, decimals1)} ${symbol1}`,
+    );
+    console.log(
+      `  your wallet: ${ethers.formatUnits(await t0.balanceOf(signer.address), decimals0)} ${symbol0}, ` +
+        `${ethers.formatUnits(await t1.balanceOf(signer.address), decimals1)} ${symbol1}, ` +
+        `${ethers.formatUnits(await shareToken.balanceOf(signer.address), SHARE_DECIMALS)} shares`,
+    );
+  };
+
+  console.log(`vault: ${vaultName} at ${vaultAddress}`);
+  await printState("before");
+  const [have0, have1] = await Promise.all([t0.balanceOf(signer.address), t1.balanceOf(signer.address)]);
+  if (have0 < amount0 || have1 < amount1) {
+    throw new Error(
+      `Insufficient balance: need ${deposit0Input} ${symbol0} and ${deposit1Input} ${symbol1}, ` +
+        `have ${ethers.formatUnits(have0, decimals0)} ${symbol0} and ${ethers.formatUnits(have1, decimals1)} ${symbol1}. Nothing was sent.`,
+    );
+  }
+  console.log(`\nPlan: deposit up to ${deposit0Input} ${symbol0} + ${deposit1Input} ${symbol1} into ${vaultName}`);
+  if (!(await confirm("Send the association/approvals needed for this deposit? Type 'yes' to continue: "))) {
+    console.log("Aborted. Nothing was sent.");
+    return;
+  }
+
+  if (!(await shareToken.isAssociated())) {
+    const gasLimit = await gasLimitFor("associate share token", shareToken.associate.estimateGas());
+    const tx = await shareToken.associate({ gasLimit });
+    console.log(`associate sent: ${hashscan(tx.hash)}`);
+    console.log(`associate mined: status ${(await tx.wait())!.status}`);
+  }
+  for (const [token, amount, symbol] of [
+    [t0, amount0, symbol0],
+    [t1, amount1, symbol1],
+  ] as const) {
+    if (amount === 0n || (await token.allowance(signer.address, vaultAddress)) >= amount) continue;
+    const gasLimit = await gasLimitFor(`approve ${symbol}`, token.approve.estimateGas(vaultAddress, amount));
+    const tx = await token.approve(vaultAddress, amount, { gasLimit });
+    console.log(`approve ${symbol} sent: ${hashscan(tx.hash)}`);
+    console.log(`approve ${symbol} mined: status ${(await tx.wait())!.status}`);
+  }
+
+  const [previewShares, used0, used1] = await vault.deposit.staticCall(amount0, amount1, 0, signer.address);
+  const minShares = (previewShares * (10_000n - SLIPPAGE_BPS)) / 10_000n;
+  console.log(
+    `exact preview: ${ethers.formatUnits(previewShares, SHARE_DECIMALS)} shares for ` +
+      `${ethers.formatUnits(used0, decimals0)} ${symbol0} + ${ethers.formatUnits(used1, decimals1)} ${symbol1}; ` +
+      `minShares ${ethers.formatUnits(minShares, SHARE_DECIMALS)}`,
+  );
+  if (!(await confirm("Proceed with the deposit? Type 'yes' to continue: "))) {
+    console.log("Aborted before deposit(). Any association/approval sent above stays in place.");
+    return;
+  }
+
+  const gasLimit = await gasLimitFor("deposit", vault.deposit.estimateGas(amount0, amount1, minShares, signer.address));
+  const tx = await vault.deposit(amount0, amount1, minShares, signer.address, { gasLimit });
+  console.log(`deposit sent: ${hashscan(tx.hash)}`);
+  const receipt = await tx.wait();
+  console.log(`deposit mined: status ${receipt!.status}, gas used ${receipt!.gasUsed}`);
+  await printState("after");
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Quoted, confirmed one-way swap on the shared pool (for the rebalance demo):
+
+`packages/hardhat/scripts/tidepoolMovePrice.ts`
+
+```ts
+/**
+ * One-way swap on the vault's SaucerSwap V2 pool, used to move the SHARED WHBAR/SAUCE testnet pool price so the
+ * narrow test vault's TWAP leaves its range. It trades against every LP in that pool (including the main vault,
+ * which is only affected through the pool price; no call is made to it).
+ *
+ *   DIRECTION=down  sells token0 (WHBAR) for token1 (SAUCE): the tick goes DOWN
+ *   DIRECTION=up    sells token1 (SAUCE) for token0 (WHBAR): the tick goes UP
+ *   AMOUNT          amount of the input token, in whole tokens (required)
+ *   TIDEPOOL_VAULT  deployment whose pool/router/range are used (default "TidepoolVault"; read-only)
+ *   WRAP_HBAR_IF_NEEDED=true  allow wrapping the WHBAR shortfall through SaucerSwap's WhbarHelper (asks first)
+ *
+ * The swap is quoted with SaucerSwap's QuoterV2 before anything is sent, then needs an explicit "yes".
+ * Run (PowerShell): $env:TIDEPOOL_VAULT="TidepoolVaultNarrow"; $env:DIRECTION="down"; $env:AMOUNT="122"
+ *                   node .yarn/releases/yarn-3.2.3.cjs hardhat:move-price
+ */
+import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, confirm, gasLimitFor, hashscan, requireEnv, tickAtSqrtPrice } from "./tidepoolScriptUtils";
+
+const QUOTER_V2 = "0x00000000000000000000000000000000001535b2"; // SaucerSwap V2 QuoterV2, testnet 0.0.1390002
+const WHBAR_TOKEN = "0x0000000000000000000000000000000000003aD2"; // testnet 0.0.15058
+const WHBAR_HELPER = "0x000000000000000000000000000000000050a8a7"; // testnet 0.0.5286055 (never call the WHBAR contract)
+const SLIPPAGE_BPS = 100n; // amountOutMinimum is 1% below the quote
+const TOKEN_ABI = [
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+];
+const ROUTER_ABI = [
+  "function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96)) payable returns (uint256)",
+];
+const QUOTER_ABI = [
+  "function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96)) returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32 initializedTicksCrossed,uint256 gasEstimate)",
+];
+const POOL_ABI = ["function slot0() view returns (uint160,int24,uint16,uint16,uint16,uint8,bool)"];
+
+async function main() {
+  if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
+  const direction = requireEnv("DIRECTION").toLowerCase();
+  if (direction !== "down" && direction !== "up")
+    throw new Error('DIRECTION must be "down" or "up" (nothing was sent).');
+  const amountInput = requireEnv("AMOUNT");
+  const vaultName = process.env.TIDEPOOL_VAULT ?? "TidepoolVault";
+
+  const { ethers, deployments } = hre;
+  const [signer] = await ethers.getSigners();
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
+  const [poolAddress, routerAddress, fee, token0, token1] = await Promise.all([
+    vault.pool(),
+    vault.swapRouter(),
+    vault.fee(),
+    vault.token0(),
+    vault.token1(),
+  ]);
+  const [tokenIn, tokenOut] = direction === "down" ? [token0, token1] : [token1, token0];
+  const tIn = new ethers.Contract(tokenIn, TOKEN_ABI, signer);
+  const tOut = new ethers.Contract(tokenOut, TOKEN_ABI, signer);
+  const [symbolIn, symbolOut, decimalsIn, decimalsOut] = await Promise.all([
+    tIn.symbol(),
+    tOut.symbol(),
+    tIn.decimals(),
+    tOut.decimals(),
+  ]);
+  const amountIn = ethers.parseUnits(amountInput, decimalsIn);
+  const pool = new ethers.Contract(poolAddress, POOL_ABI, signer);
+  const quoter = new ethers.Contract(QUOTER_V2, QUOTER_ABI, signer);
+
+  const spotBefore = Number((await pool.slot0())[1]);
+  const quote = await quoter.quoteExactInputSingle.staticCall({
+    tokenIn,
+    tokenOut,
+    amountIn,
+    fee,
+    sqrtPriceLimitX96: 0,
+  });
+  const tickAfter = tickAtSqrtPrice(quote.sqrtPriceX96After);
+  const minOut = (quote.amountOut * (10_000n - SLIPPAGE_BPS)) / 10_000n;
+  const [lower, upper] = [Number(await vault.tickLower()), Number(await vault.tickUpper())];
+
+  console.log(`reference vault: ${vaultName} at ${await vault.getAddress()} (read-only), range [${lower}, ${upper})`);
+  console.log(`pool: ${poolAddress}   router: ${routerAddress}   fee tier: ${fee}`);
+  console.log(`swap: ${amountInput} ${symbolIn} -> ~${ethers.formatUnits(quote.amountOut, decimalsOut)} ${symbolOut}`);
+  console.log(
+    `spot tick: ${spotBefore} -> ~${tickAfter} (${tickAfter - spotBefore} ticks), ${quote.initializedTicksCrossed} initialized ticks crossed`,
+  );
+  console.log(
+    `after the swap the reference vault would be ${tickAfter >= lower && tickAfter < upper ? "IN" : "OUT OF"} range (spot)`,
+  );
+  console.log(`amountOutMinimum (1% below quote): ${ethers.formatUnits(minOut, decimalsOut)} ${symbolOut}`);
+  console.log(
+    "WARNING: this trades on the SHARED SaucerSwap WHBAR/SAUCE testnet pool. It moves the price for every LP and\n" +
+      "trader in that pool, including the main Tidepool vault's position, until the price is moved back.",
+  );
+
+  const balance: bigint = await tIn.balanceOf(signer.address);
+  if (balance < amountIn) {
+    const shortfall = amountIn - balance;
+    const isWhbar = tokenIn.toLowerCase() === WHBAR_TOKEN.toLowerCase();
+    console.log(
+      `Insufficient ${symbolIn}: have ${ethers.formatUnits(balance, decimalsIn)}, need ${amountInput}, ` +
+        `short by ${ethers.formatUnits(shortfall, decimalsIn)} ${symbolIn}.`,
+    );
+    if (!isWhbar)
+      throw new Error(`Acquire ${ethers.formatUnits(shortfall, decimalsIn)} more ${symbolIn} first. Nothing was sent.`);
+    // WHBAR has 8 decimals, like HBAR: 1 WHBAR is wrapped from 1 HBAR.
+    const wrapWeibar = shortfall * TINYBAR_TO_WEIBAR;
+    console.log(
+      `That requires wrapping ${ethers.formatEther(wrapWeibar)} HBAR into WHBAR via SaucerSwap's WhbarHelper.`,
+    );
+    if (process.env.WRAP_HBAR_IF_NEEDED !== "true") {
+      throw new Error("Set WRAP_HBAR_IF_NEEDED=true to allow wrapping, or wrap first. Nothing was sent.");
+    }
+    if (!(await confirm(`Wrap ${ethers.formatEther(wrapWeibar)} HBAR into WHBAR now? Type 'yes' to continue: `))) {
+      console.log("Aborted. Nothing was sent.");
+      return;
+    }
+    const helper = new ethers.Contract(WHBAR_HELPER, ["function deposit() payable"], signer);
+    const wrapGas = await gasLimitFor("wrap HBAR", helper.deposit.estimateGas({ value: wrapWeibar }));
+    const wrapTx = await helper.deposit({ value: wrapWeibar, gasLimit: wrapGas });
+    console.log(`wrap sent: ${hashscan(wrapTx.hash)}`);
+    console.log(`wrap mined: status ${(await wrapTx.wait())!.status}`);
+  }
+
+  if (!(await confirm(`Send this ${direction} swap on the shared pool? Type 'yes' to continue: `))) {
+    console.log("Aborted before the swap. Any wrap sent above stays in your wallet as WHBAR.");
+    return;
+  }
+
+  if ((await tIn.allowance(signer.address, routerAddress)) < amountIn) {
+    const gasLimit = await gasLimitFor(
+      `approve ${symbolIn} to router`,
+      tIn.approve.estimateGas(routerAddress, amountIn),
+    );
+    const tx = await tIn.approve(routerAddress, amountIn, { gasLimit });
+    console.log(`approve sent: ${hashscan(tx.hash)}`);
+    console.log(`approve mined: status ${(await tx.wait())!.status}`);
+  }
+
+  const router = new ethers.Contract(routerAddress, ROUTER_ABI, signer);
+  const params = {
+    tokenIn,
+    tokenOut,
+    fee,
+    recipient: signer.address,
+    deadline: Math.floor(Date.now() / 1000) + 300,
+    amountIn,
+    amountOutMinimum: minOut,
+    sqrtPriceLimitX96: 0,
+  };
+  const gasLimit = await gasLimitFor("swap", router.exactInputSingle.estimateGas(params));
+  const tx = await router.exactInputSingle(params, { gasLimit });
+  console.log(`swap sent: ${hashscan(tx.hash)}`);
+  const receipt = await tx.wait();
+  console.log(`swap mined: status ${receipt!.status}, gas used ${receipt!.gasUsed}`);
+
+  const [spot, twap, inRange] = await vault.getPriceState();
+  console.log(`pool now: spot ${spot}, TWAP ${twap} (the TWAP follows over ${await vault.twapWindow()} s)`);
+  console.log(`${vaultName}: range [${lower}, ${upper}), TWAP ${inRange ? "IN" : "OUT OF"} range`);
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+Guarded rebalance with read-only preflight and post-mining checks:
+
+`packages/hardhat/scripts/tidepoolRebalance.ts`
+
+```ts
+/**
+ * Sends rebalance() to an explicitly named Tidepool vault after read-only preflight checks, then verifies the
+ * result. Meant for the narrow test vault ("TidepoolVaultNarrow").
+ *
+ *   TIDEPOOL_VAULT                   deployment name (required; there is no default)
+ *   ALLOW_MAIN_VAULT_REBALANCE=true  required to target the main "TidepoolVault" deployment
+ *
+ * Preflight (no transaction): initialized, a position exists, cooldown elapsed, TWAP outside the range,
+ * |spot - TWAP| <= maxTwapDeviation. If any check fails, nothing is sent.
+ *
+ * Gas: fixed 8,000,000. rebalance() mints a new SaucerSwap LP NFT, and Hedera's eth_call/eth_estimateGas
+ * simulation returns INVALID_NFT_ID for that mint even when it succeeds on-chain, so it cannot be estimated.
+ * Observed first-position compound (the same mint path) used 5,128,563 gas.
+ *
+ * Run (PowerShell): $env:TIDEPOOL_VAULT="TidepoolVaultNarrow"; node .yarn/releases/yarn-3.2.3.cjs hardhat:rebalance
+ */
+import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, confirm, hashscan, hederaIdOf, rangeAround, requireEnv } from "./tidepoolScriptUtils";
+
+const MAIN_VAULT = "TidepoolVault";
+const REBALANCE_GAS_LIMIT = 8_000_000n;
+const FEE_HEADROOM_TINYBARS = 100_000_000n; // 1 HBAR on top of the position fee; the vault refunds the surplus
+const POSITION_MANAGER_ABI = [
+  "function positions(uint256) view returns (address,address,uint24,int24 tickLower,int24 tickUpper,uint128 liquidity,uint256,uint256,uint128,uint128)",
+];
+
+async function main() {
+  if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
+  const vaultName = requireEnv("TIDEPOOL_VAULT");
+  const { ethers, deployments } = hre;
+
+  const vaultAddress = (await deployments.get(vaultName)).address;
+  const mainAddress = (await deployments.getOrNull(MAIN_VAULT))?.address;
+  const isMain = vaultName === MAIN_VAULT || vaultAddress.toLowerCase() === mainAddress?.toLowerCase();
+  if (isMain && process.env.ALLOW_MAIN_VAULT_REBALANCE !== "true") {
+    throw new Error(
+      `${vaultName} is the main vault. Refusing to rebalance it without ALLOW_MAIN_VAULT_REBALANCE=true. Nothing was sent.`,
+    );
+  }
+
+  const [signer] = await ethers.getSigners();
+  const vault = await ethers.getContractAt("TidepoolVault", vaultAddress, signer);
+  const manager = new ethers.Contract(await vault.positionManager(), POSITION_MANAGER_ABI, signer);
+  const nft = new ethers.Contract(
+    await vault.positionNft(),
+    ["function ownerOf(uint256) view returns (address)"],
+    signer,
+  );
+  const vaultId = await hederaIdOf(vaultAddress);
+
+  // ---- read-only preflight -------------------------------------------------------------------------------
+  const failures: string[] = [];
+  if ((await vault.shareToken()) === ethers.ZeroAddress) failures.push("vault is not initialized");
+  const oldSerial: bigint = await vault.positionSerial();
+  if (oldSerial === 0n) failures.push("vault has no position yet (run compound first)");
+  const [lower, upper, spacing, halfWidth, maxDeviation, cooldown, lastRebalance] = await Promise.all([
+    vault.tickLower(),
+    vault.tickUpper(),
+    vault.tickSpacing(),
+    vault.halfWidth(),
+    vault.maxTwapDeviation(),
+    vault.rebalanceCooldown(),
+    vault.lastRebalance(),
+  ]).then(values => values.map(Number));
+  const now = (await ethers.provider.getBlock("latest"))!.timestamp;
+  const readyAt = lastRebalance + cooldown;
+  if (now < readyAt) failures.push(`cooldown active for another ${readyAt - now} s`);
+
+  let spot = NaN;
+  let twap = NaN;
+  try {
+    const state = await vault.getPriceState();
+    spot = Number(state[0]);
+    twap = Number(state[1]);
+  } catch (error) {
+    failures.push(`pool TWAP unavailable: ${(error as Error).message}`);
+  }
+  if (!Number.isNaN(twap)) {
+    if (twap >= lower && twap < upper) failures.push(`TWAP ${twap} is still inside [${lower}, ${upper})`);
+    if (Math.abs(spot - twap) > maxDeviation) {
+      failures.push(`|spot - TWAP| = ${Math.abs(spot - twap)} exceeds maxTwapDeviation ${maxDeviation}`);
+    }
+  }
+
+  const [newLower, newUpper] = Number.isNaN(twap) ? [NaN, NaN] : rangeAround(twap, spacing, halfWidth);
+  const feeTinybars: bigint = await vault.quoteMintFee.staticCall();
+  const value = (feeTinybars + FEE_HEADROOM_TINYBARS) * TINYBAR_TO_WEIBAR;
+
+  console.log(`vault: ${vaultName} at ${vaultAddress} (${vaultId})`);
+  console.log(`current NFT serial: ${oldSerial}, range [${lower}, ${upper})`);
+  console.log(`spot tick: ${spot}, TWAP tick: ${twap}, max deviation: ${maxDeviation}`);
+  console.log(
+    `cooldown: ${cooldown} s, last rebalance ${lastRebalance}, ${now >= readyAt ? "elapsed" : `ready at ${readyAt}`}`,
+  );
+  console.log(`expected new range: [${newLower}, ${newUpper})`);
+  console.log(
+    `quoteMintFee(): ${ethers.formatUnits(feeTinybars, 8)} HBAR; msg.value: ${ethers.formatEther(value)} HBAR (surplus refunded)`,
+  );
+  console.log(`gas limit: ${REBALANCE_GAS_LIMIT} (fixed; see the note at the top of this file)`);
+
+  if (failures.length > 0) {
+    console.log("\nPreflight FAILED - nothing was sent:");
+    for (const f of failures) console.log(`  - ${f}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log("\nPreflight passed.");
+  if (!(await confirm("Send rebalance()? Type 'yes' to continue: "))) {
+    console.log("Aborted. Nothing was sent.");
+    return;
+  }
+
+  // ---- send ------------------------------------------------------------------------------------------------
+  const tx = await vault.rebalance({ value, gasLimit: REBALANCE_GAS_LIMIT });
+  console.log(`rebalance sent: ${hashscan(tx.hash)}`);
+  const receipt = await tx.wait();
+  console.log(`rebalance mined: status ${receipt!.status}, gas used ${receipt!.gasUsed}`);
+
+  // ---- verify ----------------------------------------------------------------------------------------------
+  const newSerial: bigint = await vault.positionSerial();
+  const [gotLower, gotUpper] = [Number(await vault.tickLower()), Number(await vault.tickUpper())];
+  const newLiquidity: bigint = (await manager.positions(newSerial)).liquidity;
+  const oldLiquidity: bigint = (await manager.positions(oldSerial)).liquidity;
+  const oldOwner = await hederaIdOf(await nft.ownerOf(oldSerial));
+  const newOwner = await hederaIdOf(await nft.ownerOf(newSerial));
+
+  console.log(`new position serial: ${newSerial}, range [${gotLower}, ${gotUpper}), liquidity ${newLiquidity}`);
+  console.log(`old NFT ${oldSerial}: liquidity ${oldLiquidity}, owner ${oldOwner}`);
+  console.log(`new NFT ${newSerial}: owner ${newOwner}`);
+
+  // The vault centres on the TWAP at execution time, which can differ slightly from the preflight read.
+  const event = receipt!.logs
+    .map(log => {
+      try {
+        return vault.interface.parseLog(log);
+      } catch {
+        return null;
+      }
+    })
+    .find(parsed => parsed?.name === "Rebalance");
+  const broken: string[] = [];
+  if (!event) broken.push("no Rebalance event in the receipt");
+  const executedTwap = event ? Number(event.args.twapTick) : NaN;
+  const [eventLower, eventUpper] = rangeAround(executedTwap, spacing, halfWidth);
+  console.log(`executed at TWAP tick ${executedTwap} -> range [${eventLower}, ${eventUpper})`);
+  if (eventLower !== newLower || eventUpper !== newUpper) {
+    console.log(`note: preflight expected [${newLower}, ${newUpper}); the TWAP moved between preflight and execution`);
+  }
+  if (newSerial === oldSerial) broken.push("positionSerial did not change");
+  if (event && BigInt(event.args.newPositionSerial) !== newSerial)
+    broken.push("event serial differs from positionSerial");
+  if (gotLower !== eventLower || gotUpper !== eventUpper) {
+    broken.push(`stored range [${gotLower}, ${gotUpper}) differs from rangeAround(TWAP ${executedTwap})`);
+  }
+  if (newLiquidity === 0n) broken.push("new position has zero liquidity");
+  if (oldLiquidity !== 0n) broken.push(`old NFT ${oldSerial} still has liquidity ${oldLiquidity}`);
+  if (oldOwner !== vaultId) broken.push(`old NFT owner ${oldOwner} is not the vault ${vaultId}`);
+  if (newOwner !== vaultId) broken.push(`new NFT owner ${newOwner} is not the vault ${vaultId}`);
+  if (broken.length > 0) {
+    throw new Error(`Post-rebalance checks FAILED:\n  - ${broken.join("\n  - ")}`);
+  }
+  console.log("Post-rebalance checks passed.");
 }
 
 main().catch(error => {
@@ -3119,7 +4025,7 @@ export const DepositCard = ({ vault }: { vault: VaultState }) => {
         abi: WHBAR_HELPER_ABI,
         functionName: "deposit",
         value: wrapWeibar, // weibar (18 decimals): the relay converts it to tinybar
-        gas: 200_000n,
+        gas: 1_000_000n, // ~78k once WHBAR is associated; ~839k if the wrap also auto-associates it
       }),
     );
     setWrapInput("");
@@ -3329,6 +4235,9 @@ import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { TINYBAR_TO_WEIBAR } from "~~/utils/tidepool/constants";
 
 const FEE_HEADROOM_TINYBARS = 10_000_000n; // 0.1 HBAR; the vault refunds whatever is not used
+// Fixed: a SaucerSwap position mint cannot be pre-simulated on Hedera (INVALID_NFT_ID in eth_estimateGas).
+// On testnet, compound used 4.8-5.1M gas and rebalance 5.26M; Hedera charged only the gas used.
+const KEEPER_GAS_LIMIT = 8_000_000n;
 
 /** compound() and rebalance() are permissionless: whoever calls them pays SaucerSwap's HBAR position fee. */
 export const KeeperCard = ({ vault }: { vault: VaultState }) => {
@@ -3361,7 +4270,7 @@ export const KeeperCard = ({ vault }: { vault: VaultState }) => {
   const value = feeTinybars === undefined ? undefined : (feeTinybars + FEE_HEADROOM_TINYBARS) * TINYBAR_TO_WEIBAR;
 
   const run = async (functionName: "compound" | "rebalance") => {
-    await writeContractAsync({ functionName, value, gas: 3_000_000n });
+    await writeContractAsync({ functionName, value, gas: KEEPER_GAS_LIMIT });
     await vault.refetch();
   };
 
@@ -3535,8 +4444,9 @@ Enter shares → preview amounts from `getTotalAmounts()` → `approve(vault, sh
 
 The Keeper card shows the position fee (`quoteMintFee`, tinybars → HBAR). **Open position / Compound fees** sends
 `(fee + 0.1 HBAR) × 1e10` weibar; the vault refunds the extra. **Rebalance** is enabled only when the TWAP is out of range,
-the cooldown is over, and a position exists. Wiring an off-chain keeper (cron + `rebalance()`) is documented in the README,
-not built.
+the cooldown is over, and a position exists. Both buttons use a fixed 8,000,000 gas limit (a position mint cannot be
+pre-simulated; testnet usage was 4.8–5.3M). No keeper is included; an integrator can call `compound()`/`rebalance()`
+from their own scheduler, and the contract guards make that safe to leave permissionless.
 
 ---
 
@@ -3545,8 +4455,10 @@ not built.
 | Layer | What | Where | Status |
 |---|---|---|---|
 | Unit (offline) | 17 tests on the in-process Hardhat chain with `MockHts` etched at `0x167`, `MockExchangeRate` at `0x168`, mock pool/manager/router doing real v4 liquidity maths | `test/TidepoolVault.test.ts` | [BUILD] 17/17 |
-| Live smoke | associate → wrap → buy → approve → deposit → compound on testnet; prints HashScan links | `scripts/tidepoolSmoke.ts` | [SPIKE] |
-| Live fee generation | `simulate-traders`, then compound again and check `FeesCollected` | `scripts/simulateTraders.ts` | [SPIKE] |
+| Live smoke | associate → wrap → buy → approve → deposit → compound on testnet; prints HashScan links | `scripts/tidepoolSmoke.ts` (+ `tidepoolCompound.ts`) | [CHAIN] section 17a |
+| Live fee generation | `simulate-traders`, then compound again and check `FeesCollected` | `scripts/simulateTraders.ts`, `tidepoolCompound.ts` | [CHAIN] 137,667 / 63,557 units collected |
+| Live withdraw | 10% partial withdraw | `scripts/tidepoolWithdraw.ts` | [CHAIN] `0xd9a6a9fd…eacf` |
+| Live rebalance | narrow vault: deposit → compound → move price → rebalance → restore | `tidepoolDeposit/MovePrice/Rebalance.ts` | [CHAIN] `0x890be6b4…08aa` |
 | Gate dry run | scaffold from GitHub with npm **and** yarn; install, lint, build, start, curl routes | section 14 | Day 9 |
 
 Unit tests cover: pool validation, init once/deployer only, first-deposit dead shares, compound opening a TWAP-centred
@@ -3576,16 +4488,22 @@ npm run hardhat:deploy:testnet            # writes packages/nextjs/contracts/dep
 # 3. evidence
 npm run hardhat:smoke                     # prints HashScan links (associate, wrap, buy, deposit, compound)
 npm run hardhat:simulate-traders          # optional: generate fees
+npm run hardhat:compound                  # collect fees and add them (fixed 8M gas)
+npm run hardhat:withdraw                  # partial withdraw (WITHDRAW_BPS, default 10%)
 npm run hardhat:verify:sourcify           # verify on Sourcify → HashScan shows source
 
-# 4. commit deployedContracts.ts, push, make the repo public
+# 4. commit deployedContracts.ts (main vault entry only), push, make the repo public
 ```
 
-**Demonstrating `rebalance`.** `simulate-traders` buys and sells in equal rounds, so it earns fees but barely moves the price.
-To show a rebalance: in `tidepool.config.ts` set `halfWidth: 120` (≈ ±1.2%) and `rebalanceCooldown: 600`, redeploy
-(hardhat-deploy redeploys when constructor args change and regenerates `deployedContracts.ts`), deposit and compound,
-then push the price one way with a single larger swap on `testnet.saucerswap.finance`. Wait at least `twapWindow`
-(600 s) so the TWAP follows, confirm the badge says "Out of range", and press Rebalance.
+**Demonstrating `rebalance` (narrow test vault).** Rebalancing the main vault would need a ~6% move of the shared pool,
+so the template ships a separate vault, `TidepoolVaultNarrow` (`TIDEPOOL_NARROW`: ±60 ticks, 600 s cooldown), deployed only
+by `hardhat:deploy:narrow` (the deploy script is skipped unless `TIDEPOOL_DEPLOY_NARROW=true`, which only
+`scripts/runNarrowDeployWithPK.ts` sets). Flow: `hardhat:deposit` →
+`hardhat:compound` (both with `TIDEPOOL_VAULT=TidepoolVaultNarrow`) → `hardhat:move-price` (quoted, confirmed one-way swap on
+the **shared** pool) → wait for the 600 s TWAP to leave the range and come within 50 ticks of spot → `hardhat:rebalance`
+(no default vault; refuses the main vault without `ALLOW_MAIN_VAULT_REBALANCE=true`; read-only preflight; fixed 8M gas;
+post-mining checks) → `hardhat:move-price` back to restore the pool. Commands and evidence: README and section 17a.
+A local narrow record makes every later deploy add a `TidepoolVaultNarrow` entry to `deployedContracts.ts`; do not commit it.
 
 ---
 
@@ -3620,9 +4538,21 @@ npm run lint && npm run next:check-types && npm run next:build
 npm run hardhat:account:generate # encrypted deployer key in packages/hardhat/.env
 npm run hardhat:deploy:testnet   # deploy + initialize (sends 30 HBAR for the HTS token fee; the rest is refunded)
 npm run hardhat:smoke            # associate, wrap, buy SAUCE, deposit, open position; prints HashScan links
+npm run hardhat:compound         # compound() only (fixed 8M gas; TIDEPOOL_VAULT picks the vault, default main)
+npm run hardhat:withdraw         # 10% partial withdraw with two "yes" prompts (WITHDRAW_BPS, TIDEPOOL_VAULT)
 npm run hardhat:simulate-traders # swap back and forth so the position earns fees
 npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 routes return 404)
+
+# Optional narrow-vault rebalance demo (separate vault; moves the SHARED testnet pool price)
+npm run hardhat:deploy:narrow    # deploys "TidepoolVaultNarrow" (+/-60 ticks, 600 s cooldown); main vault untouched
+npm run hardhat:deposit          # requires TIDEPOOL_VAULT, DEPOSIT0, DEPOSIT1; exact amounts only
+npm run hardhat:move-price       # requires DIRECTION=down|up and AMOUNT; quotes first, asks "yes"
+npm run hardhat:rebalance        # requires TIDEPOOL_VAULT; read-only preflight, then fixed 8M gas
 ```
+
+Every operator script asks for the deployer password. `deposit`, `withdraw`, `move-price` and `rebalance` also
+print what they will send and wait for an explicit `yes`; `smoke`, `compound` and `simulate-traders` send as soon
+as the password is accepted. Never run them from an agent without the user's go-ahead.
 
 ## Where things are
 
@@ -3631,6 +4561,9 @@ npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 
 - `packages/hardhat/contracts/tidepool/interfaces/ISaucerSwapV2.sol` — the SaucerSwap V2 surface used
 - `packages/hardhat/contracts/tidepool/test/Mocks.sol` — test doubles; `MockHts`/`MockExchangeRate` are etched at 0x167/0x168
 - `packages/hardhat/tidepool.config.ts` — per-network pool, manager, router and vault parameters
+  (`TIDEPOOL` = main vault; `TIDEPOOL_NARROW` = the rebalance demo vault)
+- `packages/hardhat/deploy/01_deploy_tidepool_vault_narrow.ts` — skipped unless `TIDEPOOL_DEPLOY_NARROW=true`
+- `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
 - `packages/nextjs/hooks/tidepool/*`, `packages/nextjs/app/_components/tidepool/*` — dashboard
 
 ## Rules that are easy to get wrong on Hedera
@@ -3648,6 +4581,15 @@ npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 
 6. **Licences.** Do not copy Uniswap v3 periphery/core code (GPL / BUSL). Import MIT files from `@uniswap/v4-core/src/libraries`.
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
+8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas; the vault's
+   `compound()`/`rebalance()` make six approvals. Observed on testnet: `initialize` 2.31M, first `compound` 5.13M,
+   `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.
+9. **Position mints cannot be simulated.** `eth_call`/`eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap
+   V2 position mint (first `compound`, every `rebalance`), even when the real transaction succeeds. Send those with
+   a fixed gas limit (8M) after read-only precondition checks; estimate everything else x 1.3.
+10. **Deployment records.** `deployments/` is git-ignored. After any deploy, `generateTsAbis` rewrites
+    `packages/nextjs/contracts/deployedContracts.ts` from every local record; if a `TidepoolVaultNarrow` record exists
+    it is added too. The frontend only reads `TidepoolVault`; do not commit the narrow entry.
 
 ## Frontend conventions
 
@@ -3655,7 +4597,13 @@ Scaffold hooks: `useScaffoldReadContract`, `useScaffoldWriteContract`, `useDeplo
 DaisyUI classes. `~~` import alias. `"use client"` on pages with hooks. Prefer `type` over `interface`.
 ````
 
-### 13.2 `README.md` outline (write it on Day 8)
+### 13.2 `README.md`
+
+Written; see the repository root. Its sections: what Tidepool is, why, what it does, architecture, Hedera-specific
+integration, why it is a useful template, setup, environment variables, local development, testnet deployment,
+using the vault (deposit, compound, withdraw), the optional narrow-vault rebalance demo with the shared-pool warning,
+live testnet evidence, known limitations, licence. The original outline was:
+
 
 1. **Tidepool in one paragraph** + screenshot + testnet HashScan links (vault, share token, first compound).
 2. **60-second path:** `npm create scaffold-hbar@latest --template <you>/tidepool` → `npm run next:dev` → open the live vault.
@@ -3739,10 +4687,9 @@ mainnet deployment (addresses in section 3.4).
 
 ---
 
-## 17a. Testnet evidence log (Day 1, 25 Sep 2026) [CHAIN]
+## 17a. Testnet evidence log (25 Sep 2026) [CHAIN]
 
-Deployer: account 0.0.10694876 (ECDSA, EVM `0x325667856eeDadB1c76f8793Ed6F30cC63171295`).
-Vault: **0.0.10710646** / `0x2d209297642C4bb27c30ef37Fb18bCF842D55624` (pool WHBAR/SAUCE 0.30%, 0.0.2661057).
+All transactions were sent from one ECDSA deployer account (visible on HashScan). Main vault: **0.0.10710646** / `0x2d209297642C4bb27c30ef37Fb18bCF842D55624` (pool WHBAR/SAUCE 0.30%, 0.0.2661057).
 
 | Step | Tx hash | Result | Gas used / limit | Notes |
 |---|---|---|---|---|
@@ -3750,14 +4697,31 @@ Vault: **0.0.10710646** / `0x2d209297642C4bb27c30ef37Fb18bCF842D55624` (pool WHB
 | `initialize` (1st) | `0xe13de31b…53cc` | REVERT `HtsCallFailed(21)` | 1,969,541 / 2,000,000 | child `TOKENASSOCIATE` = `INSUFFICIENT_GAS`; atomic, no state change; 2.148 HBAR fee (landmine 16) |
 | `initialize` (2nd) | `0x1dff79f5…6ef9` | SUCCESS | 2,313,512 / 5,000,000 | associations: WHBAR, SAUCE, LP NFT; share token **0.0.10710796** (8 dp, infinite, treasury and supply key = vault, no other keys); token creation kept 15.27009466 HBAR, vault refunded 14.72990534 of the 30 sent |
 | smoke: `deposit` | `0x0bf5cee5…4947` | SUCCESS | 203,268 / 283,032 | 20 WHBAR + 925.314746 SAUCE in; 1e10 shares minted, 1e5 dead shares kept by the vault |
+| smoke: `compound` | — | not sent | — | smoke's `eth_estimateGas` for the first compound failed with `INVALID_NFT_ID` (simulation limit below); smoke now uses a fixed 8M limit |
 | `compound` (first position) | `0xcb477c3b…8d3f` | SUCCESS | **5,128,563** / 8,000,000 | TWAP tick −7695 → range **[−8340, −7140)**; LP NFT **0.0.1310436 serial 378** minted to the position manager and transferred to the vault; liquidity 45,894,658,424; swap 1.4918598 WHBAR → 68.899548 SAUCE via router; 18.5081402 WHBAR + 988.756018 SAUCE added; 5.458276 SAUCE left idle; position fee 0.64079562 HBAR (exactly `tinybars(fee)+1`) paid to the pool; 1.00000000 HBAR refunded; network fee 5.59013367 HBAR |
+| `simulate-traders` (3 rounds) | `0x0a3c8a25…08ea` … `0xd4a294b7…3440` | SUCCESS ×9 | 142k–199k per swap, ~727k per approve | 5 HBAR each way, all on pool 0.0.2661057 |
+| `compound` (fee-bearing) | `0xd157a337…6fcf` | SUCCESS | 4,802,810 / 8,000,000 | `FeesCollected(137667, 63557)`; `increaseLiquidity` on #378: +138,473,646 liquidity; swap 2.530344 SAUCE → 0.05446514 WHBAR; no new NFT |
+| approve shares + `withdraw` (10%) | `0x0d2a44fc…9d10`, `0xd9a6a9fd…eacf` | SUCCESS | 727,032; **360,910** | 999,990,000 shares burned; supply 9,000,010,000; #378 liquidity 46,033,132,070 → 41,429,864,897 |
+
+Narrow test vault `TidepoolVaultNarrow`: **0.0.10716411** / `0x91EdDBE42CFF874FdAFC2c1463Ca734A10C6E905` (same pool; ±60 ticks, 600 s cooldown).
+
+| Step | Tx hash | Result | Gas used / limit | Notes |
+|---|---|---|---|---|
+| Deploy | `0x431013ba…d6e9` | SUCCESS | 4,222,565 / 6,000,000 | first run was interrupted before `initialize`; the rerun reused this deployment |
+| `initialize` | `0x426f1b52…9419` | SUCCESS | 2,313,452 / 5,000,000 | share token **0.0.10716482** (tpNARROW); 14.72990534 HBAR refunded |
+| associate + 2 approvals + `deposit` | `0xfd87a143…1777`, `0xe7f00985…e087`, `0x6f5b5d46…be2b`, `0xcdb3cbea…f268` | SUCCESS | deposit 155,315 | exactly 2 WHBAR + 93 SAUCE; 99.999 shares to the depositor |
+| `compound` (first position) | `0x2285403b…93c6` | SUCCESS | 5,128,549 / 8,000,000 | TWAP −7697 → **[−7800, −7680)**, NFT **#380**, liquidity 41,622,687,268; 15.862371 SAUCE left idle |
+| move price down: wrap, approve, swap | `0xd312cba0…0c27`, `0x1a3ad29c…dd65`, `0xf05334b2…1a48` | SUCCESS | 77,966; 726,840; 172,329 | 142.1 WHBAR → 6,512.183911 SAUCE; spot −7699 → −7850 |
+| **`rebalance`** | **`0x890be6b4…08aa`** | SUCCESS | **5,257,516** / 8,000,000 | executed TWAP −7850 → **[−7920, −7800)**; NFT **#380 → #381**; #380 liquidity 41,622,687,268 → **0**; #381 liquidity 43,510,992,498; both NFTs still owned by the vault; `FeesCollected(782708, 0)`; 7.634641 SAUCE left idle |
+| restore: approve, swap back | `0x181dd5f3…1e4a`, `0xf109b4c1…d796` | SUCCESS | 726,840; 211,030 | 6,518.359326 SAUCE → 141.42039494 WHBAR; spot back to −7700 (the 600 s TWAP follows) |
 
 **Gas findings:**
 - **Each HTS allowance approval made by the vault costs 705,424 gas.** `compound()` makes six (set and clear, for router and manager), 4,232,544 gas, 83% of the call.
 - Inside `compound()`: router swap ~104k gas, SaucerSwap `mint` ~633k, HTS NFT mint ~283k.
 - An EOA's HTS association is estimated at ~782k gas, an EOA approval at ~783k, and a WhbarHelper wrap at ~839k (before association).
 - **Hedera charged by gas used (about 109 tinybars per gas) in every transaction observed**, not by 80% of the gas limit, so generous limits cost nothing extra on success.
-- The frontend's fixed `gas: 3_000_000` for compound and rebalance is too low; use ≥ 8,000,000.
+- The frontend's original fixed `gas: 3_000_000` for compound and rebalance was too low; `KeeperCard` now uses 8,000,000.
+- `rebalance()` used 5,257,516 gas: six approvals 4,232,544, `decreaseLiquidity` 116,552, collects 154,524 + 39,945, swap 97,523, SaucerSwap `mint` 575,872.
 
 **Simulation limit:** `eth_call` and `eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap V2 position mint (the HTS NFT mint followed by `transferFrom` of the new serial), including mints that succeeded on-chain. Replaying real mint `0x4cf676ed…66f7` reproduced it. So `compound()` (first position) and `rebalance()` cannot be pre-checked; send them with a fixed gas limit (`scripts/tidepoolCompound.ts`).
 

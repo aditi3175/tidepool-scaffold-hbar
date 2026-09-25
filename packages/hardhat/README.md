@@ -1,71 +1,56 @@
-# Hardhat package (Hedera)
+# Hardhat package — Tidepool contracts and testnet scripts
 
-Hardhat config, contracts, deploy scripts, tests, and Hashscan verification for this monorepo.
+Contracts, deploy scripts, unit tests and testnet operator scripts for the Tidepool vault.
+See the [root README](../../README.md) for the full walkthrough and [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) for the design.
 
-## Local development
+Run the `hardhat:*` scripts from the repo root (inside this package, drop the `hardhat:` prefix).
 
-From the repo root, use the explicit `hardhat:*` scripts for this package. Inside `packages/hardhat`, use the unprefixed package-local scripts.
+## Unit tests (no network)
 
-1. **Start the local chain** (terminal 1, from repo root):
+```bash
+yarn hardhat:compile
+yarn hardhat:test
+```
+
+Tests run on the in-process Hardhat chain against mocks (`contracts/tidepool/test/Mocks.sol`). `MockHts` and
+`MockExchangeRate` are etched at the HTS (`0x167`) and exchange-rate (`0x168`) system-contract addresses.
+Forking is opt-in (`HEDERA_FORKING=true`); the tests do not need it.
+
+## Testnet
+
+Tidepool manages a live SaucerSwap V2 position, so every live script targets `hederaTestnet`.
+
+1. Create or import the deployer key (stored encrypted in `packages/hardhat/.env`, which is git-ignored):
    ```bash
-   yarn hardhat:chain
+   yarn hardhat:account:generate    # or: yarn hardhat:account:import
+   yarn hardhat:account             # address and balances
    ```
-   This starts `hardhat node` with **Hedera testnet forking** (`HEDERA_FORKING=true` and `@hashgraph/system-contracts-forking`). JSON-RPC is served at **http://127.0.0.1:8545**.
-
-2. **Deploy to the running fork** (terminal 2):
+2. Fund it from the [Hedera Portal faucet](https://portal.hedera.com/faucet).
+3. Deploy and initialize the main vault:
    ```bash
-   yarn hardhat:deploy --network localhost
+   yarn hardhat:deploy:testnet
    ```
-   Use **`localhost`** so Hardhat connects to the long-running node on port 8545.
-
-   **`yarn hardhat:deploy` without `--network localhost`** uses the default network `hardhat`, which is the **in-process ephemeral** Hardhat network—**not** the same process as `yarn hardhat:chain`. For deploys against the forked node you started in step 1, always pass **`--network localhost`** while that node is running.
-
-3. **Run contract tests** (from repo root; tests use `HEDERA_FORKING=true` and can run against the fork or standalone):
+4. Operate it:
    ```bash
-   yarn hardhat:test
+   yarn hardhat:smoke              # associate, wrap, buy SAUCE, deposit, open the position
+   yarn hardhat:simulate-traders   # swap back and forth so the position earns fees
+   yarn hardhat:compound           # collect fees and add them to the position
+   yarn hardhat:withdraw           # partial withdraw (WITHDRAW_BPS, default 1000 = 10%)
    ```
-
-## Deploy and verify on Hedera testnet/mainnet
-
-You need a deployer account with HBAR on the target network. Without funds, deploy and verify will fail with "Sender account not found".
-
-1. **Generate or import an account** (from the repo root):
+5. Verify the source on Sourcify (HashScan reads it):
    ```bash
-   yarn hardhat:account:generate
+   yarn hardhat:verify:sourcify    # CONTRACT=TidepoolVault by default
    ```
-   or
-   ```bash
-   yarn hardhat:account:import
-   ```
-   The encrypted key is stored in `packages/hardhat/.env`.
 
-2. **Fund the account on testnet:**  
-   Use the [Hedera Portal faucet](https://portal.hedera.com/faucet) to receive testnet HBAR.
-
-3. **Deploy to Hedera testnet** (from repo root):
-   ```bash
-   yarn hardhat:deploy --network hederaTestnet
-   ```
-   or
-   ```bash
-   yarn hardhat:deploy --network hedera_testnet
-   ```
-   You will be prompted to enter the password to decrypt your deployer key.
-
-4. **Verify on Hashscan** (uses deployment JSON under `deployments/<network>/`, which includes compiler metadata and sources):
-   ```bash
-   yarn hardhat:verify:testnet   # all contracts on chain 296
-   yarn hardhat:verify:mainnet   # all contracts on chain 295
-   yarn workspace @sh/hardhat verify:contract -- HederaToken testnet
-   yarn workspace @sh/hardhat verify:contract -- HederaToken testnet 0xYourContractAddress
-   ```
+With npm instead of Yarn, pass extra flags after `--` (for example `npm run hardhat:deploy -- --network hederaTestnet`).
 
 ## Layout
 
-- `contracts/` — Solidity sources
-- `deploy/` — hardhat-deploy scripts (e.g. `00_deploy_hedera_token.ts`)
-- `scripts/` — generateAccount, importAccount, verifyHedera.js, etc.
-- `test/` — contract tests
-- `hardhat.config.ts` — networks (`hardhat`, `localhost` for RPC at 127.0.0.1:8545, `hederaTestnet`, `hederaMainnet`)
+- `contracts/tidepool/` — `TidepoolVault.sol`, `libraries/RangeMath.sol`, `interfaces/ISaucerSwapV2.sol`, `test/Mocks.sol`
+- `deploy/` — `00_deploy_tidepool_vault.ts` (main vault) and `01_deploy_tidepool_vault_narrow.ts` (rebalance demo, opt-in)
+- `scripts/` — account management, `generateTsAbis.ts`, and the `tidepool*.ts` operator scripts
+- `tidepool.config.ts` — pool, position manager, router and vault parameters per network
+- `test/TidepoolVault.test.ts` — unit tests
 
-Network and RPC URLs are in `hardhat.config.ts`. Deployer key is read from `.env` (encrypted) and decrypted at deploy time for live networks.
+`deployments/` holds the hardhat-deploy records and is git-ignored; after each deploy, `generateTsAbis` rewrites
+`packages/nextjs/contracts/deployedContracts.ts` from those records.

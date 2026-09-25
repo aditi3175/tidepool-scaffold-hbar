@@ -22,9 +22,21 @@ npm run lint && npm run next:check-types && npm run next:build
 npm run hardhat:account:generate # encrypted deployer key in packages/hardhat/.env
 npm run hardhat:deploy:testnet   # deploy + initialize (sends 30 HBAR for the HTS token fee; the rest is refunded)
 npm run hardhat:smoke            # associate, wrap, buy SAUCE, deposit, open position; prints HashScan links
+npm run hardhat:compound         # compound() only (fixed 8M gas; TIDEPOOL_VAULT picks the vault, default main)
+npm run hardhat:withdraw         # 10% partial withdraw with two "yes" prompts (WITHDRAW_BPS, TIDEPOOL_VAULT)
 npm run hardhat:simulate-traders # swap back and forth so the position earns fees
 npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 routes return 404)
+
+# Optional narrow-vault rebalance demo (separate vault; moves the SHARED testnet pool price)
+npm run hardhat:deploy:narrow    # deploys "TidepoolVaultNarrow" (+/-60 ticks, 600 s cooldown); main vault untouched
+npm run hardhat:deposit          # requires TIDEPOOL_VAULT, DEPOSIT0, DEPOSIT1; exact amounts only
+npm run hardhat:move-price       # requires DIRECTION=down|up and AMOUNT; quotes first, asks "yes"
+npm run hardhat:rebalance        # requires TIDEPOOL_VAULT; read-only preflight, then fixed 8M gas
 ```
+
+Every operator script asks for the deployer password. `deposit`, `withdraw`, `move-price` and `rebalance` also
+print what they will send and wait for an explicit `yes`; `smoke`, `compound` and `simulate-traders` send as soon
+as the password is accepted. Never run them from an agent without the user's go-ahead.
 
 ## Where things are
 
@@ -33,6 +45,9 @@ npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 
 - `packages/hardhat/contracts/tidepool/interfaces/ISaucerSwapV2.sol` — the SaucerSwap V2 surface used
 - `packages/hardhat/contracts/tidepool/test/Mocks.sol` — test doubles; `MockHts`/`MockExchangeRate` are etched at 0x167/0x168
 - `packages/hardhat/tidepool.config.ts` — per-network pool, manager, router and vault parameters
+  (`TIDEPOOL` = main vault; `TIDEPOOL_NARROW` = the rebalance demo vault)
+- `packages/hardhat/deploy/01_deploy_tidepool_vault_narrow.ts` — skipped unless `TIDEPOOL_DEPLOY_NARROW=true`
+- `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
 - `packages/nextjs/hooks/tidepool/*`, `packages/nextjs/app/_components/tidepool/*` — dashboard
 
 ## Rules that are easy to get wrong on Hedera
@@ -50,6 +65,15 @@ npm run hardhat:verify:sourcify  # Sourcify APIv2 (hardhat-verify's Sourcify v1 
 6. **Licences.** Do not copy Uniswap v3 periphery/core code (GPL / BUSL). Import MIT files from `@uniswap/v4-core/src/libraries`.
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
+8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas; the vault's
+   `compound()`/`rebalance()` make six approvals. Observed on testnet: `initialize` 2.31M, first `compound` 5.13M,
+   `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.
+9. **Position mints cannot be simulated.** `eth_call`/`eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap
+   V2 position mint (first `compound`, every `rebalance`), even when the real transaction succeeds. Send those with
+   a fixed gas limit (8M) after read-only precondition checks; estimate everything else x 1.3.
+10. **Deployment records.** `deployments/` is git-ignored. After any deploy, `generateTsAbis` rewrites
+    `packages/nextjs/contracts/deployedContracts.ts` from every local record; if a `TidepoolVaultNarrow` record exists
+    it is added too. The frontend only reads `TidepoolVault`; do not commit the narrow entry.
 
 ## Frontend conventions
 

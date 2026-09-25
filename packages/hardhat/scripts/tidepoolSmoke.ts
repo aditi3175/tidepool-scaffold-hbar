@@ -4,14 +4,16 @@
  *   2. wrap HBAR through SaucerSwap's WhbarHelper (never the WHBAR contract directly)
  *   3. buy SAUCE through the SaucerSwap V2 router
  *   4. approve + deposit into the vault
- *   5. compound() - mints the first position, paying SaucerSwap's HBAR position fee
+ *   5. compound() - mints the first position, paying SaucerSwap's HBAR position fee (fixed 8M gas: a position
+ *      mint cannot be simulated on Hedera, see tidepoolCompound.ts)
  *
  * Run: npm run hardhat:smoke   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolSmoke.ts --network hederaTestnet)
  */
 import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, gasLimitFor, hashscan } from "./tidepoolScriptUtils";
 
 const WHBAR_HELPER = "0x000000000000000000000000000000000050a8a7"; // testnet 0.0.5286055
-const TINYBAR_TO_WEIBAR = 10_000_000_000n; // JSON-RPC value is 18 decimals, the EVM sees 8
+const COMPOUND_GAS_LIMIT = 8_000_000n; // first compound on testnet used 5,128,563
 const HTS_FACADE_ABI = [
   "function isAssociated() view returns (bool)",
   "function associate() returns (uint256)",
@@ -23,21 +25,6 @@ const ROUTER_ABI = [
   "function refundETH() payable",
   "function multicall(bytes[]) payable returns (bytes[])",
 ];
-
-const hashscan = (hash: string) => `https://hashscan.io/testnet/transaction/${hash}`;
-
-const HEDERA_MAX_GAS = 15_000_000n; // per-transaction gas limit on Hedera
-/**
- * HTS system-contract work (associate, approve, token transfers) is billed as gas and costs far more than the
- * ERC-20 equivalent, so fixed limits are fragile. Estimate against current state right before sending, add 30%.
- */
-async function gasLimitFor(label: string, estimate: Promise<bigint>): Promise<bigint> {
-  const estimated = await estimate;
-  const limit = (estimated * 130n) / 100n;
-  const capped = limit > HEDERA_MAX_GAS ? HEDERA_MAX_GAS : limit;
-  console.log(`${label}: estimated ${estimated} gas, sending with limit ${capped}`);
-  return capped;
-}
 
 async function main() {
   if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
@@ -109,8 +96,7 @@ async function main() {
 
   const feeTinybars = await vault.quoteMintFee.staticCall();
   const compoundValue = (feeTinybars + 100_000_000n) * TINYBAR_TO_WEIBAR; // fee + 1 HBAR headroom, refunded
-  const compoundGas = await gasLimitFor("compound", vault.compound.estimateGas({ value: compoundValue }));
-  const compoundTx = await vault.compound({ value: compoundValue, gasLimit: compoundGas });
+  const compoundTx = await vault.compound({ value: compoundValue, gasLimit: COMPOUND_GAS_LIMIT });
   console.log(`compound (first position): ${hashscan((await compoundTx.wait())!.hash)}`);
   console.log(
     `position serial: ${await vault.positionSerial()}, range [${await vault.tickLower()}, ${await vault.tickUpper()})`,

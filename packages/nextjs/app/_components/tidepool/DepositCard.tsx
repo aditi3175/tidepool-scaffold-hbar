@@ -70,7 +70,7 @@ export const DepositCard = ({ vault }: { vault: VaultState }) => {
         abi: WHBAR_HELPER_ABI,
         functionName: "deposit",
         value: wrapWeibar, // weibar (18 decimals): the relay converts it to tinybar
-        gas: 200_000n,
+        gas: 1_000_000n, // ~78k once WHBAR is associated; ~839k if the wrap also auto-associates it
       }),
     );
     setWrapInput("");

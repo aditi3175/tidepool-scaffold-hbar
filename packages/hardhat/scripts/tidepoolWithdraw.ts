@@ -9,13 +9,13 @@
  *
  * Run: npm run hardhat:withdraw   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolWithdraw.ts --network hederaTestnet)
  *      WITHDRAW_BPS=1000 by default (10% of your shares, in basis points)
+ *      TIDEPOOL_VAULT selects the hardhat-deploy deployment name (default "TidepoolVault", the main vault).
  */
 import hre from "hardhat";
-import { createInterface } from "readline/promises";
+import { confirm, gasLimitFor, hashscan } from "./tidepoolScriptUtils";
 
 const SHARE_DECIMALS = 8;
 const SLIPPAGE_BPS = 100n; // min amounts are 1% below the exact preview
-const HEDERA_MAX_GAS = 15_000_000n; // per-transaction gas limit on Hedera
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address,address) view returns (uint256)",
@@ -25,34 +25,14 @@ const POSITION_MANAGER_ABI = [
   "function positions(uint256) view returns (address,address,uint24,int24,int24,uint128 liquidity,uint256,uint256,uint128 tokensOwed0,uint128 tokensOwed1)",
 ];
 
-const hashscan = (hash: string) => `https://hashscan.io/testnet/transaction/${hash}`;
-
-async function confirm(question: string): Promise<boolean> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await rl.question(question);
-  rl.close();
-  return answer.trim().toLowerCase() === "yes";
-}
-
-async function gasLimitFor(label: string, estimate: Promise<bigint>): Promise<bigint> {
-  let estimated: bigint;
-  try {
-    estimated = await estimate;
-  } catch (error) {
-    throw new Error(`${label}: eth_estimateGas failed, so nothing was sent. Cause: ${(error as Error).message}`);
-  }
-  const limit = (estimated * 130n) / 100n;
-  const capped = limit > HEDERA_MAX_GAS ? HEDERA_MAX_GAS : limit;
-  console.log(`${label}: estimated ${estimated} gas, sending with limit ${capped}`);
-  return capped;
-}
-
 async function main() {
   if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
   const { ethers, deployments } = hre;
   const [signer] = await ethers.getSigners();
-  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get("TidepoolVault")).address, signer);
+  const vaultName = process.env.TIDEPOOL_VAULT ?? "TidepoolVault";
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
   const vaultAddress = await vault.getAddress();
+  console.log(`vault: ${vaultName} at ${vaultAddress}`);
 
   const [token0, token1, shareTokenAddress, managerAddress] = await Promise.all([
     vault.token0(),

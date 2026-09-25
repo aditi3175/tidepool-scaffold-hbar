@@ -6,20 +6,21 @@
  * network's simulation returns INVALID_NFT_ID for that sequence even for mints that succeed on-chain.
  *
  * Run: npm run hardhat:compound   (wraps: ts-node scripts/runScriptWithPK.ts scripts/tidepoolCompound.ts --network hederaTestnet)
+ *      TIDEPOOL_VAULT selects the hardhat-deploy deployment name (default "TidepoolVault", the main vault).
  */
 import hre from "hardhat";
+import { TINYBAR_TO_WEIBAR, hashscan } from "./tidepoolScriptUtils";
 
-const TINYBAR_TO_WEIBAR = 10_000_000_000n; // JSON-RPC value is 18 decimals, the EVM sees 8
 const COMPOUND_GAS_LIMIT = 8_000_000n;
 const FEE_HEADROOM_TINYBARS = 100_000_000n; // 1 HBAR on top of the position fee; the vault refunds the surplus
-
-const hashscan = (hash: string) => `https://hashscan.io/testnet/transaction/${hash}`;
 
 async function main() {
   if (hre.network.name !== "hederaTestnet") throw new Error("Run with --network hederaTestnet");
   const { ethers, deployments } = hre;
   const [signer] = await ethers.getSigners();
-  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get("TidepoolVault")).address, signer);
+  const vaultName = process.env.TIDEPOOL_VAULT ?? "TidepoolVault";
+  const vault = await ethers.getContractAt("TidepoolVault", (await deployments.get(vaultName)).address, signer);
+  console.log(`vault: ${vaultName} at ${await vault.getAddress()}`);
 
   const feeTinybars = await vault.quoteMintFee.staticCall();
   const value = (feeTinybars + FEE_HEADROOM_TINYBARS) * TINYBAR_TO_WEIBAR;

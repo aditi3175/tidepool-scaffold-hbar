@@ -11,6 +11,7 @@
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "deploy": "ts-node scripts/runHardhatDeployWithPK.ts",
+    "deploy:narrow": "ts-node scripts/runNarrowDeployWithPK.ts",
     "flatten": "hardhat flatten",
     "fork": "MAINNET_FORKING_ENABLED=true HEDERA_FORKING=true hardhat node --network hardhat --no-deploy",
     "format": "prettier --write './**/*.(ts|sol)'",
@@ -20,6 +21,9 @@
     "smoke": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolSmoke.ts --network hederaTestnet",
     "compound": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolCompound.ts --network hederaTestnet",
     "withdraw": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolWithdraw.ts --network hederaTestnet",
+    "deposit": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolDeposit.ts --network hederaTestnet",
+    "move-price": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolMovePrice.ts --network hederaTestnet",
+    "rebalance": "ts-node scripts/runScriptWithPK.ts scripts/tidepoolRebalance.ts --network hederaTestnet",
     "simulate-traders": "ts-node scripts/runScriptWithPK.ts scripts/simulateTraders.ts --network hederaTestnet",
     "verify:sourcify": "hardhat run scripts/verifySourcify.ts --network hederaTestnet"
   },

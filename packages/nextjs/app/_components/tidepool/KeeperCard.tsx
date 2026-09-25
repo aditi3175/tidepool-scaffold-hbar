@@ -6,6 +6,9 @@ import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { TINYBAR_TO_WEIBAR } from "~~/utils/tidepool/constants";
 
 const FEE_HEADROOM_TINYBARS = 10_000_000n; // 0.1 HBAR; the vault refunds whatever is not used
+// Fixed: a SaucerSwap position mint cannot be pre-simulated on Hedera (INVALID_NFT_ID in eth_estimateGas).
+// On testnet, compound used 4.8-5.1M gas and rebalance 5.26M; Hedera charged only the gas used.
+const KEEPER_GAS_LIMIT = 8_000_000n;
 
 /** compound() and rebalance() are permissionless: whoever calls them pays SaucerSwap's HBAR position fee. */
 export const KeeperCard = ({ vault }: { vault: VaultState }) => {
@@ -38,7 +41,7 @@ export const KeeperCard = ({ vault }: { vault: VaultState }) => {
   const value = feeTinybars === undefined ? undefined : (feeTinybars + FEE_HEADROOM_TINYBARS) * TINYBAR_TO_WEIBAR;
 
   const run = async (functionName: "compound" | "rebalance") => {
-    await writeContractAsync({ functionName, value, gas: 3_000_000n });
+    await writeContractAsync({ functionName, value, gas: KEEPER_GAS_LIMIT });
     await vault.refetch();
   };
 
