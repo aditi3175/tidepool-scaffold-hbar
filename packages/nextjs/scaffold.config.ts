@@ -31,7 +31,8 @@ const scaffoldConfig = {
 
   pollingInterval: 10000,
 
-  enableBurnerWallet: true,
+  // Tidepool: users connect their own Hedera wallet; the template's burner wallet is disabled.
+  enableBurnerWallet: false,
 
   rpcOverrides: {
     [chains.hedera.id]: process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL || "https://mainnet.hashio.io/api",

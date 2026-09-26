@@ -12,23 +12,32 @@ export type VaultEvent = {
   logIndex: number;
 };
 
+/** Events the dashboard shows. CallResponseEvent (from the HTS helper contract) is internal plumbing. */
+const SHOWN_EVENTS = new Set(["Initialized", "Deposit", "Withdraw", "FeesCollected", "Compound", "Rebalance"]);
+
+export const ACTIVITY_LIMIT = 50;
+
 /** Vault history straight from the Hedera mirror node REST API, decoded with the vault ABI. */
 export function useVaultActivity(vault: `0x${string}` | undefined, abi: Abi | undefined) {
   return useQuery({
     queryKey: ["tidepool-activity", vault],
     enabled: Boolean(vault && abi),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
     queryFn: async (): Promise<VaultEvent[]> => {
-      const res = await fetch(`${MIRROR_NODE_URL}/api/v1/contracts/${vault}/results/logs?order=desc&limit=50`);
-      if (!res.ok) throw new Error(`Mirror node returned ${res.status}`);
+      const res = await fetch(
+        `${MIRROR_NODE_URL}/api/v1/contracts/${vault}/results/logs?order=desc&limit=${ACTIVITY_LIMIT}`,
+      );
+      if (!res.ok) throw new Error(`The mirror node returned HTTP ${res.status}.`);
       const { logs } = (await res.json()) as { logs: MirrorLog[] };
 
       return logs.flatMap(log => {
         try {
           const decoded = decodeEventLog({ abi: abi!, data: log.data, topics: log.topics as [Hex, ...Hex[]] });
+          const name = String(decoded.eventName);
+          if (!SHOWN_EVENTS.has(name)) return [];
           return [
             {
-              name: String(decoded.eventName),
+              name,
               args: (decoded.args ?? {}) as Record<string, unknown>,
               timestamp: Math.floor(Number(log.timestamp)),
               transactionHash: log.transaction_hash,

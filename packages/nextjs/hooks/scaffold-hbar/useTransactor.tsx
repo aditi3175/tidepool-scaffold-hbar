@@ -6,6 +6,7 @@ import scaffoldConfig from "~~/scaffold.config";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 import { AllowedChainIds, getBlockExplorerTxLink, notification } from "~~/utils/scaffold-hbar";
 import { TransactorFuncOptions, getParsedErrorWithAllAbis } from "~~/utils/scaffold-hbar/contract";
+import { CANCELLED_MESSAGE, isUserRejection } from "~~/utils/tidepool/errors";
 
 type TransactionFunc = (
   tx: (() => Promise<Hash>) | Parameters<SendTransactionMutate<Config, undefined>>[0],
@@ -95,6 +96,11 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
     } catch (error: any) {
       if (notificationId) {
         notification.remove(notificationId);
+      }
+      // Tidepool: a wallet rejection gets a neutral notice instead of an error toast.
+      if (isUserRejection(error)) {
+        notification.info(CANCELLED_MESSAGE);
+        throw error;
       }
       console.error("⚡️ ~ file: useTransactor.ts ~ error", error);
       const message = getParsedErrorWithAllAbis(error, chainId as AllowedChainIds);

@@ -1,5 +1,5 @@
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
-import { HTS_TOKEN_ABI } from "~~/utils/tidepool/constants";
+import { HTS_TOKEN_ABI, POLL_INTERVAL_MS } from "~~/utils/tidepool/constants";
 
 /**
  * The connected account's view of one HTS token: association, balance and allowance to `spender`.
@@ -10,7 +10,7 @@ export function useHtsAccount(token: `0x${string}` | undefined, spender: `0x${st
   const { address } = useAccount();
   const enabled = Boolean(token && address);
 
-  const { data: isAssociated, refetch: refetchAssociation } = useReadContract({
+  const association = useReadContract({
     address: token,
     abi: HTS_TOKEN_ABI,
     functionName: "isAssociated",
@@ -18,7 +18,7 @@ export function useHtsAccount(token: `0x${string}` | undefined, spender: `0x${st
     query: { enabled },
   });
 
-  const { data, refetch: refetchAmounts } = useReadContracts({
+  const amounts = useReadContracts({
     contracts:
       token && address && spender
         ? [
@@ -26,13 +26,15 @@ export function useHtsAccount(token: `0x${string}` | undefined, spender: `0x${st
             { address: token, abi: HTS_TOKEN_ABI, functionName: "allowance", args: [address, spender] },
           ]
         : [],
-    query: { enabled: enabled && Boolean(spender), refetchInterval: 15_000 },
+    query: { enabled: enabled && Boolean(spender), refetchInterval: POLL_INTERVAL_MS },
   });
 
   return {
-    isAssociated,
-    balance: data?.[0]?.result as bigint | undefined,
-    allowance: data?.[1]?.result as bigint | undefined,
-    refetch: () => Promise.all([refetchAssociation(), refetchAmounts()]),
+    isAssociated: association.data,
+    balance: amounts.data?.[0]?.result as bigint | undefined,
+    allowance: amounts.data?.[1]?.result as bigint | undefined,
+    refetch: () => Promise.all([association.refetch(), amounts.refetch()]),
   };
 }
+
+export type HtsAccount = ReturnType<typeof useHtsAccount>;

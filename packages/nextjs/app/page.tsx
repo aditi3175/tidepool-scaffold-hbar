@@ -1,117 +1,99 @@
 "use client";
 
-import { ActivityFeed } from "./_components/tidepool/ActivityFeed";
-import { DepositCard } from "./_components/tidepool/DepositCard";
-import { KeeperCard } from "./_components/tidepool/KeeperCard";
-import { RangeChart } from "./_components/tidepool/RangeChart";
-import { WithdrawCard } from "./_components/tidepool/WithdrawCard";
 import type { NextPage } from "next";
-import { formatUnits } from "viem";
+import { ActivityFeed } from "~~/app/_components/tidepool/ActivityFeed";
+import { KeeperPanel } from "~~/app/_components/tidepool/KeeperPanel";
+import { PositionPanel } from "~~/app/_components/tidepool/PositionPanel";
+import { UserActions } from "~~/app/_components/tidepool/UserActions";
+import { VaultOverview } from "~~/app/_components/tidepool/VaultOverview";
+import { VaultSelector } from "~~/app/_components/tidepool/VaultSelector";
+import { ExternalLink, Skeleton } from "~~/app/_components/tidepool/ui";
+import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
+import { useSelectedVault } from "~~/hooks/tidepool/useSelectedVault";
+import { useUserPosition } from "~~/hooks/tidepool/useUserPosition";
 import { useVault } from "~~/hooks/tidepool/useVault";
-import { HASHSCAN_URL } from "~~/utils/tidepool/constants";
+import { hashscan } from "~~/utils/tidepool/hashscan";
+import type { TidepoolVaultConfig } from "~~/utils/tidepool/vaults";
 
 const Home: NextPage = () => {
-  const vault = useVault();
-  const { symbol0, symbol1, decimals0, decimals1, total0, total1 } = vault;
-  const ready = vault.address && symbol0 && symbol1 && decimals0 !== undefined && decimals1 !== undefined;
+  const { vault, select } = useSelectedVault();
+
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:py-8">
+      <VaultSelector selected={vault} onSelect={select} />
+      {/* Keyed by vault so inputs and transaction status reset when switching. */}
+      <VaultDashboard key={vault.id} config={vault} />
+    </div>
+  );
+};
+
+const VaultDashboard = ({ config }: { config: TidepoolVaultConfig }) => {
+  const { targetNetwork } = useTargetNetwork();
+  const vault = useVault(config);
+  const user = useUserPosition(vault);
 
   if (vault.isLoading) {
     return (
-      <div className="flex justify-center p-10">
-        <span className="loading loading-spinner loading-lg" />
+      <div className="flex flex-col gap-4" aria-busy>
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
-  if (!vault.address) {
+  if (vault.notFound) {
     return (
-      <div className="max-w-xl mx-auto p-10 text-center">
-        <h1 className="text-2xl font-bold">Tidepool</h1>
-        <p className="mt-4">
-          No TidepoolVault deployment found for the selected network. Deploy one with{" "}
-          <code>npm run hardhat:deploy --network hederaTestnet</code> or switch the wallet to Hedera Testnet.
+      <div className="rounded-box border border-base-300 bg-base-100 p-6 text-sm">
+        <h1 className="text-lg font-semibold">
+          {config.label} not found on {targetNetwork.name}
+        </h1>
+        <p className="mt-2 text-base-content/70">
+          {config.demo
+            ? "The narrow demo vault is configured in contracts/externalContracts.ts for Hedera testnet only."
+            : "No TidepoolVault deployment was found for this network. Deploy one with `npm run hardhat:deploy:testnet`, which regenerates contracts/deployedContracts.ts."}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <>
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold">
-          Tidepool · {symbol0 ?? "…"}/{symbol1 ?? "…"}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {vault.symbol0 && vault.symbol1 ? `${vault.symbol0} / ${vault.symbol1}` : "Tidepool vault"}
+          <span className="ml-2 align-middle text-sm font-normal text-base-content/60">{config.label}</span>
         </h1>
-        <p className="opacity-70">
-          A SaucerSwap V2 position that compounds its fees and re-centres itself.{" "}
-          <a className="link" href={`${HASHSCAN_URL}/contract/${vault.address}`} target="_blank" rel="noreferrer">
-            Vault on HashScan
-          </a>
+        <p className="text-sm text-base-content/70">
+          One SaucerSwap V2 position that compounds its fees and re-centres on the pool&apos;s TWAP.{" "}
+          {vault.address && <ExternalLink href={hashscan.contract(vault.address)}>Vault {vault.address}</ExternalLink>}
         </p>
       </header>
 
-      {ready && (
-        <section className="card bg-base-100 shadow">
-          <div className="card-body gap-4">
-            <div className="flex flex-wrap gap-2">
-              {vault.twapError ? (
-                <span className="badge badge-error">TWAP unavailable</span>
-              ) : vault.positionSerial === 0n ? (
-                <span className="badge">No position yet</span>
-              ) : (
-                <span className={`badge ${vault.inRange ? "badge-success" : "badge-warning"}`}>
-                  {vault.inRange ? "In range, earning fees" : "Out of range, rebalance available"}
-                </span>
-              )}
-              {vault.positionSerial ? (
-                <span className="badge badge-ghost">LP NFT #{vault.positionSerial.toString()}</span>
-              ) : null}
-            </div>
-            {vault.positionSerial &&
-            vault.tickLower !== undefined &&
-            vault.tickUpper !== undefined &&
-            vault.spotTick !== undefined &&
-            vault.twapTick !== undefined ? (
-              <RangeChart
-                tickLower={vault.tickLower}
-                tickUpper={vault.tickUpper}
-                spotTick={vault.spotTick}
-                twapTick={vault.twapTick}
-                decimals0={decimals0}
-                decimals1={decimals1}
-                quoteLabel={`${symbol1} per ${symbol0}`}
-              />
-            ) : null}
-            <div className="stats stats-vertical md:stats-horizontal">
-              <div className="stat">
-                <div className="stat-title">{symbol0} held</div>
-                <div className="stat-value text-2xl">{total0 === undefined ? "-" : formatUnits(total0, decimals0)}</div>
-              </div>
-              <div className="stat">
-                <div className="stat-title">{symbol1} held</div>
-                <div className="stat-value text-2xl">{total1 === undefined ? "-" : formatUnits(total1, decimals1)}</div>
-              </div>
-              <div className="stat">
-                <div className="stat-title">Shares outstanding</div>
-                <div className="stat-value text-2xl">
-                  {vault.totalShares === undefined ? "-" : formatUnits(vault.totalShares, 8)}
-                </div>
-              </div>
-            </div>
-            <p className="text-xs opacity-60">
-              Testnet pool prices are set by testnet traders and do not track real market prices.
-            </p>
-          </div>
-        </section>
+      {vault.readError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-box border border-error/40 bg-error/5 px-4 py-3 text-sm"
+        >
+          <span>Could not read the vault: {vault.readError}</span>
+          <button type="button" className="btn btn-xs" onClick={() => void vault.refetch()}>
+            Retry
+          </button>
+        </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <DepositCard vault={vault} />
-        <WithdrawCard vault={vault} />
-        <KeeperCard vault={vault} />
+      <VaultOverview vault={vault} user={user} />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <PositionPanel vault={vault} />
+        </div>
+        <div className="lg:col-span-2">
+          <UserActions vault={vault} user={user} />
+        </div>
       </div>
-
-      <ActivityFeed vault={vault.address} abi={vault.abi} />
-    </div>
+      <KeeperPanel vault={vault} />
+      <ActivityFeed vault={vault} />
+    </>
   );
 };
 

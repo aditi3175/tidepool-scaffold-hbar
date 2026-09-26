@@ -1,21 +1,54 @@
-import { useReadContracts } from "wagmi";
-import { useDeployedContractInfo } from "~~/hooks/scaffold-hbar";
-import { HTS_TOKEN_ABI } from "~~/utils/tidepool/constants";
+import { zeroAddress } from "viem";
+import { useBlock, useReadContract, useReadContracts } from "wagmi";
+import { useDeployedContractInfo, useTargetNetwork } from "~~/hooks/scaffold-hbar";
+import { HTS_TOKEN_ABI, POLL_INTERVAL_MS, POSITION_MANAGER_ABI } from "~~/utils/tidepool/constants";
+import { friendlyError } from "~~/utils/tidepool/errors";
+import { type TidepoolVaultConfig, VAULT_ABI } from "~~/utils/tidepool/vaults";
+
+type Address = `0x${string}`;
 
 /**
- * Everything the dashboard needs about the vault. viem's Hedera chains define no multicall3
- * contract, so wagmi sends these as individual eth_calls.
+ * Everything the dashboard reads about one vault, grouped by how often it can change:
+ * - immutable settings (read once per vault),
+ * - live vault state, the vault's idle balances, its SaucerSwap position and the latest block (polled),
+ * - token metadata (read once).
+ * viem's Hedera chains define no multicall3 contract, so wagmi sends each read as its own eth_call.
  */
-export function useVault() {
-  const { data: vault, isLoading } = useDeployedContractInfo({ contractName: "TidepoolVault" });
+export function useVault(config: TidepoolVaultConfig) {
+  const { targetNetwork } = useTargetNetwork();
+  const { data: info, isLoading: infoLoading } = useDeployedContractInfo({ contractName: config.contractName });
+  const address = info?.address as Address | undefined;
+  const base = address ? ({ address, abi: VAULT_ABI } as const) : undefined;
 
-  const base = vault ? ({ address: vault.address, abi: vault.abi } as const) : undefined;
-  const { data: state, refetch: refetchState } = useReadContracts({
+  const settings = useReadContracts({
     allowFailure: true,
     contracts: base
       ? [
           { ...base, functionName: "token0" },
           { ...base, functionName: "token1" },
+          { ...base, functionName: "pool" },
+          { ...base, functionName: "fee" },
+          { ...base, functionName: "tickSpacing" },
+          { ...base, functionName: "halfWidth" },
+          { ...base, functionName: "twapWindow" },
+          { ...base, functionName: "maxTwapDeviation" },
+          { ...base, functionName: "rebalanceCooldown" },
+          { ...base, functionName: "swapSlippageBps" },
+          { ...base, functionName: "positionManager" },
+          { ...base, functionName: "positionNft" },
+        ]
+      : [],
+    query: { enabled: Boolean(base), staleTime: Infinity },
+  });
+  const s = settings.data;
+  const token0 = s?.[0]?.result as Address | undefined;
+  const token1 = s?.[1]?.result as Address | undefined;
+  const positionManager = s?.[10]?.result as Address | undefined;
+
+  const live = useReadContracts({
+    allowFailure: true,
+    contracts: base
+      ? [
           { ...base, functionName: "shareToken" },
           { ...base, functionName: "tickLower" },
           { ...base, functionName: "tickUpper" },
@@ -24,15 +57,41 @@ export function useVault() {
           { ...base, functionName: "getTotalAmounts" },
           { ...base, functionName: "getPriceState" },
           { ...base, functionName: "lastRebalance" },
-          { ...base, functionName: "rebalanceCooldown" },
         ]
       : [],
-    query: { enabled: Boolean(base), refetchInterval: 15_000 },
+    query: { enabled: Boolean(base), refetchInterval: POLL_INTERVAL_MS },
+  });
+  const l = live.data;
+  const positionSerial = l?.[3]?.result as bigint | undefined;
+
+  // The vault's idle balances: deposits and collected fees waiting for the next compound.
+  const holdings = useReadContracts({
+    allowFailure: true,
+    contracts:
+      address && token0 && token1
+        ? [
+            { address: token0, abi: HTS_TOKEN_ABI, functionName: "balanceOf", args: [address] },
+            { address: token1, abi: HTS_TOKEN_ABI, functionName: "balanceOf", args: [address] },
+          ]
+        : [],
+    query: { enabled: Boolean(address && token0 && token1), refetchInterval: POLL_INTERVAL_MS },
   });
 
-  const token0 = state?.[0]?.result as `0x${string}` | undefined;
-  const token1 = state?.[1]?.result as `0x${string}` | undefined;
-  const { data: meta } = useReadContracts({
+  // The vault's SaucerSwap position, straight from the position manager.
+  const positionRead = useReadContract({
+    address: positionManager,
+    abi: POSITION_MANAGER_ABI,
+    functionName: "positions",
+    args: positionSerial ? [positionSerial] : undefined,
+    query: { enabled: Boolean(positionManager && positionSerial), refetchInterval: POLL_INTERVAL_MS },
+  });
+  const position = positionRead.data;
+
+  const shareToken = l?.[0]?.result as Address | undefined;
+  const initialized = shareToken !== undefined ? shareToken !== zeroAddress : undefined;
+
+  const meta = useReadContracts({
+    allowFailure: true,
     contracts:
       token0 && token1
         ? [
@@ -45,33 +104,92 @@ export function useVault() {
     query: { enabled: Boolean(token0 && token1), staleTime: Infinity },
   });
 
-  const totals = state?.[7]?.result as readonly [bigint, bigint] | undefined;
-  const priceState = state?.[8]?.result as readonly [number, number, boolean] | undefined;
+  const shareSymbol = useReadContract({
+    address: initialized ? shareToken : undefined,
+    abi: HTS_TOKEN_ABI,
+    functionName: "symbol",
+    query: { enabled: Boolean(initialized), staleTime: Infinity },
+  });
+
+  // Chain time for the rebalance cooldown: the contract compares against block.timestamp, not the browser clock.
+  const block = useBlock({
+    chainId: targetNetwork.id,
+    query: { enabled: Boolean(base), refetchInterval: POLL_INTERVAL_MS },
+  });
+
+  const totals = l?.[5]?.result as readonly [bigint, bigint] | undefined;
+  const priceState = l?.[6]?.result as readonly [number, number, boolean] | undefined;
+  const priceFailure = l?.[6]?.status === "failure" ? friendlyError(l[6].error, VAULT_ABI) : undefined;
+
+  const refetch = async () => {
+    await Promise.all([live.refetch(), holdings.refetch(), positionRead.refetch(), block.refetch()]);
+  };
 
   return {
-    isLoading,
-    address: vault?.address,
-    abi: vault?.abi,
+    config,
+    address,
+    abi: VAULT_ABI,
+    isLoading: infoLoading || (Boolean(address) && (live.isLoading || settings.isLoading)),
+    /** No contract code at the configured address on the target network. */
+    notFound: !infoLoading && !address,
+    /** The core reads failed (RPC or network trouble), as opposed to a contract revert. */
+    readError: l?.[3]?.status === "failure" ? friendlyError(l[3].error, VAULT_ABI).message : live.error?.message,
+
+    // Immutable settings
     token0,
     token1,
-    shareToken: state?.[2]?.result as `0x${string}` | undefined,
-    tickLower: state?.[3]?.result as number | undefined,
-    tickUpper: state?.[4]?.result as number | undefined,
-    positionSerial: state?.[5]?.result as bigint | undefined,
-    totalShares: state?.[6]?.result as bigint | undefined,
+    pool: s?.[2]?.result as Address | undefined,
+    fee: s?.[3]?.result as number | undefined,
+    tickSpacing: s?.[4]?.result as number | undefined,
+    halfWidth: s?.[5]?.result as number | undefined,
+    twapWindow: s?.[6]?.result as number | undefined,
+    maxTwapDeviation: s?.[7]?.result as number | undefined,
+    rebalanceCooldown: s?.[8]?.result as number | undefined,
+    swapSlippageBps: s?.[9]?.result as number | undefined,
+    positionManager,
+    positionNft: s?.[11]?.result as Address | undefined,
+
+    // Live vault state
+    shareToken: initialized ? shareToken : undefined,
+    initialized,
+    tickLower: l?.[1]?.result as number | undefined,
+    tickUpper: l?.[2]?.result as number | undefined,
+    positionSerial,
+    hasPosition: positionSerial === undefined ? undefined : positionSerial > 0n,
+    totalShares: l?.[4]?.result as bigint | undefined,
+    /** getTotalAmounts(): position principal at the spot price plus idle balances; excludes uncollected fees. */
     total0: totals?.[0],
     total1: totals?.[1],
+    idle0: holdings.data?.[0]?.result as bigint | undefined,
+    idle1: holdings.data?.[1]?.result as bigint | undefined,
+    lastRebalance: l?.[7]?.result as bigint | undefined,
+
+    // SaucerSwap position (NonfungiblePositionManager.positions)
+    liquidity: position?.[5],
+    /** Fees credited to the position at its last update; not the live claimable amount. */
+    tokensOwed0: position?.[8],
+    tokensOwed1: position?.[9],
+
+    // Pool price (getPriceState)
     spotTick: priceState?.[0],
     twapTick: priceState?.[1],
+    /** The contract's own flag: TWAP tick inside [tickLower, tickUpper) and a position exists. */
     inRange: priceState?.[2],
-    twapError: state?.[8]?.status === "failure",
-    lastRebalance: state?.[9]?.result as bigint | undefined,
-    rebalanceCooldown: state?.[10]?.result as number | undefined,
-    symbol0: meta?.[0]?.result as string | undefined,
-    decimals0: meta?.[1]?.result as number | undefined,
-    symbol1: meta?.[2]?.result as string | undefined,
-    decimals1: meta?.[3]?.result as number | undefined,
-    refetch: refetchState,
+    twapUnavailable: priceFailure?.errorName === "TwapUnavailable",
+    priceError: priceFailure?.message,
+
+    // Chain time (seconds) and when it was read (ms since epoch), to extrapolate between polls
+    chainTime: block.data?.timestamp,
+    chainTimeReadAt: block.dataUpdatedAt || undefined,
+
+    symbol0: meta.data?.[0]?.result as string | undefined,
+    decimals0: meta.data?.[1]?.result as number | undefined,
+    symbol1: meta.data?.[2]?.result as string | undefined,
+    decimals1: meta.data?.[3]?.result as number | undefined,
+    shareSymbol: shareSymbol.data,
+
+    updatedAt: live.dataUpdatedAt,
+    refetch,
   };
 }
 
