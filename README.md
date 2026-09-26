@@ -80,7 +80,7 @@ npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar
 yarn install
 yarn hardhat:compile
 yarn hardhat:test
-yarn next:dev            # http://localhost:3000, shows the committed testnet vault
+yarn next:dev            # http://localhost:3000, dashboard for the testnet vaults
 ```
 
 With npm, pass extra flags after `--` (`npm run hardhat:deploy -- --network hederaTestnet`); a root `.npmrc` sets
@@ -126,6 +126,43 @@ yarn hardhat:verify:sourcify         # Sourcify APIv2; HashScan shows the source
 Parameters live in `packages/hardhat/tidepool.config.ts` (`TIDEPOOL.hederaTestnet`): the WHBAR/SAUCE 0.30% pool,
 ±600-tick range, 600 s TWAP window, 50-tick max deviation, 3600 s cooldown, 1% extra swap slippage.
 
+## Dashboard
+
+`yarn next:dev` serves the dashboard on http://localhost:3000 against Hedera testnet. Connect your own wallet
+(MetaMask or WalletConnect) on Hedera Testnet; the template's burner wallet is disabled. Amounts are shown in token
+units only, with no USD values.
+
+- **Vault selector.** Main Vault or Narrow Demo Vault (marked "Demo", with a warning banner). The main vault's address
+  comes from the generated `packages/nextjs/contracts/deployedContracts.ts`; the narrow vault is configured by hand as
+  `TidepoolVaultNarrow` in `packages/nextjs/contracts/externalContracts.ts` (same contract, so it reuses the
+  generated ABI). The list of vaults is `packages/nextjs/utils/tidepool/vaults.ts`.
+- **Vault overview.** Vault holdings (`getTotalAmounts()`, which excludes uncollected fees), idle balances, total
+  shares and the share token (HashScan link); for the connected account, its Hedera account ID, shares, percentage of
+  supply, estimated slice of the holdings and share-token association.
+- **Position.** LP NFT serial (HashScan link), liquidity, range in ticks and prices, spot and TWAP ticks and prices
+  and the distance between them, in-range status, a range chart, "Fees owed" (see known limitations) and the vault's
+  range settings.
+- **Deposit / Withdraw.** Association buttons, an optional HBAR → WHBAR wrap, a SaucerSwap testnet link for SAUCE,
+  ratio auto-fill, exact-amount approvals, a preview (an estimate, then the exact result from a simulation once the
+  approval is in place), 1% minimums, a Max button for withdrawals, and step-by-step status with HashScan links.
+- **Keeper panel.** Compound and Rebalance, marked permissionless. Each shows a checklist of the contract's conditions
+  (initialized, TWAP readable, spot within `maxTwapDeviation`, tokens to add or a position to rebalance, cooldown
+  checked against chain time, TWAP outside the range, position fee quoted), the position fee, the HBAR sent, the gas
+  limit and maximum gas cost, why an action is unavailable, and the resulting transaction and position.
+- **Activity.** Deposits, withdrawals, fees collected, compounds and rebalances (old → new range) from the vault's
+  last 50 mirror-node logs, with amounts and HashScan links. `CallResponseEvent` is hidden.
+
+**Transactions.** `deposit` and `withdraw` are simulated before sending (the Scaffold-HBAR default). `compound` and
+`rebalance` can mint a SaucerSwap position, which `eth_call`/`eth_estimateGas` cannot simulate on Hedera
+(`INVALID_NFT_ID`), so the dashboard sends only these two with `disableSimulate: true` and a fixed 8,000,000 gas
+limit, after the read-only checklist passes. If the state changes between the check and execution, the contract
+reverts and only gas is charged. The dashboard sends `quoteMintFee()` + 0.1 HBAR; the vault refunds the unused part.
+
+**Errors.** Vault custom errors (`PriceDeviation`, `CooldownActive`, `SlippageExceeded`, …) appear as plain-language
+messages, and rejecting a request in the wallet shows "Transaction cancelled" rather than an error. This comes from
+two small edits to the template's `utils/scaffold-hbar/getParsedError.ts` and `hooks/scaffold-hbar/useTransactor.tsx`.
+When a keeper transaction reverts on chain, the panel looks up the reason on the mirror node.
+
 ## Using the vault
 
 **Deposit.** Deposits are proportional to what the vault already holds (the first deposit sets the ratio) and sit
@@ -133,11 +170,12 @@ idle until the next compound, so depositing pays no SaucerSwap fee. In the dashb
 prompted, wrap HBAR if needed, enter an amount (the other side auto-fills), approve and deposit. From the CLI:
 `yarn hardhat:smoke` (buys test tokens and deposits your balances) or `yarn hardhat:deposit` (exact amounts).
 
-**Compound.** `yarn hardhat:compound`, or "Open position / Compound fees" in the dashboard. Sends
-`quoteMintFee()` + 1 HBAR (the vault refunds the surplus) with a fixed 8M gas limit, because a position mint cannot be
-pre-simulated on Hedera (`eth_estimateGas` returns `INVALID_NFT_ID`).
+**Compound.** `yarn hardhat:compound`, or "Open position" / "Compound" in the dashboard's keeper panel. Both use a
+fixed 8M gas limit, because a position mint cannot be pre-simulated on Hedera (`eth_estimateGas` returns
+`INVALID_NFT_ID`). The CLI script sends `quoteMintFee()` + 1 HBAR, the dashboard `quoteMintFee()` + 0.1 HBAR; the vault
+refunds the surplus either way.
 
-**Withdraw.** `yarn hardhat:withdraw` (10% by default) or the dashboard's Withdraw card. Approve the vault for your
+**Withdraw.** `yarn hardhat:withdraw` (10% by default) or the dashboard's Withdraw tab. Approve the vault for your
 shares, then withdraw: the vault collects fees, removes your share of the liquidity and idle balances, burns your
 shares and sends WHBAR/SAUCE. Withdrawals do not check the TWAP, so you can always exit; your minimum amounts protect
 you.
@@ -184,7 +222,8 @@ nothing if any fails, then verifies the new NFT, range and the old NFT's zero li
 `AMOUNT=142.1` was sized for the pool state at the time of our test; re-quote before using it.
 
 A narrow deployment adds a `TidepoolVaultNarrow` entry to `packages/nextjs/contracts/deployedContracts.ts` on every
-later deploy; the frontend ignores it, and it should not be committed.
+later deploy; do not commit it. The dashboard's Narrow Demo Vault tab already reads this vault from
+`packages/nextjs/contracts/externalContracts.ts`, whose entry takes precedence over a generated one with the same name.
 
 ## Live Hedera testnet evidence
 
@@ -222,6 +261,9 @@ The full log (including the first, gas-limited `initialize` attempt and the fee-
 - The swap-to-ratio step ignores its own price impact, so some tokens can stay idle until the next compound (seen on
   testnet: 5.46 SAUCE on the main vault, 7.63 SAUCE on the narrow vault after rebalance).
 - `getTotalAmounts()` excludes fees not yet collected.
+- The dashboard's "Fees owed" is SaucerSwap's `tokensOwed` from `positions()`, which only changes when the position is
+  touched (collect, increase or decrease liquidity). It is not the live claimable fee amount; exact pending fees need
+  fee-growth maths the dashboard does not do. The activity feed's collected-fees total covers only the loaded events.
 - Old LP NFTs remain in the vault with zero liquidity after a rebalance (they are not burned).
 - `compound()`/`rebalance()` cannot be pre-simulated on Hedera (see above), so they use a fixed gas limit.
 - The TWAP guard depends on the pool's observation history; pools with an observation cardinality of 1 cannot be used

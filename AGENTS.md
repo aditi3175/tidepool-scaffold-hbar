@@ -14,7 +14,7 @@ With npm, pass extra flags after `--` (`npm run hardhat:deploy -- --network hede
 without the `--`, npm swallows `--network`.
 
 ```bash
-npm run next:dev                 # frontend on http://localhost:3000 (reads the committed testnet vault)
+npm run next:dev                 # frontend on http://localhost:3000 (Main Vault / Narrow Demo Vault selector, testnet)
 npm run hardhat:test             # unit tests (mocks; no network needed)
 npm run hardhat:compile
 npm run lint && npm run next:check-types && npm run next:build
@@ -48,7 +48,14 @@ as the password is accepted. Never run them from an agent without the user's go-
   (`TIDEPOOL` = main vault; `TIDEPOOL_NARROW` = the rebalance demo vault)
 - `packages/hardhat/deploy/01_deploy_tidepool_vault_narrow.ts` — skipped unless `TIDEPOOL_DEPLOY_NARROW=true`
 - `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
-- `packages/nextjs/hooks/tidepool/*`, `packages/nextjs/app/_components/tidepool/*` — dashboard
+- `packages/nextjs/app/page.tsx` + `packages/nextjs/app/_components/tidepool/*` — dashboard (VaultSelector,
+  VaultOverview, PositionPanel, UserActions with DepositCard/WithdrawCard, KeeperPanel, ActivityFeed, shared `ui.tsx`)
+- `packages/nextjs/hooks/tidepool/` — `useVault` (vault, idle balances, `positions()`, chain time), `useUserPosition`,
+  `useHtsAccount`, `useKeeperStatus` (keeper checklist and fee/gas quotes), `useTxFeedback` (inline tx status and
+  mirror-node revert reasons), `useSelectedVault`, `useWalletGate`, `useVaultActivity`
+- `packages/nextjs/utils/tidepool/` — `vaults.ts` (selectable vaults), `constants.ts` (gas limits, ABIs), `errors.ts`
+  (plain-language custom errors), `hashscan.ts`, `math.ts`
+- `packages/nextjs/contracts/externalContracts.ts` — the narrow demo vault (`TidepoolVaultNarrow`) for the frontend
 
 ## Rules that are easy to get wrong on Hedera
 
@@ -73,9 +80,22 @@ as the password is accepted. Never run them from an agent without the user's go-
    a fixed gas limit (8M) after read-only precondition checks; estimate everything else x 1.3.
 10. **Deployment records.** `deployments/` is git-ignored. After any deploy, `generateTsAbis` rewrites
     `packages/nextjs/contracts/deployedContracts.ts` from every local record; if a `TidepoolVaultNarrow` record exists
-    it is added too. The frontend only reads `TidepoolVault`; do not commit the narrow entry.
+    it is added too; do not commit the narrow entry. The frontend reads the main vault (`TidepoolVault`) from
+    `deployedContracts.ts` and the narrow demo vault from `externalContracts.ts`, whose entry wins over a generated one.
 
 ## Frontend conventions
 
 Scaffold hooks: `useScaffoldReadContract`, `useScaffoldWriteContract`, `useDeployedContractInfo`, `useTransactor`.
 DaisyUI classes. `~~` import alias. `"use client"` on pages with hooks. Prefer `type` over `interface`.
+
+- **Vault selector.** `utils/tidepool/vaults.ts` lists the Main Vault (`TidepoolVault`, generated
+  `deployedContracts.ts`) and the Narrow Demo Vault (`TidepoolVaultNarrow`, hand-written `externalContracts.ts`,
+  reusing the generated ABI).
+  Never hand-edit `deployedContracts.ts`; add or change frontend-only vaults in `externalContracts.ts` and `vaults.ts`.
+- **Simulation.** `deposit`/`withdraw` go through `useScaffoldWriteContract` with its default simulation.
+  `compound`/`rebalance` use `disableSimulate: true` and a fixed `GAS.keeper` (8,000,000) because a SaucerSwap mint
+  returns `INVALID_NFT_ID` in `eth_call`; `useKeeperStatus` performs the read-only precondition checks that gate the
+  buttons. Do not disable simulation anywhere else.
+- **Errors.** `utils/tidepool/errors.ts` maps the vault's custom errors to plain language; the template's
+  `getParsedError.ts` and `useTransactor.tsx` call it, and wallet rejections show "Transaction cancelled".
+- **Wallets.** The burner wallet is disabled (`enableBurnerWallet: false` in `scaffold.config.ts`).

@@ -3492,6 +3492,11 @@ main().catch(error => {
 
 ### 9.9 Frontend utilities
 
+> **Shipped frontend differs.** Sections 9.9–9.11 and 10 record the design-stage frontend. The shipped dashboard
+> (`packages/nextjs`) adds a Main / Narrow Demo vault selector, a keeper panel that replaces `KeeperCard`, sends
+> `compound`/`rebalance` with `disableSimulate: true`, fixed 8M gas and fee + 0.1 HBAR, and maps custom errors to
+> plain language. The code in `packages/nextjs` and the README's Dashboard section are authoritative.
+
 `packages/nextjs/utils/tidepool/constants.ts`
 
 ```ts
@@ -4415,6 +4420,8 @@ jobs:
 ---
 
 ## 10. Frontend architecture and user flows
+
+> See the note at the start of 9.9: this section describes the design-stage frontend.
 
 ### 10.1 Data sources
 
