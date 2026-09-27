@@ -144,7 +144,45 @@ describe("TidepoolVault", function () {
     it("surfaces an unusable pool oracle as TwapUnavailable", async function () {
       const { vault, pool, alice } = await loadFixture(deployFixture);
       await pool.setObserveReverts(true);
-      await expect(vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address)).to.be.reverted;
+      await expect(vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address)).to.be.revertedWithCustomError(
+        vault,
+        "TwapUnavailable",
+      );
+    });
+
+    it("refuses a first compound when the vault holds nothing", async function () {
+      const { vault } = await loadFixture(deployFixture);
+      await expect(vault.compound({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "NothingToCompound");
+    });
+
+    it("grants standing manager and router allowances once, so compound works twice without re-approving", async function () {
+      const { vault, t0, t1, npm, router, alice, bob } = await loadFixture(deployFixture);
+      const standing = 2n ** 63n - 1n; // type(int64).max
+      for (const token of [t0, t1]) {
+        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(standing);
+        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(standing);
+      }
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      const [, , , , , liqBefore] = await npm.positions(1);
+
+      await vault.connect(bob).deposit(10n ** 10n, 10n ** 9n, 0, bob.address);
+      const tx = vault.compound({ value: MINT_FEE });
+      await expect(tx).to.emit(vault, "Compound");
+      await expect(tx).to.not.emit(t0, "Approval");
+      await expect(tx).to.not.emit(t1, "Approval");
+      const [, , , , , liqAfter] = await npm.positions(1);
+      expect(liqAfter).to.be.greaterThan(liqBefore);
+    });
+
+    it("refuses to compound into a position whose range no longer contains the TWAP", async function () {
+      const { vault, pool, alice } = await loadFixture(deployFixture);
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      await pool.setPrice(-7680 + 900, -7680 + 900);
+      await expect(vault.compound({ value: MINT_FEE }))
+        .to.be.revertedWithCustomError(vault, "OutOfRange")
+        .withArgs(-7680 + 900);
     });
 
     it("makes a share-price inflation attack unprofitable", async function () {
@@ -239,6 +277,13 @@ describe("TidepoolVault", function () {
       await time.increase(3601);
       await pool.setPrice(-7680 + 2000, -7680 + 900);
       await expect(vault.rebalance({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "PriceDeviation");
+    });
+
+    it("surfaces an unusable pool oracle as TwapUnavailable", async function () {
+      const { vault, pool } = await withPosition();
+      await time.increase(3601);
+      await pool.setObserveReverts(true);
+      await expect(vault.rebalance({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "TwapUnavailable");
     });
 
     it("re-centres on the TWAP tick with a new position and keeps value", async function () {

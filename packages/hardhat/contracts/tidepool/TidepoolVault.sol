@@ -32,7 +32,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         uint32 twapWindow; // seconds used for the TWAP
         int24 maxTwapDeviation; // max |spotTick - twapTick| for deposit / compound / rebalance
         uint32 rebalanceCooldown; // minimum seconds between rebalances
-        uint16 swapSlippageBps; // extra slippage allowed on the rebalance swap, on top of the pool fee
+        uint16 swapSlippageBps; // extra slippage allowed on the compound and rebalance swaps, on top of the pool fee
     }
 
     /// @dev HTS amounts are int64, so shares use 8 decimals and a fixed first mint.
@@ -41,6 +41,8 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     /// @dev Minted to the vault (HTS treasury) on the first deposit and never released: defeats share-price inflation.
     uint256 public constant DEAD_SHARES = 1e5;
     int64 private constant SHARE_AUTO_RENEW_PERIOD = 7_776_000; // 90 days, the HTS default
+    /// @dev Standing allowance granted once in initialize(). HTS allowances are int64, so uint256 max is not valid.
+    uint256 private constant STANDING_ALLOWANCE = uint256(uint64(type(int64).max));
     address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
 
     address public immutable deployer;
@@ -93,6 +95,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     error NothingToCompound();
     error NoPosition();
     error StillInRange(int24 twapTick);
+    error OutOfRange(int24 twapTick);
     error CooldownActive(uint256 readyAt);
     error RefundFailed();
 
@@ -132,8 +135,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     // ------------------------------------------------------------------------------------------
 
     /// @notice Associates the vault with token0, token1 and the LP NFT, then creates the HTS share token
-    ///         with the vault as treasury and supply key. msg.value pays the HTS token-creation fee;
-    ///         any HBAR left in the vault afterwards is returned to the caller.
+    ///         with the vault as treasury and supply key, and grants the position manager and swap router
+    ///         standing int64-max allowances on token0 and token1 (each HTS approval costs ~705k gas, so they
+    ///         are paid once here instead of on every compound/rebalance). msg.value pays the HTS
+    ///         token-creation fee; any HBAR left in the vault afterwards is returned to the caller.
     function initialize(string calldata name, string calldata symbol) external payable nonReentrant {
         if (msg.sender != deployer) revert NotDeployer();
         if (shareToken != address(0)) revert AlreadyInitialized();
@@ -175,6 +180,11 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         (int64 rc, address created) = createFungibleToken(token, 0, SHARE_DECIMALS);
         _checkHts(rc);
         shareToken = created;
+
+        IERC20(token0).forceApprove(address(positionManager), STANDING_ALLOWANCE);
+        IERC20(token1).forceApprove(address(positionManager), STANDING_ALLOWANCE);
+        IERC20(token0).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
+        IERC20(token1).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
 
         _refund(address(this).balance);
         emit Initialized(created);
@@ -278,6 +288,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         _collectFees();
 
         if (positionSerial == 0) {
+            if (IERC20(token0).balanceOf(address(this)) == 0 && IERC20(token1).balanceOf(address(this)) == 0) {
+                revert NothingToCompound();
+            }
             (int24 lower, int24 upper) = RangeMath.rangeAround(twapTick, tickSpacing, halfWidth);
             _swapToRatio(sqrtPriceX96, twapTick, lower, upper);
             _mintPosition(lower, upper);
@@ -286,14 +299,14 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
             return;
         }
 
+        // Adding to an out-of-range position would swap everything to one token; rebalance() is the path there.
+        if (twapTick < tickLower || twapTick >= tickUpper) revert OutOfRange(twapTick);
         _swapToRatio(sqrtPriceX96, twapTick, tickLower, tickUpper);
         uint256 idle0 = IERC20(token0).balanceOf(address(this));
         uint256 idle1 = IERC20(token1).balanceOf(address(this));
         if (idle0 == 0 && idle1 == 0) revert NothingToCompound();
 
         uint256 mintFeeTinybars = _chargeMintFee();
-        IERC20(token0).forceApprove(address(positionManager), idle0);
-        IERC20(token1).forceApprove(address(positionManager), idle1);
         (uint128 liquidity, uint256 used0, uint256 used1) = positionManager.increaseLiquidity{ value: mintFeeTinybars }(
             INPM.IncreaseLiquidityParams({
                 tokenSN: positionSerial,
@@ -304,7 +317,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 deadline: block.timestamp
             })
         );
-        _clearApprovals(address(positionManager));
         _refund(msg.value - mintFeeTinybars);
 
         emit Compound(msg.sender, liquidity, used0, used1);
@@ -426,8 +438,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         uint256 bal1 = IERC20(token1).balanceOf(address(this));
         uint256 mintFeeTinybars = _chargeMintFee();
 
-        IERC20(token0).forceApprove(address(positionManager), bal0);
-        IERC20(token1).forceApprove(address(positionManager), bal1);
         (uint256 serial, , , ) = positionManager.mint{ value: mintFeeTinybars }(
             INPM.MintParams({
                 token0: token0,
@@ -443,7 +453,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 deadline: block.timestamp
             })
         );
-        _clearApprovals(address(positionManager));
 
         positionSerial = serial;
         tickLower = lower;
@@ -471,7 +480,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         );
 
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
-        IERC20(tokenIn).forceApprove(address(swapRouter), amountIn);
         swapRouter.exactInputSingle(
             ISaucerSwapV2SwapRouter.ExactInputSingleParams({
                 tokenIn: tokenIn,
@@ -484,7 +492,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 sqrtPriceLimitX96: 0
             })
         );
-        IERC20(tokenIn).forceApprove(address(swapRouter), 0);
     }
 
     /// @dev SaucerSwap charges `factory.mintFee()` tinycents, paid in HBAR, on every mint and increaseLiquidity.
@@ -500,11 +507,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     function _chargeMintFee() private returns (uint256 tinybars) {
         tinybars = _mintFeeTinybars();
         if (msg.value < tinybars) revert InsufficientFee(tinybars, msg.value);
-    }
-
-    function _clearApprovals(address spender) private {
-        IERC20(token0).forceApprove(spender, 0);
-        IERC20(token1).forceApprove(spender, 0);
     }
 
     function _mintShares(uint256 amount) private {

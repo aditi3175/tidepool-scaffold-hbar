@@ -51,10 +51,11 @@ const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRu
     return;
   }
 
-  // Same initialize() as the main vault: three HTS associations (~2M gas) plus share-token creation.
+  // Same initialize() as the main vault: three HTS associations, share-token creation and four standing
+  // approvals (~5.14M gas estimated; see 00_deploy_tidepool_vault.ts).
   await execute(
     DEPLOYMENT_NAME,
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 5_000_000, gasPrice },
+    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
     "initialize",
     params.shareName,
     params.shareSymbol,

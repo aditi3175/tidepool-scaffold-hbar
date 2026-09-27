@@ -305,10 +305,14 @@ share token auto-renew period 7 776 000 s (90 days).
 1. `associateTokens(this, [token0, token1, positionNft])` via `0x167` → must return 22 (SUCCESS).
 2. `createFungibleToken` with treasury = vault, supply key = `contractId(vault)`, auto-renew account = vault,
    initial supply 0, decimals 8. `msg.value` is forwarded (HederaTokenService helper does `call{value: msg.value}`).
-3. Any HBAR left in the vault is refunded to the deployer. Deploy script sends **30 HBAR**
+3. Standing allowances: `forceApprove(positionManager)` and `forceApprove(swapRouter)` on token0 and token1, each
+   `type(int64).max` (HTS allowances are int64, so `type(uint256).max` is not valid). Paid once here (~705k gas
+   each) instead of six approvals on every compound/rebalance.
+4. Any HBAR left in the vault is refunded to the deployer. Deploy script sends **30 HBAR**
    (TokenCreate $1.00 + 20% ≈ 15.4 HBAR at 7.8 ¢/HBAR, with headroom). [CHAIN]: the token creation kept 15.27009466 HBAR
-   and the vault refunded 14.72990534 HBAR, on both testnet vaults. `initialize` needs ~2.31M gas (three associations);
-   the deploy scripts use a 5M limit.
+   and the vault refunded 14.72990534 HBAR, on both testnet vaults. `initialize` used ~2.31M gas (three associations)
+   before the standing approvals were added; with them it is estimated at ~5.14M (2.31M + 4 × 705k, not yet measured).
+   The deploy scripts use an 8M limit.
 
 **`deposit(amount0Max, amount1Max, minShares, receiver)`**
 1. Requires initialized; `_checkedPrices()` (spot within `maxTwapDeviation` of TWAP).
@@ -328,8 +332,11 @@ share token auto-renew period 7 776 000 s (90 days).
 
 **`compound()` payable**
 1. `_checkedPrices()`, `_collectFees()`.
-2. No position yet: range = `rangeAround(twapTick)`, swap to ratio, `mint`, set `lastRebalance`, emit `Rebalance(…,0,0,…)`.
-3. Otherwise: swap idle to the current range's ratio, `increaseLiquidity` with all idle.
+2. No position yet: revert `NothingToCompound` if both idle balances are 0; otherwise range = `rangeAround(twapTick)`,
+   swap to ratio, `mint`, set `lastRebalance`, emit `Rebalance(…,0,0,…)`.
+3. Otherwise: revert `OutOfRange(twapTick)` if the TWAP tick is outside `[tickLower, tickUpper)` (that case is
+   `rebalance()`'s job; adding to an out-of-range position would swap everything to one token); swap idle to the
+   current range's ratio, `increaseLiquidity` with all idle (`NothingToCompound` if nothing is idle).
 4. Fee: `quoteMintFee = tinycentsToTinybars(mintFee) + 1` must be ≤ `msg.value`; exactly that is forwarded; the rest is refunded.
 
 **`rebalance()` payable**
@@ -360,7 +367,10 @@ Both computations run in the same transaction against the same `0x168` rate, so 
 1. `totalShares` equals the share token's HTS total supply (every mint/burn goes through `_mintShares`/`_burnShares`).
 2. `totalShares ≥ DEAD_SHARES` once anyone has deposited.
 3. The vault holds no HBAR at rest (all fee HBAR is forwarded or refunded in the same call).
-4. Approvals to the manager and router are reset to 0 at the end of every operation.
+4. The vault's only token allowances are the standing `type(int64).max` allowances on token0 and token1 to the
+   immutable `positionManager` and `swapRouter`, granted once in `initialize()`. No function grants, raises or
+   clears an allowance after that. (The manager and router are SaucerSwap contracts checked in the constructor:
+   the pool must come from the manager's factory and the router must report the same factory.)
 5. `tickLower`/`tickUpper` are multiples of `tickSpacing`, `tickLower < tickUpper`.
 
 ### 6.6 Threat model
@@ -375,6 +385,7 @@ Both computations run in the same transaction against the same `0x168` rate, so 
 | Keeper griefing (calling repeatedly) | Caller pays the ≈ 0.64 HBAR fee each time; rebalance cooldown. |
 | Oracle unavailable | `TwapUnavailable` → deposit/compound/rebalance stop; **withdraw still works**. |
 | HBAR stuck | Exact-fee forwarding + refunds; `initialize` refunds leftovers. |
+| Standing allowances to manager and router | Both addresses are immutable and checked against the SaucerSwap factory in the constructor; the vault trusts SaucerSwap's manager and router code (it already holds its position in them). Allowance is `type(int64).max` per token and decreases as it is spent: ~9.2e10 WHBAR (8 dp) or ~9.2e12 SAUCE (6 dp) before it would run out; there is no function to top it up. |
 | int64 overflow of shares | `SafeCast.toInt64` reverts. Headroom: ~9.2e8× growth over the first deposit. |
 | Rounding | Deposits round amounts **up**, withdrawals round **down**, both in the vault's favour. |
 
@@ -887,7 +898,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         uint32 twapWindow; // seconds used for the TWAP
         int24 maxTwapDeviation; // max |spotTick - twapTick| for deposit / compound / rebalance
         uint32 rebalanceCooldown; // minimum seconds between rebalances
-        uint16 swapSlippageBps; // extra slippage allowed on the rebalance swap, on top of the pool fee
+        uint16 swapSlippageBps; // extra slippage allowed on the compound and rebalance swaps, on top of the pool fee
     }
 
     /// @dev HTS amounts are int64, so shares use 8 decimals and a fixed first mint.
@@ -896,6 +907,8 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     /// @dev Minted to the vault (HTS treasury) on the first deposit and never released: defeats share-price inflation.
     uint256 public constant DEAD_SHARES = 1e5;
     int64 private constant SHARE_AUTO_RENEW_PERIOD = 7_776_000; // 90 days, the HTS default
+    /// @dev Standing allowance granted once in initialize(). HTS allowances are int64, so uint256 max is not valid.
+    uint256 private constant STANDING_ALLOWANCE = uint256(uint64(type(int64).max));
     address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
 
     address public immutable deployer;
@@ -948,6 +961,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     error NothingToCompound();
     error NoPosition();
     error StillInRange(int24 twapTick);
+    error OutOfRange(int24 twapTick);
     error CooldownActive(uint256 readyAt);
     error RefundFailed();
 
@@ -987,8 +1001,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     // ------------------------------------------------------------------------------------------
 
     /// @notice Associates the vault with token0, token1 and the LP NFT, then creates the HTS share token
-    ///         with the vault as treasury and supply key. msg.value pays the HTS token-creation fee;
-    ///         any HBAR left in the vault afterwards is returned to the caller.
+    ///         with the vault as treasury and supply key, and grants the position manager and swap router
+    ///         standing int64-max allowances on token0 and token1 (each HTS approval costs ~705k gas, so they
+    ///         are paid once here instead of on every compound/rebalance). msg.value pays the HTS
+    ///         token-creation fee; any HBAR left in the vault afterwards is returned to the caller.
     function initialize(string calldata name, string calldata symbol) external payable nonReentrant {
         if (msg.sender != deployer) revert NotDeployer();
         if (shareToken != address(0)) revert AlreadyInitialized();
@@ -1030,6 +1046,11 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         (int64 rc, address created) = createFungibleToken(token, 0, SHARE_DECIMALS);
         _checkHts(rc);
         shareToken = created;
+
+        IERC20(token0).forceApprove(address(positionManager), STANDING_ALLOWANCE);
+        IERC20(token1).forceApprove(address(positionManager), STANDING_ALLOWANCE);
+        IERC20(token0).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
+        IERC20(token1).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
 
         _refund(address(this).balance);
         emit Initialized(created);
@@ -1133,6 +1154,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         _collectFees();
 
         if (positionSerial == 0) {
+            if (IERC20(token0).balanceOf(address(this)) == 0 && IERC20(token1).balanceOf(address(this)) == 0) {
+                revert NothingToCompound();
+            }
             (int24 lower, int24 upper) = RangeMath.rangeAround(twapTick, tickSpacing, halfWidth);
             _swapToRatio(sqrtPriceX96, twapTick, lower, upper);
             _mintPosition(lower, upper);
@@ -1141,14 +1165,14 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
             return;
         }
 
+        // Adding to an out-of-range position would swap everything to one token; rebalance() is the path there.
+        if (twapTick < tickLower || twapTick >= tickUpper) revert OutOfRange(twapTick);
         _swapToRatio(sqrtPriceX96, twapTick, tickLower, tickUpper);
         uint256 idle0 = IERC20(token0).balanceOf(address(this));
         uint256 idle1 = IERC20(token1).balanceOf(address(this));
         if (idle0 == 0 && idle1 == 0) revert NothingToCompound();
 
         uint256 mintFeeTinybars = _chargeMintFee();
-        IERC20(token0).forceApprove(address(positionManager), idle0);
-        IERC20(token1).forceApprove(address(positionManager), idle1);
         (uint128 liquidity, uint256 used0, uint256 used1) = positionManager.increaseLiquidity{ value: mintFeeTinybars }(
             INPM.IncreaseLiquidityParams({
                 tokenSN: positionSerial,
@@ -1159,7 +1183,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 deadline: block.timestamp
             })
         );
-        _clearApprovals(address(positionManager));
         _refund(msg.value - mintFeeTinybars);
 
         emit Compound(msg.sender, liquidity, used0, used1);
@@ -1281,8 +1304,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         uint256 bal1 = IERC20(token1).balanceOf(address(this));
         uint256 mintFeeTinybars = _chargeMintFee();
 
-        IERC20(token0).forceApprove(address(positionManager), bal0);
-        IERC20(token1).forceApprove(address(positionManager), bal1);
         (uint256 serial, , , ) = positionManager.mint{ value: mintFeeTinybars }(
             INPM.MintParams({
                 token0: token0,
@@ -1298,7 +1319,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 deadline: block.timestamp
             })
         );
-        _clearApprovals(address(positionManager));
 
         positionSerial = serial;
         tickLower = lower;
@@ -1326,7 +1346,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         );
 
         (address tokenIn, address tokenOut) = zeroForOne ? (token0, token1) : (token1, token0);
-        IERC20(tokenIn).forceApprove(address(swapRouter), amountIn);
         swapRouter.exactInputSingle(
             ISaucerSwapV2SwapRouter.ExactInputSingleParams({
                 tokenIn: tokenIn,
@@ -1339,7 +1358,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
                 sqrtPriceLimitX96: 0
             })
         );
-        IERC20(tokenIn).forceApprove(address(swapRouter), 0);
     }
 
     /// @dev SaucerSwap charges `factory.mintFee()` tinycents, paid in HBAR, on every mint and increaseLiquidity.
@@ -1355,11 +1373,6 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     function _chargeMintFee() private returns (uint256 tinybars) {
         tinybars = _mintFeeTinybars();
         if (msg.value < tinybars) revert InsufficientFee(tinybars, msg.value);
-    }
-
-    function _clearApprovals(address spender) private {
-        IERC20(token0).forceApprove(spender, 0);
-        IERC20(token1).forceApprove(spender, 0);
     }
 
     function _mintShares(uint256 amount) private {
@@ -1762,11 +1775,13 @@ const deployTidepoolVault: DeployFunction = async function (hre: HardhatRuntimeE
   }
 
   // JSON-RPC value is in weibar (18 decimals); the relay converts it to tinybar for the EVM.
-  // Gas: each HTS association made through the system contract is charged as gas (~650-700k each),
-  // so the three associations alone need ~2M. eth_estimateGas on testnet returned ~2.51M; 2M ran out.
+  // Gas: each HTS association or allowance approval made through the system contract is charged as gas.
+  // Testnet, before standing approvals: initialize used 2,313,512 (three associations + token creation; 2M ran out).
+  // The four standing approvals add ~4 x 705,424 (the per-approval cost measured on testnet), so ~5.14M in total.
+  // Not re-measured yet; 8M leaves headroom, and Hedera charges gas used, not the limit.
   await execute(
     "TidepoolVault",
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 5_000_000, gasPrice },
+    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
     "initialize",
     params.shareName,
     params.shareSymbol,
@@ -1836,10 +1851,11 @@ const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRu
     return;
   }
 
-  // Same initialize() as the main vault: three HTS associations (~2M gas) plus share-token creation.
+  // Same initialize() as the main vault: three HTS associations, share-token creation and four standing
+  // approvals (~5.14M gas estimated; see 00_deploy_tidepool_vault.ts).
   await execute(
     DEPLOYMENT_NAME,
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 5_000_000, gasPrice },
+    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
     "initialize",
     params.shareName,
     params.shareSymbol,
@@ -2313,7 +2329,45 @@ describe("TidepoolVault", function () {
     it("surfaces an unusable pool oracle as TwapUnavailable", async function () {
       const { vault, pool, alice } = await loadFixture(deployFixture);
       await pool.setObserveReverts(true);
-      await expect(vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address)).to.be.reverted;
+      await expect(vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address)).to.be.revertedWithCustomError(
+        vault,
+        "TwapUnavailable",
+      );
+    });
+
+    it("refuses a first compound when the vault holds nothing", async function () {
+      const { vault } = await loadFixture(deployFixture);
+      await expect(vault.compound({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "NothingToCompound");
+    });
+
+    it("grants standing manager and router allowances once, so compound works twice without re-approving", async function () {
+      const { vault, t0, t1, npm, router, alice, bob } = await loadFixture(deployFixture);
+      const standing = 2n ** 63n - 1n; // type(int64).max
+      for (const token of [t0, t1]) {
+        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(standing);
+        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(standing);
+      }
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      const [, , , , , liqBefore] = await npm.positions(1);
+
+      await vault.connect(bob).deposit(10n ** 10n, 10n ** 9n, 0, bob.address);
+      const tx = vault.compound({ value: MINT_FEE });
+      await expect(tx).to.emit(vault, "Compound");
+      await expect(tx).to.not.emit(t0, "Approval");
+      await expect(tx).to.not.emit(t1, "Approval");
+      const [, , , , , liqAfter] = await npm.positions(1);
+      expect(liqAfter).to.be.greaterThan(liqBefore);
+    });
+
+    it("refuses to compound into a position whose range no longer contains the TWAP", async function () {
+      const { vault, pool, alice } = await loadFixture(deployFixture);
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      await pool.setPrice(-7680 + 900, -7680 + 900);
+      await expect(vault.compound({ value: MINT_FEE }))
+        .to.be.revertedWithCustomError(vault, "OutOfRange")
+        .withArgs(-7680 + 900);
     });
 
     it("makes a share-price inflation attack unprofitable", async function () {
@@ -2408,6 +2462,13 @@ describe("TidepoolVault", function () {
       await time.increase(3601);
       await pool.setPrice(-7680 + 2000, -7680 + 900);
       await expect(vault.rebalance({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "PriceDeviation");
+    });
+
+    it("surfaces an unusable pool oracle as TwapUnavailable", async function () {
+      const { vault, pool } = await withPosition();
+      await time.increase(3601);
+      await pool.setObserveReverts(true);
+      await expect(vault.rebalance({ value: MINT_FEE })).to.be.revertedWithCustomError(vault, "TwapUnavailable");
     });
 
     it("re-centres on the TWAP tick with a new position and keeps value", async function () {
@@ -4588,8 +4649,10 @@ as the password is accepted. Never run them from an agent without the user's go-
 6. **Licences.** Do not copy Uniswap v3 periphery/core code (GPL / BUSL). Import MIT files from `@uniswap/v4-core/src/libraries`.
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
-8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas; the vault's
-   `compound()`/`rebalance()` make six approvals. Observed on testnet: `initialize` 2.31M, first `compound` 5.13M,
+8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas. The vault grants
+   the manager and router standing `type(int64).max` allowances once, in `initialize()`, so `compound()`/`rebalance()`
+   make no approvals (the deployed testnet vaults predate this and make six per call). Observed on testnet with the
+   old per-call approvals: `initialize` 2.31M, first `compound` 5.13M,
    `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.
 9. **Position mints cannot be simulated.** `eth_call`/`eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap
    V2 position mint (first `compound`, every `rebalance`), even when the real transaction succeeds. Send those with
@@ -4723,12 +4786,12 @@ Narrow test vault `TidepoolVaultNarrow`: **0.0.10716411** / `0x91EdDBE42CFF874Fd
 | restore: approve, swap back | `0x181dd5f3…1e4a`, `0xf109b4c1…d796` | SUCCESS | 726,840; 211,030 | 6,518.359326 SAUCE → 141.42039494 WHBAR; spot back to −7700 (the 600 s TWAP follows) |
 
 **Gas findings:**
-- **Each HTS allowance approval made by the vault costs 705,424 gas.** `compound()` makes six (set and clear, for router and manager), 4,232,544 gas, 83% of the call.
+- **Each HTS allowance approval made by the vault costs 705,424 gas.** In the deployed version `compound()` made six (set and clear, for router and manager), 4,232,544 gas, 83% of the call. The source now grants standing allowances once in `initialize()` instead; expected cost after redeploying (not yet measured): `initialize` ≈ 5.14M, first `compound` / `rebalance` ≈ 0.9–1.1M.
 - Inside `compound()`: router swap ~104k gas, SaucerSwap `mint` ~633k, HTS NFT mint ~283k.
 - An EOA's HTS association is estimated at ~782k gas, an EOA approval at ~783k, and a WhbarHelper wrap at ~839k (before association).
 - **Hedera charged by gas used (about 109 tinybars per gas) in every transaction observed**, not by 80% of the gas limit, so generous limits cost nothing extra on success.
 - The frontend's original fixed `gas: 3_000_000` for compound and rebalance was too low; `KeeperCard` now uses 8,000,000.
-- `rebalance()` used 5,257,516 gas: six approvals 4,232,544, `decreaseLiquidity` 116,552, collects 154,524 + 39,945, swap 97,523, SaucerSwap `mint` 575,872.
+- `rebalance()` (deployed version) used 5,257,516 gas: six approvals 4,232,544, `decreaseLiquidity` 116,552, collects 154,524 + 39,945, swap 97,523, SaucerSwap `mint` 575,872.
 
 **Simulation limit:** `eth_call` and `eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap V2 position mint (the HTS NFT mint followed by `transferFrom` of the new serial), including mints that succeeded on-chain. Replaying real mint `0x4cf676ed…66f7` reproduced it. So `compound()` (first position) and `rebalance()` cannot be pre-checked; send them with a fixed gas limit (`scripts/tidepoolCompound.ts`).
 

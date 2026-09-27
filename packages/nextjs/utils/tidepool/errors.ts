@@ -15,7 +15,11 @@ const MESSAGES: Record<string, (args: readonly unknown[]) => string> = {
   TwapUnavailable: () =>
     "The pool's price history is shorter than the vault's TWAP window, so the vault will not act until it grows.",
   NothingToCompound: () =>
-    "There is nothing to compound: the vault holds no idle tokens and the position had no fees to collect.",
+    "There is nothing to compound: the vault holds no idle tokens and the position had no fees to collect. " +
+    "If the vault has no position yet, deposit first.",
+  OutOfRange: ([twapTick]) =>
+    `The time-weighted price (tick ${twapTick}) has left the position's range, so Compound would add liquidity that ` +
+    "earns no fees. Use Rebalance to re-centre the range first.",
   InsufficientFee: ([required, provided]) =>
     `The HBAR sent (${tinybars(provided)}) does not cover SaucerSwap's position fee (${tinybars(required)}). ` +
     "Refresh the fee quote and try again.",

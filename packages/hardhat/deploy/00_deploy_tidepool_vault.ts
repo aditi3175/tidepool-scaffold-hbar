@@ -46,11 +46,13 @@ const deployTidepoolVault: DeployFunction = async function (hre: HardhatRuntimeE
   }
 
   // JSON-RPC value is in weibar (18 decimals); the relay converts it to tinybar for the EVM.
-  // Gas: each HTS association made through the system contract is charged as gas (~650-700k each),
-  // so the three associations alone need ~2M. eth_estimateGas on testnet returned ~2.51M; 2M ran out.
+  // Gas: each HTS association or allowance approval made through the system contract is charged as gas.
+  // Testnet, before standing approvals: initialize used 2,313,512 (three associations + token creation; 2M ran out).
+  // The four standing approvals add ~4 x 705,424 (the per-approval cost measured on testnet), so ~5.14M in total.
+  // Not re-measured yet; 8M leaves headroom, and Hedera charges gas used, not the limit.
   await execute(
     "TidepoolVault",
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 5_000_000, gasPrice },
+    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
     "initialize",
     params.shareName,
     params.shareSymbol,

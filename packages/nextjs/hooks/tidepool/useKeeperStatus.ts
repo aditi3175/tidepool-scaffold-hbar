@@ -98,7 +98,8 @@ export type KeeperQuotes = ReturnType<typeof useKeeperQuotes>;
 /**
  * Mirrors the preconditions TidepoolVault checks in compound() and rebalance(), using data already read:
  * initialized, TWAP available, |spot - TWAP| <= maxTwapDeviation, the position-fee quote, and for rebalance
- * a position, the cooldown (against chain time) and a TWAP tick outside [tickLower, tickUpper).
+ * a position, the cooldown (against chain time) and a TWAP tick outside [tickLower, tickUpper). compound() on an
+ * existing position needs the TWAP tick inside the range (OutOfRange otherwise).
  * compound()'s NothingToCompound depends on fees the pool has not credited yet, so it is a warning, not a block.
  */
 export function useKeeperStatus(vault: VaultState, quotes: KeeperQuotes) {
@@ -188,14 +189,26 @@ export function useKeeperStatus(vault: VaultState, quotes: KeeperQuotes) {
         "No idle tokens. Compound succeeds only if the position earned fees since the last collection; otherwise it reverts with NothingToCompound and only gas is charged.",
     };
   }
-  const compoundChecks: Check[] = [initialized, priceGuard, supply, feeCheck];
-  if (vault.hasPosition && vault.inRange === false && !vault.twapUnavailable) {
-    compoundChecks.push({
-      label: "Position in range",
-      status: "warn",
-      detail: "The TWAP is outside the range, so added liquidity will not earn fees until a rebalance re-centres it.",
-    });
+  // Same order as the contract: price checks, then the range (OutOfRange), then the tokens to add.
+  const compoundChecks: Check[] = [initialized, priceGuard];
+  if (
+    vault.hasPosition &&
+    vault.twapTick !== undefined &&
+    vault.tickLower !== undefined &&
+    vault.tickUpper !== undefined
+  ) {
+    const inRange = vault.twapTick >= vault.tickLower && vault.twapTick < vault.tickUpper;
+    compoundChecks.push(
+      inRange
+        ? {
+            label: "TWAP inside range",
+            status: "ok",
+            detail: `TWAP tick ${vault.twapTick} is inside [${vault.tickLower}, ${vault.tickUpper}).`,
+          }
+        : { label: "TWAP inside range", status: "blocked", detail: "Price left the range — use Rebalance" },
+    );
   }
+  compoundChecks.push(supply, feeCheck);
 
   // rebalance()
   const positionCheck: Check =

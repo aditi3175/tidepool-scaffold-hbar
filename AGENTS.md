@@ -72,8 +72,10 @@ as the password is accepted. Never run them from an agent without the user's go-
 6. **Licences.** Do not copy Uniswap v3 periphery/core code (GPL / BUSL). Import MIT files from `@uniswap/v4-core/src/libraries`.
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
-8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas; the vault's
-   `compound()`/`rebalance()` make six approvals. Observed on testnet: `initialize` 2.31M, first `compound` 5.13M,
+8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas. The vault grants
+   the manager and router standing `type(int64).max` allowances once, in `initialize()`, so `compound()`/`rebalance()`
+   make no approvals (the deployed testnet vaults predate this and make six per call). Observed on testnet with the
+   old per-call approvals: `initialize` 2.31M, first `compound` 5.13M,
    `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.
 9. **Position mints cannot be simulated.** `eth_call`/`eth_estimateGas` return `INVALID_NFT_ID` for any SaucerSwap
    V2 position mint (first `compound`, every `rebalance`), even when the real transaction succeeds. Send those with
