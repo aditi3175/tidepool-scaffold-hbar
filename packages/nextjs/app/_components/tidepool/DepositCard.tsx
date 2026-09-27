@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { usePublicClient, useWriteContract } from "wagmi";
 import { AssociateButton } from "~~/app/_components/tidepool/AssociateButton";
+import { TxRail } from "~~/app/_components/tidepool/TxRail";
+import { Num } from "~~/app/_components/tidepool/motion";
 import { ExternalLink, TxFeedback } from "~~/app/_components/tidepool/ui";
 import { useScaffoldWriteContract, useTargetNetwork, useTransactor } from "~~/hooks/scaffold-hbar";
 import { useHtsAccount } from "~~/hooks/tidepool/useHtsAccount";
@@ -219,8 +221,8 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
   return (
     <div className="flex flex-col gap-4">
       {missing.length > 0 && gate.canTransact && (
-        <div className="rounded-box border border-warning/50 bg-warning/10 p-3 text-sm">
-          <p className="mb-2">
+        <div className="rounded-xl border border-warning/20 bg-warning/[0.05] p-4 text-sm">
+          <p className="mb-3 text-base-content/75">
             Hedera accounts must associate an HTS token before they can receive it. One transaction per token.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -237,40 +239,56 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
         </div>
       )}
 
-      {fields.map(field => (
-        <label key={field.symbol} className="flex flex-col gap-1">
-          <span className="flex justify-between text-xs text-base-content/70">
-            <span>{field.symbol}</span>
-            <span>
-              Wallet: {field.account.balance === undefined ? "–" : formatAmount(field.account.balance, field.decimals)}
+      <div className="flex flex-col gap-2">
+        {fields.map(field => (
+          <label
+            key={field.symbol}
+            className={`tp-inset flex flex-col gap-2 px-4 py-3 transition-colors focus-within:border-primary/50 ${
+              field.over ? "border-error/50!" : ""
+            }`}
+          >
+            <span className="flex items-center justify-between text-[11px] text-base-content/45">
+              <span className="tp-eyebrow">You deposit</span>
+              <span className="tp-num">
+                Wallet {field.account.balance === undefined ? "–" : formatAmount(field.account.balance, field.decimals)}
+              </span>
             </span>
-          </span>
-          <input
-            className={`input input-bordered w-full font-mono ${field.over ? "input-error" : ""}`}
-            inputMode="decimal"
-            placeholder="0.0"
-            value={field.value}
-            disabled={feedback.busy}
-            onChange={e => field.onChange(e.target.value.replace(",", "."))}
-          />
-        </label>
-      ))}
-      <p className="text-xs text-base-content/60">
+            <span className="flex items-center gap-3">
+              <input
+                className="tp-num w-full min-w-0 bg-transparent text-2xl text-base-content outline-none placeholder:text-base-content/20 disabled:opacity-50"
+                inputMode="decimal"
+                placeholder="0.0"
+                aria-label={`${field.symbol} amount`}
+                value={field.value}
+                disabled={feedback.busy}
+                onChange={e => field.onChange(e.target.value.replace(",", "."))}
+              />
+              <span className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-sm font-medium">
+                {field.symbol}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="text-[11px] leading-snug text-base-content/40">
         {firstDeposit
           ? "First deposit: both amounts are taken as entered and 99.999 shares are minted (0.001 are locked in the vault)."
           : "Deposits follow the vault's current token ratio, so the other amount fills in automatically."}
       </p>
 
-      <div className="rounded-box bg-base-200 px-3 py-2 text-sm">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm">
         {amount0 + amount1 === 0n ? (
-          <span className="text-base-content/60">Enter an amount to preview shares.</span>
+          <span className="text-base-content/45">Enter an amount to preview shares.</span>
         ) : exact.data ? (
-          <div className="flex flex-col gap-0.5">
-            <span>
-              You receive <span className="font-mono">{formatAmount(exact.data.shares, SHARE_DECIMALS)}</span> shares
-              <span className="text-xs text-base-content/60"> (exact, simulated)</span>
+          <div className="flex flex-col gap-1">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-base-content/60">You receive</span>
+              <span>
+                <Num text={formatAmount(exact.data.shares, SHARE_DECIMALS)} className="text-lg" />
+                <span className="ml-1.5 text-xs text-base-content/45">shares · exact, simulated</span>
+              </span>
             </span>
-            <span className="text-xs text-base-content/60">
+            <span className="text-[11px] leading-snug text-base-content/45">
               Pulls {formatAmount(exact.data.used0, decimals0)} {symbol0} + {formatAmount(exact.data.used1, decimals1)}{" "}
               {symbol1}. Minimum accepted: {formatAmount(withSlippage(exact.data.shares), SHARE_DECIMALS)} shares (1%).
             </span>
@@ -278,39 +296,74 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
         ) : exact.error ? (
           <span className="text-error">{friendlyError(exact.error, vault.abi).message}</span>
         ) : (
-          <div className="flex flex-col gap-0.5">
-            <span>
-              About <span className="font-mono">{formatAmount(estimate, SHARE_DECIMALS)}</span> shares
-              <span className="text-xs text-base-content/60"> (estimate)</span>
+          <div className="flex flex-col gap-1">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-base-content/60">About</span>
+              <span>
+                <Num text={formatAmount(estimate, SHARE_DECIMALS)} className="text-lg" />
+                <span className="ml-1.5 text-xs text-base-content/45">shares · estimate</span>
+              </span>
             </span>
-            <span className="text-xs text-base-content/60">
+            <span className="text-[11px] leading-snug text-base-content/45">
               The exact amount is simulated after approval; the deposit accepts up to 1% fewer shares.
             </span>
           </div>
         )}
       </div>
 
+      {amount0 + amount1 > 0n && (
+        <TxRail
+          flow="Deposit"
+          state={feedback.state}
+          steps={[
+            ...(amount0 > 0n
+              ? [
+                  {
+                    label: needs0 ? `Approve ${symbol0}` : `${symbol0} approved`,
+                    done: !needs0,
+                    match: `approving ${symbol0}`,
+                  },
+                ]
+              : []),
+            ...(amount1 > 0n
+              ? [
+                  {
+                    label: needs1 ? `Approve ${symbol1}` : `${symbol1} approved`,
+                    done: !needs1,
+                    match: `approving ${symbol1}`,
+                  },
+                ]
+              : []),
+            { label: "Deposit", done: false, match: ["exact share amount", "depositing"] },
+          ]}
+        />
+      )}
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-primary tp-cta h-12 w-full rounded-xl text-[15px] font-medium shadow-none"
         disabled={Boolean(blockReason) || feedback.busy}
         onClick={deposit}
       >
         {feedback.busy && <span className="loading loading-spinner loading-sm" />}
         {needs0 || needs1 ? "Approve & deposit" : "Deposit"}
       </button>
-      {blockReason && !feedback.busy && <p className="-mt-2 text-xs text-base-content/60">{blockReason}</p>}
+      {blockReason && !feedback.busy && <p className="-mt-1 text-center text-xs text-base-content/45">{blockReason}</p>}
       <TxFeedback state={feedback.state} />
 
-      <div className="flex flex-col gap-2 border-t border-base-300 pt-3 text-xs text-base-content/70">
+      <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 text-xs text-base-content/55">
         {whbarInPool && (
-          <details>
-            <summary className="cursor-pointer select-none">Need WHBAR? Wrap HBAR</summary>
-            <div className="mt-2 flex items-end gap-2">
-              <label className="flex grow flex-col gap-1">
+          <details className="tp-details group">
+            <summary className="flex select-none items-center justify-between hover:text-base-content/80">
+              Need WHBAR? Wrap HBAR
+              <span className="tp-chevron text-base-content/40 transition-transform" aria-hidden>
+                ▾
+              </span>
+            </summary>
+            <div className="mt-3 flex items-end gap-2">
+              <label className="flex grow flex-col gap-1.5">
                 <span>HBAR to wrap (through SaucerSwap&apos;s WhbarHelper)</span>
                 <input
-                  className="input input-bordered input-sm w-full font-mono"
+                  className="input input-sm tp-num w-full border-white/[0.08] bg-black/25"
                   inputMode="decimal"
                   placeholder="0.0"
                   value={wrapInput}
@@ -320,7 +373,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
               </label>
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn btn-sm border-white/[0.1] bg-white/[0.06] shadow-none hover:bg-white/[0.1]"
                 disabled={!gate.canTransact || wrapWeibar === 0n || feedback.busy}
                 onClick={wrap}
               >

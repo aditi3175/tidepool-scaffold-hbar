@@ -1,27 +1,37 @@
 import { DebugContracts } from "./_components/DebugContracts";
 import type { NextPage } from "next";
+import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { getMetadata } from "~~/utils/scaffold-hbar/getMetadata";
 
 export const metadata = getMetadata({
   title: "Debug Contracts",
-  description: "Debug your deployed 🏗 Scaffold-HBAR contracts in an easy way",
+  description: "Raw ABI-level access to the Tidepool vault contracts on Hedera Testnet.",
 });
 
 const Debug: NextPage = () => {
   return (
-    <>
-      <DebugContracts />
-      <div className="text-center mt-8 bg-secondary p-10">
-        <h1 className="text-4xl my-0">Debug Contracts</h1>
-        <p className="text-neutral">
-          You can debug & interact with your deployed contracts here.
-          <br /> Check{" "}
-          <code className="italic bg-base-300 text-base font-bold [word-spacing:-0.5rem] px-1">
-            packages / nextjs / app / debug / page.tsx
-          </code>{" "}
+    <div className="tp-debug">
+      <header className="tp-scope tp-rise mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8">
+        <div className="tp-eyebrow text-primary/80">Developer · Contract debugger</div>
+        <h1 className="tp-display m-0 text-[2.4rem] text-base-content sm:text-5xl">Inspect Tidepool contracts.</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-base-content/55">
+          Raw ABI-level access to <span className="tp-num text-base-content/75">TidepoolVault</span> and{" "}
+          <span className="tp-num text-base-content/75">TidepoolVaultNarrow</span>: read every view function and call
+          any write function directly, without the Dashboard&apos;s checks.
         </p>
-      </div>
-    </>
+        <div
+          role="note"
+          className="flex max-w-2xl gap-3 rounded-xl border border-warning/15 bg-warning/[0.04] px-4 py-3 text-sm leading-relaxed"
+        >
+          <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-warning/80" aria-hidden />
+          <p className="text-base-content/70">
+            <span className="font-medium text-warning/90">Developer tool.</span> Writes here send real Hedera Testnet
+            transactions. Use the Dashboard for Compound and Rebalance.
+          </p>
+        </div>
+      </header>
+      <DebugContracts />
+    </div>
   );
 };
 

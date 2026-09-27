@@ -1,67 +1,56 @@
 import React from "react";
 import { HederaPortalFaucet } from "@scaffold-hbar-ui/components";
 import { hedera } from "viem/chains";
-import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { SwitchTheme } from "~~/components/SwitchTheme";
-import { useFetchHbarPrice } from "~~/hooks/scaffold-hbar";
+import { TidepoolMark } from "~~/components/TidepoolMark";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar/useTargetNetwork";
 
+const links = [
+  { label: "HashScan", href: "https://hashscan.io/testnet" },
+  { label: "SaucerSwap docs", href: "https://docs.saucerswap.finance" },
+  { label: "Hedera docs", href: "https://docs.hedera.com/" },
+  { label: "Built with Scaffold-HBAR", href: "https://github.com/hedera-dev/scaffold-hbar" },
+];
+
 /**
- * Site footer
+ * Site footer: Tidepool identity, the testnet disclaimer, and developer links (including the Scaffold-HBAR credit).
  */
 export const Footer = () => {
   const { targetNetwork } = useTargetNetwork();
   const isTestnet = targetNetwork.id !== hedera.id;
-  const { price: nativeCurrencyPrice } = useFetchHbarPrice();
 
   return (
-    <div className="min-h-0 py-5 px-1 mb-11 lg:mb-0">
-      <div>
-        <div className="fixed flex justify-between items-center w-full z-10 p-4 bottom-0 left-0 pointer-events-none">
-          <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
-            {nativeCurrencyPrice > 0 && (
-              <div>
-                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto">
-                  <CurrencyDollarIcon className="h-4 w-4" />
-                  <span>{nativeCurrencyPrice.toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-            {isTestnet && <HederaPortalFaucet showIcon />}
+    <footer className="mt-16 border-t border-white/[0.06]">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-8 text-sm md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-3">
+          <TidepoolMark className="mt-0.5 h-6 w-6 shrink-0 opacity-80" />
+          <div>
+            <div className="font-medium">Tidepool</div>
+            <div className="text-xs text-base-content/45">
+              SaucerSwap V2 liquidity vault template for Hedera. Testnet reference code, not audited.
+            </div>
           </div>
-          <SwitchTheme className="pointer-events-auto" />
         </div>
-      </div>
-      <div className="w-full">
-        <ul className="menu menu-horizontal w-full">
-          <div className="flex justify-center items-center gap-3 text-sm w-full text-base-content/60">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-base-content/55">
+          {links.map(link => (
             <a
-              href="https://github.com/hedera-dev/scaffold-hbar"
+              key={link.href}
+              href={link.href}
               target="_blank"
               rel="noreferrer"
-              className="link hover:text-primary"
+              className="transition-colors hover:text-base-content"
             >
-              GitHub
+              {link.label}
             </a>
-            <span className="opacity-30">|</span>
-            <span>
-              Built on{" "}
-              <a
-                href="https://hedera.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold link hover:text-primary"
-              >
-                Hedera
-              </a>
-            </span>
-            <span className="opacity-30">|</span>
-            <a href="https://docs.hedera.com/" target="_blank" rel="noreferrer" className="link hover:text-primary">
-              Docs
-            </a>
-          </div>
-        </ul>
+          ))}
+          {isTestnet && (
+            <HederaPortalFaucet
+              variant="link"
+              showIcon
+              className="inline-flex items-center gap-1.5 no-underline transition-colors hover:text-base-content"
+            />
+          )}
+        </nav>
       </div>
-    </div>
+    </footer>
   );
 };

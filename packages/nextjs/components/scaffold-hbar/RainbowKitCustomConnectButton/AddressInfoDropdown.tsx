@@ -54,14 +54,14 @@ export const AddressInfoDropdown = ({
   return (
     <>
       <details ref={dropdownRef} className="dropdown dropdown-end leading-3">
-        <summary className="btn btn-secondary btn-sm pl-0 pr-2 shadow-md dropdown-toggle gap-0 h-auto!">
-          <BlockieAvatar address={checkSumAddress} size={30} ensImage={ensAvatar} />
-          <span className="ml-2 mr-1">
+        <summary className="btn btn-sm dropdown-toggle h-auto! gap-0 rounded-full border border-white/[0.08] bg-white/[0.04] py-0.5 pl-0.5 pr-2 font-normal shadow-none hover:bg-white/[0.08]">
+          <BlockieAvatar address={checkSumAddress} size={26} ensImage={ensAvatar} />
+          <span className="ml-2 mr-1 font-mono text-xs">
             {isENS(displayName) ? displayName : checkSumAddress?.slice(0, 6) + "..." + checkSumAddress?.slice(-4)}
           </span>
           <ChevronDownIcon className="h-6 w-4 ml-2 sm:ml-0" />
         </summary>
-        <ul className="dropdown-content menu z-2 p-2 mt-2 shadow-center shadow-accent bg-base-200 rounded-box gap-1">
+        <ul className="dropdown-content menu z-2 mt-2 gap-1 rounded-box border border-white/[0.08] bg-[#111319] p-2 shadow-xl">
           <NetworkOptions hidden={!selectingNetwork} />
           <li className={selectingNetwork ? "hidden" : ""}>
             <div

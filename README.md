@@ -114,6 +114,10 @@ yarn lint && yarn next:check-types && yarn next:build
 yarn next:dev
 ```
 
+In `next:dev`, the first visit to each page (for example `/debug`) takes a while because Next.js compiles routes on
+demand; later visits are fast. Production builds are compiled ahead of time. `next:build` and `next:dev` share
+`packages/nextjs/.next`, so stop the dev server before building.
+
 ## Testnet deployment
 
 ```bash

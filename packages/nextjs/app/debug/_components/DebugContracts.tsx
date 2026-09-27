@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo } from "react";
 import { ContractUI } from "./ContractUI";
-import "@scaffold-hbar-ui/debug-contracts/styles.css";
 import { useSessionStorage } from "usehooks-ts";
 import { BarsArrowUpIcon } from "@heroicons/react/20/solid";
 import { ContractName, GenericContract } from "~~/utils/scaffold-hbar/contract";
@@ -33,31 +32,40 @@ export function DebugContracts() {
   }, [contractNames, selectedContract, setSelectedContract]);
 
   return (
-    <div className="flex flex-col gap-y-6 lg:gap-y-8 py-8 lg:py-12 justify-center items-center">
+    <div className="flex flex-col items-center justify-center gap-y-6 py-8 lg:gap-y-8 lg:py-10">
       {contractNames.length === 0 ? (
-        <p className="text-3xl mt-14">No contracts found!</p>
+        <p className="mt-14 text-lg text-base-content/60">No contracts found!</p>
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="flex flex-row gap-2 w-full max-w-7xl pb-1 px-6 lg:px-10 flex-wrap">
-              {contractNames.map(contractName => (
-                <button
-                  className={`btn btn-secondary btn-sm font-light hover:border-transparent ${
-                    contractName === selectedContract
-                      ? "bg-base-300 hover:bg-base-300 no-animation"
-                      : "bg-base-100 hover:bg-secondary"
-                  }`}
-                  key={String(contractName)}
-                  onClick={() => setSelectedContract(contractName)}
-                >
-                  {String(contractName)}
-                  {(contractsData[String(contractName)] as GenericContract)?.external && (
-                    <span className="tooltip tooltip-top tooltip-accent" data-tip="External contract">
-                      <BarsArrowUpIcon className="h-4 w-4 cursor-pointer" />
-                    </span>
-                  )}
-                </button>
-              ))}
+            <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+              <div
+                role="tablist"
+                aria-label="Contract"
+                className="inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-full border border-white/[0.07] bg-white/[0.025] p-1 sm:w-fit"
+              >
+                {contractNames.map(contractName => (
+                  <button
+                    role="tab"
+                    type="button"
+                    aria-selected={contractName === selectedContract}
+                    className={`tp-num flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-all duration-200 sm:flex-none ${
+                      contractName === selectedContract
+                        ? "bg-white/[0.09] text-base-content shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
+                        : "text-base-content/50 hover:text-base-content/80"
+                    }`}
+                    key={String(contractName)}
+                    onClick={() => setSelectedContract(contractName)}
+                  >
+                    {String(contractName)}
+                    {(contractsData[String(contractName)] as GenericContract)?.external && (
+                      <span className="tooltip tooltip-top" data-tip="External contract (externalContracts.ts)">
+                        <BarsArrowUpIcon className="h-4 w-4 cursor-pointer opacity-60" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {contractNames.map(

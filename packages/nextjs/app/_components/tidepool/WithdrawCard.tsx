@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { usePublicClient, useWriteContract } from "wagmi";
-import { TxFeedback } from "~~/app/_components/tidepool/ui";
+import { TxRail } from "~~/app/_components/tidepool/TxRail";
+import { TokenAmount, TxFeedback } from "~~/app/_components/tidepool/ui";
 import { useScaffoldWriteContract, useTargetNetwork, useTransactor } from "~~/hooks/scaffold-hbar";
 import { useTxFeedback } from "~~/hooks/tidepool/useTxFeedback";
 import type { UserPosition } from "~~/hooks/tidepool/useUserPosition";
@@ -115,74 +116,89 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1">
-        <span className="flex justify-between text-xs text-base-content/70">
-          <span>Shares to burn</span>
-          <span>
-            Balance: {balance === undefined ? "–" : formatAmount(balance, SHARE_DECIMALS)}
-            {user.percent !== undefined && ` (${user.percent}%)`}
+      <label className="tp-inset flex flex-col gap-2 px-4 py-3 transition-colors focus-within:border-primary/50">
+        <span className="flex items-center justify-between text-[11px] text-base-content/45">
+          <span className="tp-eyebrow">Shares to burn</span>
+          <span className="tp-num">
+            Balance {balance === undefined ? "–" : formatAmount(balance, SHARE_DECIMALS)}
+            {user.percent !== undefined && ` · ${user.percent}%`}
           </span>
         </span>
-        <div className="join w-full">
+        <span className="flex items-center gap-3">
           <input
-            className="input input-bordered join-item w-full font-mono"
+            className="tp-num w-full min-w-0 bg-transparent text-2xl text-base-content outline-none placeholder:text-base-content/20 disabled:opacity-50"
             inputMode="decimal"
             placeholder="0.0"
+            aria-label="Shares to burn"
             value={input}
             disabled={feedback.busy}
             onChange={e => setInput(e.target.value.replace(",", "."))}
           />
           <button
             type="button"
-            className="btn join-item"
+            className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-accent transition-colors hover:bg-primary/20 disabled:opacity-40"
             disabled={!balance || feedback.busy}
             onClick={() => setInput(formatUnits(balance ?? 0n, SHARE_DECIMALS))}
           >
             Max
           </button>
-        </div>
+        </span>
       </label>
 
-      <div className="rounded-box bg-base-200 px-3 py-2 text-sm">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm">
         {amount === 0n ? (
-          <span className="text-base-content/60">Enter shares to preview what you receive.</span>
+          <span className="text-base-content/45">Enter shares to preview what you receive.</span>
         ) : exact.data ? (
-          <div className="flex flex-col gap-0.5">
-            <span>
-              You receive <span className="font-mono">{formatAmount(exact.data.out0, decimals0)}</span> {symbol0} +{" "}
-              <span className="font-mono">{formatAmount(exact.data.out1, decimals1)}</span> {symbol1}
-              <span className="text-xs text-base-content/60"> (exact, simulated)</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="flex items-center justify-between text-base-content/60">
+              You receive <span className="text-xs text-base-content/40">exact, simulated</span>
             </span>
-            <span className="text-xs text-base-content/60">Minimums accepted: 1% below these amounts.</span>
+            <span className="flex flex-col gap-0.5 text-lg">
+              <TokenAmount amount={formatAmount(exact.data.out0, decimals0)} symbol={symbol0} />
+              <TokenAmount amount={formatAmount(exact.data.out1, decimals1)} symbol={symbol1} />
+            </span>
+            <span className="text-[11px] text-base-content/45">Minimums accepted: 1% below these amounts.</span>
           </div>
         ) : exact.error ? (
           <span className="text-error">{friendlyError(exact.error, vault.abi).message}</span>
         ) : (
-          <div className="flex flex-col gap-0.5">
-            <span>
-              About <span className="font-mono">{formatAmount(est0, decimals0)}</span> {symbol0} +{" "}
-              <span className="font-mono">{formatAmount(est1, decimals1)}</span> {symbol1}
-              <span className="text-xs text-base-content/60"> (estimate)</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="flex items-center justify-between text-base-content/60">
+              About <span className="text-xs text-base-content/40">estimate</span>
             </span>
-            <span className="text-xs text-base-content/60">
+            <span className="flex flex-col gap-0.5 text-lg">
+              <TokenAmount amount={formatAmount(est0, decimals0)} symbol={symbol0} />
+              <TokenAmount amount={formatAmount(est1, decimals1)} symbol={symbol1} />
+            </span>
+            <span className="text-[11px] leading-snug text-base-content/45">
               Pro-rata share of vault holdings, before uncollected fees. The exact amount is simulated after approval.
             </span>
           </div>
         )}
       </div>
 
+      {amount > 0n && (
+        <TxRail
+          flow="Withdraw"
+          state={feedback.state}
+          steps={[
+            { label: needsApproval ? "Approve shares" : "Shares approved", done: !needsApproval, match: "approving" },
+            { label: "Withdraw", done: false, match: ["exact amounts", "withdrawing"] },
+          ]}
+        />
+      )}
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-primary tp-cta h-12 w-full rounded-xl text-[15px] font-medium shadow-none"
         disabled={Boolean(blockReason) || feedback.busy}
         onClick={withdraw}
       >
         {feedback.busy && <span className="loading loading-spinner loading-sm" />}
         {needsApproval && amount > 0n ? "Approve & withdraw" : "Withdraw"}
       </button>
-      {blockReason && !feedback.busy && <p className="-mt-2 text-xs text-base-content/60">{blockReason}</p>}
+      {blockReason && !feedback.busy && <p className="-mt-1 text-center text-xs text-base-content/45">{blockReason}</p>}
       <TxFeedback state={feedback.state} />
-      <p className="border-t border-base-300 pt-3 text-xs text-base-content/60">
+      <p className="border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-base-content/50">
         Withdrawals skip the TWAP guard, so you can always exit. You receive {symbol0} and {symbol1} (WHBAR stays
         wrapped).
       </p>

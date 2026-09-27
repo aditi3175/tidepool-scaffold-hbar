@@ -7,13 +7,13 @@ export const WrongNetworkDropdown = () => {
 
   return (
     <div className="dropdown dropdown-end mr-2">
-      <label tabIndex={0} className="btn btn-error btn-sm dropdown-toggle gap-1">
+      <label tabIndex={0} className="btn btn-error btn-soft btn-sm dropdown-toggle gap-1 rounded-full shadow-none">
         <span>Wrong network</span>
         <ChevronDownIcon className="h-6 w-4 ml-2 sm:ml-0" />
       </label>
       <ul
         tabIndex={0}
-        className="dropdown-content menu p-2 mt-1 shadow-center shadow-accent bg-base-200 rounded-box gap-1"
+        className="dropdown-content menu mt-1 gap-1 rounded-box border border-white/[0.08] bg-[#111319] p-2 shadow-xl"
       >
         <NetworkOptions />
         <li>
