@@ -1,4 +1,4 @@
-import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "@rainbow-me/rainbowkit/styles.css";
 import "@scaffold-hbar-ui/components/styles.css";
 // Loaded here, before globals.css, rather than only by /debug: it is a full precompiled Tailwind build, and when it
@@ -17,23 +17,13 @@ export const metadata = getMetadata({
 });
 
 // Self-hosted by next/font at build time (no runtime request to Google, no new dependency).
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
-  display: "swap",
-});
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono", display: "swap" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 const ScaffoldHbarApp = ({ children }: { children: React.ReactNode }) => {
   return (
-    <html
-      suppressHydrationWarning
-      className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
-    >
-      <body className="tp-atmosphere text-base-content">
+    <html suppressHydrationWarning className={`${geist.variable} ${geistMono.variable}`}>
+      <body className="bg-bg font-sans text-fg antialiased">
         {/* Tidepool ships a single dark theme. */}
         <ThemeProvider forcedTheme="dark" enableSystem={false}>
           <ScaffoldHbarAppWithProviders>{children}</ScaffoldHbarAppWithProviders>

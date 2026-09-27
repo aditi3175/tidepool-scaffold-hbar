@@ -3,161 +3,88 @@
 import React, { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ArrowUpRightIcon,
-  Bars3Icon,
-  BugAntIcon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
-import { useRefreshTick } from "~~/app/_components/tidepool/motion";
+import { Bars3Icon } from "@heroicons/react/24/outline";
 import { TidepoolMark } from "~~/components/TidepoolMark";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
-import { useNetworkColor, useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-hbar";
-import { HASHSCAN_URL } from "~~/utils/tidepool/constants";
+import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-hbar";
 
-type HeaderMenuLink = {
-  label: string;
-  href: string;
-  icon?: React.ReactNode;
-  /** Opens in a new tab (outside the app). */
-  external?: boolean;
-};
-
-/**
- * Developer tools, grouped away from the product. The template's built-in block explorer only works on a local
- * chain, so on Hedera Testnet the menu links to HashScan instead (the /blockexplorer route still exists).
- */
-const developerLinks: HeaderMenuLink[] = [
-  {
-    label: "Debug Contracts",
-    href: "/debug",
-    icon: <BugAntIcon className="h-4 w-4" />,
-  },
-  {
-    label: "HashScan (Testnet)",
-    href: HASHSCAN_URL,
-    icon: <MagnifyingGlassIcon className="h-4 w-4" />,
-    external: true,
-  },
+const NAV = [
+  { label: "How it works", href: "/how-it-works" },
+  { label: "Docs", href: "/docs" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Contracts", href: "/debug" },
 ];
 
-const MenuLink = ({ label, href, icon, external }: HeaderMenuLink) => {
-  const pathname = usePathname();
-  const isActive = !external && pathname === href;
-  const className = `${
-    isActive ? "text-base-content bg-white/[0.06]" : "text-base-content/60 hover:text-base-content"
-  } gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors`;
-  return (
-    <li>
-      {external ? (
-        <a href={href} target="_blank" rel="noreferrer" className={className}>
-          {icon}
-          <span>{label}</span>
-          <ArrowUpRightIcon className="h-3 w-3 opacity-50" aria-hidden />
-        </a>
-      ) : (
-        <Link href={href} passHref className={className}>
-          {icon}
-          <span>{label}</span>
-        </Link>
-      )}
-    </li>
-  );
-};
+const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-const NetworkIndicator = () => {
+const NetworkBadge = () => {
   const { targetNetwork } = useTargetNetwork();
-  const color = useNetworkColor();
   return (
     <span
-      className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.02] px-3 py-1 text-xs text-base-content/70"
+      className="hidden items-center gap-2 rounded-lg border border-line px-2 py-1 text-xs text-muted sm:inline-flex"
       title={`Target network: ${targetNetwork.name}`}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+      <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
       {targetNetwork.name}
     </span>
   );
 };
 
-/** Hairline under the header; one light sweep each time the vault data actually refreshes. */
-const RefreshHairline = () => {
-  const tick = useRefreshTick();
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px overflow-hidden" aria-hidden>
-      {tick > 0 && (
-        <span
-          key={tick}
-          className="tp-sweep absolute inset-y-0 left-0 block w-1/3 bg-[linear-gradient(90deg,transparent,#6e7bff,#3ee0c5,transparent)]"
-        />
-      )}
-    </div>
-  );
-};
-
-/**
- * Site header: Tidepool branding, the target Hedera network, the wallet, and developer tools in their own menu.
- */
+/** Site header: wordmark, the four sections, then the network badge and the wallet. */
 export const Header = () => {
-  const burgerMenuRef = useRef<HTMLDetailsElement>(null);
-  const devMenuRef = useRef<HTMLDetailsElement>(null);
-  useOutsideClick(burgerMenuRef, () => burgerMenuRef?.current?.removeAttribute("open"));
-  useOutsideClick(devMenuRef, () => devMenuRef?.current?.removeAttribute("open"));
+  const pathname = usePathname();
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  useOutsideClick(menuRef, () => menuRef.current?.removeAttribute("open"));
+
+  const link = (item: (typeof NAV)[number]) => {
+    const active = isActive(pathname, item.href);
+    return (
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={`rounded-lg px-3 py-1.5 text-sm ${active ? "bg-raised text-fg" : "text-muted hover:text-fg"}`}
+      >
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
-    <div className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#07080b]/75 backdrop-blur-md">
-      <RefreshHairline />
-      <div className="navbar mx-auto min-h-0 max-w-6xl gap-2 px-4 py-2.5">
-        <div className="navbar-start w-auto gap-1 sm:gap-2">
-          <details className="dropdown lg:hidden" ref={burgerMenuRef}>
-            <summary className="btn btn-ghost btn-sm px-2 shadow-none" aria-label="Menu">
-              <Bars3Icon className="h-5 w-5" />
-            </summary>
-            <ul
-              className="menu menu-sm dropdown-content mt-3 w-56 rounded-box border border-white/[0.08] bg-[#111319] p-2 shadow-xl"
-              onClick={() => burgerMenuRef?.current?.removeAttribute("open")}
-            >
-              <MenuLink label="Dashboard" href="/" />
-              <li className="menu-title text-xs text-base-content/45">Developer</li>
-              {developerLinks.map(link => (
-                <MenuLink key={link.href} {...link} />
-              ))}
-            </ul>
-          </details>
-          <Link
-            href="/"
-            passHref
-            className="group flex shrink-0 items-center gap-2.5"
-            aria-label="Tidepool on Hedera, home"
+    <header className="sticky top-0 z-20 border-b border-line bg-bg">
+      <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-4 px-4 sm:px-6">
+        <details className="relative lg:hidden" ref={menuRef}>
+          <summary
+            className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-muted hover:text-fg [&::-webkit-details-marker]:hidden"
+            aria-label="Menu"
           >
-            <TidepoolMark className="h-8 w-8 transition-transform duration-300 group-hover:rotate-[-8deg]" />
-            <span className="flex flex-col leading-none">
-              <span className="tp-display text-[23px] text-base-content">Tidepool</span>
-              <span className="mt-0.5 text-[11px] text-base-content/45">on Hedera</span>
-            </span>
-          </Link>
-          <ul className="menu menu-horizontal menu-sm ml-6 hidden items-center gap-1 px-1 lg:flex">
-            <MenuLink label="Dashboard" href="/" />
-            <li>
-              <details ref={devMenuRef}>
-                <summary className="gap-1 rounded-lg px-3 py-1.5 text-sm text-base-content/60 after:hidden hover:text-base-content">
-                  Developer
-                  <ChevronDownIcon className="h-3 w-3" />
-                </summary>
-                <ul className="z-30 w-56 rounded-box border border-white/[0.08] bg-[#111319] p-2 shadow-xl">
-                  {developerLinks.map(link => (
-                    <MenuLink key={link.href} {...link} />
-                  ))}
-                </ul>
-              </details>
-            </li>
-          </ul>
-        </div>
-        <div className="navbar-end grow gap-3">
-          <NetworkIndicator />
+            <Bars3Icon className="h-5 w-5" />
+          </summary>
+          <nav
+            className="absolute left-0 top-10 z-30 flex w-52 flex-col gap-1 rounded-lg border border-line bg-raised p-2 shadow-[0_4px_16px_rgb(0_0_0/0.35)]"
+            onClick={() => menuRef.current?.removeAttribute("open")}
+          >
+            {NAV.map(item => (
+              <React.Fragment key={item.href}>{link(item)}</React.Fragment>
+            ))}
+          </nav>
+        </details>
+
+        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Tidepool home">
+          <TidepoolMark className="h-6 w-6" />
+          <span className="text-base font-semibold text-fg">Tidepool</span>
+        </Link>
+
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
+          {NAV.map(item => (
+            <React.Fragment key={item.href}>{link(item)}</React.Fragment>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3">
+          <NetworkBadge />
           <RainbowKitCustomConnectButton />
         </div>
       </div>
-    </div>
+    </header>
   );
 };

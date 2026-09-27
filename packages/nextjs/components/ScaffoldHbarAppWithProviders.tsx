@@ -24,11 +24,12 @@ const ScaffoldHbarApp = ({ children }: { children: React.ReactNode }) => {
       <Toaster
         toastOptions={{
           style: {
-            background: "#15171e",
-            color: "#ededf2",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "14px",
+            background: "#142230",
+            color: "#e6edf3",
+            border: "1px solid #1c2b38",
+            borderRadius: "8px",
             fontSize: "14px",
+            boxShadow: "0 4px 16px rgb(0 0 0 / 0.35)",
           },
         }}
       />
@@ -46,9 +47,9 @@ export const queryClient = new QueryClient({
 
 // Tidepool ships a single dark theme, so the wallet modal always matches it.
 const rainbowKitTheme = darkTheme({
-  accentColor: "#6e7bff",
-  accentColorForeground: "white",
-  borderRadius: "large",
+  accentColor: "#2dd4bf",
+  accentColorForeground: "#0a1016",
+  borderRadius: "small",
   fontStack: "system",
   overlayBlur: "small",
 });
@@ -57,8 +58,8 @@ export const ScaffoldHbarAppWithProviders = ({ children }: { children: React.Rea
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ProgressBar height="2px" color="#6e7bff" />
-        <RainbowKitProvider avatar={BlockieAvatar} coolMode initialChain={hederaTestnet} theme={rainbowKitTheme}>
+        <ProgressBar height="2px" color="#2dd4bf" />
+        <RainbowKitProvider avatar={BlockieAvatar} initialChain={hederaTestnet} theme={rainbowKitTheme}>
           <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
         </RainbowKitProvider>
       </QueryClientProvider>

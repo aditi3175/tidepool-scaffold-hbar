@@ -10,9 +10,13 @@ export const MIRROR_NODE_URL = process.env.NEXT_PUBLIC_MIRROR_NODE_URL ?? "https
 export const HASHSCAN_URL = "https://hashscan.io/testnet";
 /** Where to get SAUCE on testnet. Tidepool does not swap for the user. */
 export const SAUCERSWAP_TESTNET_URL = "https://testnet.saucerswap.finance";
-/** The architecture write-up, linked from the dashboard's "How it works" row. */
-export const ARCHITECTURE_DOC_URL =
-  "https://github.com/aditi3175/tidepool-scaffold-hbar/blob/main/docs/ARCHITECTURE.md";
+/** The template's GitHub repository and the command that scaffolds a new project from it. */
+export const GITHUB_URL = "https://github.com/aditi3175/tidepool-scaffold-hbar";
+export const README_URL = `${GITHUB_URL}#readme`;
+export const SCAFFOLD_COMMAND = "npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar";
+/** Hedera portal faucet (testnet HBAR). */
+export const FAUCET_URL = "https://portal.hedera.com/faucet";
+("https://github.com/aditi3175/tidepool-scaffold-hbar/blob/main/docs/ARCHITECTURE.md");
 
 /** Vault share token decimals (TidepoolVault.SHARE_DECIMALS). */
 export const SHARE_DECIMALS = 8;
@@ -38,9 +42,6 @@ export const GAS = {
   withdraw: 2_000_000n,
   keeper: 8_000_000n,
 } as const;
-
-/** Gas the keeper actions used on testnet, for display next to the fixed limit. */
-export const OBSERVED_KEEPER_GAS = { compound: "0.56M–0.94M", rebalance: "0.98M" } as const;
 
 /** HTS tokens expose an ERC-20 facade plus the HIP-719 association functions. */
 export const HTS_TOKEN_ABI = parseAbi([

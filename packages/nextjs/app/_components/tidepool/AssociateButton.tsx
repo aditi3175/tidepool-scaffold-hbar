@@ -39,7 +39,7 @@ export const AssociateButton = ({
   return (
     <button
       type="button"
-      className="btn btn-sm rounded-full border-warning/30 bg-warning/10 font-normal text-warning shadow-none hover:bg-warning/20"
+      className="btn btn-sm rounded-md border-warning/40 bg-transparent font-normal text-warning shadow-none hover:bg-warning/10"
       disabled={disabled || pending}
       onClick={associate}
     >

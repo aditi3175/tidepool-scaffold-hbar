@@ -116,9 +116,9 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="tp-inset flex flex-col gap-2 px-4 py-3 transition-colors focus-within:border-primary/50">
-        <span className="flex items-center justify-between text-[11px] text-base-content/45">
-          <span className="tp-eyebrow">Shares to burn</span>
+      <label className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2 focus-within:border-primary/60">
+        <span className="flex items-center justify-between text-xs text-base-content/55">
+          <span>Shares to burn</span>
           <span className="tp-num">
             Balance {balance === undefined ? "–" : formatAmount(balance, SHARE_DECIMALS)}
             {user.percent !== undefined && ` · ${user.percent}%`}
@@ -126,7 +126,7 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
         </span>
         <span className="flex items-center gap-3">
           <input
-            className="tp-num w-full min-w-0 bg-transparent text-2xl text-base-content outline-none placeholder:text-base-content/20 disabled:opacity-50"
+            className="tp-num w-full min-w-0 bg-transparent text-xl text-base-content outline-none placeholder:text-base-content/30 disabled:opacity-50"
             inputMode="decimal"
             placeholder="0.0"
             aria-label="Shares to burn"
@@ -136,7 +136,7 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
           />
           <button
             type="button"
-            className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-accent transition-colors hover:bg-primary/20 disabled:opacity-40"
+            className="shrink-0 rounded-md bg-base-300 px-2 py-1 text-xs font-medium text-primary disabled:opacity-40"
             disabled={!balance || feedback.busy}
             onClick={() => setInput(formatUnits(balance ?? 0n, SHARE_DECIMALS))}
           >
@@ -145,34 +145,28 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
         </span>
       </label>
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm">
+      <div className="rounded-lg bg-base-200 px-3 py-2 text-sm">
         {amount === 0n ? (
-          <span className="text-base-content/45">Enter shares to preview what you receive.</span>
+          <span className="text-base-content/55">Enter shares</span>
         ) : exact.data ? (
           <div className="flex flex-col gap-1.5">
-            <span className="flex items-center justify-between text-base-content/60">
-              You receive <span className="text-xs text-base-content/40">exact, simulated</span>
-            </span>
-            <span className="flex flex-col gap-0.5 text-lg">
+            <span className="text-base-content/60">You receive</span>
+            <span className="flex flex-col gap-0.5 font-medium">
               <TokenAmount amount={formatAmount(exact.data.out0, decimals0)} symbol={symbol0} />
               <TokenAmount amount={formatAmount(exact.data.out1, decimals1)} symbol={symbol1} />
             </span>
-            <span className="text-[11px] text-base-content/45">Minimums accepted: 1% below these amounts.</span>
+            <span className="text-xs text-base-content/55">Min 1% below</span>
           </div>
         ) : exact.error ? (
           <span className="text-error">{friendlyError(exact.error, vault.abi).message}</span>
         ) : (
           <div className="flex flex-col gap-1.5">
-            <span className="flex items-center justify-between text-base-content/60">
-              About <span className="text-xs text-base-content/40">estimate</span>
-            </span>
-            <span className="flex flex-col gap-0.5 text-lg">
+            <span className="text-base-content/60">About</span>
+            <span className="flex flex-col gap-0.5 font-medium">
               <TokenAmount amount={formatAmount(est0, decimals0)} symbol={symbol0} />
               <TokenAmount amount={formatAmount(est1, decimals1)} symbol={symbol1} />
             </span>
-            <span className="text-[11px] leading-snug text-base-content/45">
-              Pro-rata share of vault holdings, before uncollected fees. The exact amount is simulated after approval.
-            </span>
+            <span className="text-xs text-base-content/55">Estimate</span>
           </div>
         )}
       </div>
@@ -189,18 +183,17 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
       )}
       <button
         type="button"
-        className="btn btn-primary tp-cta h-12 w-full rounded-xl text-[15px] font-medium shadow-none"
+        className="btn btn-primary h-11 w-full rounded-lg text-sm font-medium shadow-none"
         disabled={Boolean(blockReason) || feedback.busy}
         onClick={withdraw}
       >
         {feedback.busy && <span className="loading loading-spinner loading-sm" />}
         {needsApproval && amount > 0n ? "Approve & withdraw" : "Withdraw"}
       </button>
-      {blockReason && !feedback.busy && <p className="-mt-1 text-center text-xs text-base-content/45">{blockReason}</p>}
+      {blockReason && !feedback.busy && <p className="-mt-2 text-center text-xs text-base-content/55">{blockReason}</p>}
       <TxFeedback state={feedback.state} />
-      <p className="border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-base-content/50">
-        Withdrawals skip the TWAP guard, so you can always exit. You receive {symbol0} and {symbol1} (WHBAR stays
-        wrapped).
+      <p className="border-t border-base-300 pt-4 text-xs text-base-content/55">
+        Always available · paid in {symbol0} and {symbol1}
       </p>
     </div>
   );
