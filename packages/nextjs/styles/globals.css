@@ -120,8 +120,9 @@
     border-color: var(--color-gray-200, currentColor);
   }
 
+  /* Spacing comes from layout utilities; paragraphs carry no default margin. */
   p {
-    margin: 1rem 0;
+    margin: 0;
   }
 
   body {
@@ -172,11 +173,6 @@
 /* Tidepool                                                             */
 /* ------------------------------------------------------------------ */
 
-/* Inside Tidepool screens, paragraphs are spaced by layout, not by the template's global margin. */
-.tp-scope p {
-  margin: 0;
-}
-
 /* Numbers, ticks, addresses and code: mono, aligned digits. */
 .tp-num {
   font-family: var(--font-mono);
@@ -200,6 +196,101 @@
   }
 }
 
+/* Docs pages: Markdown rendered with the design tokens. */
+.tp-prose {
+  overflow-wrap: break-word;
+  color: var(--color-fg);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+.tp-prose > * + * {
+  margin-top: 1rem;
+}
+.tp-prose h2 {
+  margin-top: 2.5rem;
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: 600;
+}
+.tp-prose h3 {
+  margin-top: 2rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+.tp-prose p,
+.tp-prose li {
+  color: rgb(230 237 243 / 0.85);
+}
+.tp-prose strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+.tp-prose a {
+  color: var(--color-teal);
+  text-underline-offset: 3px;
+}
+.tp-prose a:hover {
+  text-decoration: underline;
+}
+.tp-prose ul,
+.tp-prose ol {
+  padding-left: 1.25rem;
+}
+.tp-prose ul {
+  list-style: disc;
+}
+.tp-prose ol {
+  list-style: decimal;
+}
+.tp-prose li + li {
+  margin-top: 0.5rem;
+}
+.tp-prose li::marker {
+  color: var(--color-muted);
+}
+.tp-prose :not(pre) > code {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+}
+.tp-prose blockquote {
+  border-left: 2px solid var(--color-amber);
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  border-radius: 0 8px 8px 0;
+}
+.tp-prose blockquote p {
+  color: var(--color-fg);
+}
+.tp-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+.tp-prose th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-fg);
+  background: var(--color-surface);
+}
+.tp-prose th,
+.tp-prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: top;
+}
+.tp-prose tr:last-child td {
+  border-bottom: 0;
+}
+.tp-prose hr {
+  border-color: var(--color-line);
+}
+
 /* Route progress bar: a flat 2px teal line; no glow. */
 #nprogress .peg {
   display: none;
@@ -218,28 +309,60 @@
 }
 
 /*
-  Contract debugger (/debug): map @scaffold-hbar-ui/debug-contracts' dark palette to Tidepool's.
-  The package defines --color-sui-* on the root element; redefining them on the .tp-debug wrapper only affects
-  descendants of that wrapper, so the Dashboard and other pages are unaffected.
+  Contracts page (/debug): the @scaffold-hbar-ui/debug-contracts palette mapped onto the Tidepool tokens. The package
+  reads --color-sui-* from the root element; redefining them on the .tp-debug wrapper only affects the debugger.
 */
 .tp-debug {
   /* The package's hidden hover tooltips are wider than a phone screen; don't let them widen the page. */
   overflow-x: clip;
-  --color-sui-primary: #7c83ff;
-  --color-sui-primary-subtle: #22252e;
-  --color-sui-primary-neutral: #131418;
-  --color-sui-primary-content: #ffffff;
-  --color-sui-accent: #7c83ff;
-  --color-sui-base-content: #ededf2;
-  --color-sui-base-100: #131418;
-  --color-sui-neutral: #ededf2;
-  --color-sui-neutral-content: #0a0b0f;
-  --color-sui-input-text: #ededf2;
-  --color-sui-input-placeholder: #7b7e89;
-  --color-sui-input-background: #0c0d12;
-  --color-sui-input-border: #2a2d37;
-  --color-sui-input-border-disabled: #22252e;
-  --color-sui-input-border-error: #f47174;
-  --color-sui-skeleton-base: #1a1c23;
-  --color-sui-skeleton-highlight: #262932;
+  --color-sui-primary: #2dd4bf;
+  --color-sui-primary-content: #e6edf3;
+  --color-sui-primary-subtle: #1c2b38;
+  --color-sui-primary-neutral: #0f1820;
+  --color-sui-accent: #2dd4bf;
+  --color-sui-base-content: #e6edf3;
+  --color-sui-base-100: #0f1820;
+  --color-sui-neutral: #e6edf3;
+  --color-sui-neutral-content: #0a1016;
+  --color-sui-input-text: #e6edf3;
+  --color-sui-input-placeholder: #8a9bab;
+  --color-sui-input-background: #0a1016;
+  --color-sui-input-border: #1c2b38;
+  --color-sui-input-border-disabled: #1c2b38;
+  --color-sui-input-border-error: #f87171;
+  --color-sui-skeleton-base: #0f1820;
+  --color-sui-skeleton-highlight: #1c2b38;
+}
+/* No shadows, 8px corners, no letter-spaced uppercase, teal buttons: the site's rules, applied to the debugger. */
+.tp-debug * {
+  box-shadow: none;
+}
+.tp-debug .rounded-3xl,
+.tp-debug [class*="rounded-[22px]"] {
+  border-radius: 8px;
+}
+.tp-debug .rounded-b-3xl {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+.tp-debug .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* The package paints its panels with the same colour it uses for borders; use surfaces instead. */
+.tp-debug .bg-sui-primary-subtle {
+  background-color: var(--color-surface);
+}
+.tp-debug .bg-sui-primary-subtle.text-sm {
+  background-color: var(--color-bg);
+}
+.tp-debug .btn-dc-secondary {
+  background-color: var(--color-teal);
+  color: var(--color-bg);
+}
+.tp-debug .btn-dc-secondary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.tp-debug [class*="border-gray-300"] {
+  border-color: var(--color-line);
 }

@@ -16,7 +16,7 @@ cd <your-project>
 npm run next:dev
 ```
 
-Open http://localhost:3000, connect a wallet on Hedera Testnet (chain 296), and you're looking at the live reference vault.
+Open http://localhost:3000/dashboard, connect a wallet on Hedera Testnet (chain 296), and you're looking at the live reference vault. The site also has a landing page (`/`), How it works (`/how-it-works`), these docs (`/docs`) and a contract debugger (`/debug`).
 
 The commands in this README use npm, the template's default. If you scaffolded with Yarn, drop the `run` (`yarn hardhat:test`). Pass extra flags to npm scripts after `--`, because npm swallows flags like `--network` otherwise.
 
@@ -63,8 +63,11 @@ packages/hardhat/
   scripts/                                   smoke, compound, withdraw, rebalance, move-price, verify
   test/TidepoolVault.test.ts                 unit tests
 packages/nextjs/
-  app/page.tsx                               dashboard
-  app/_components/tidepool/                  dashboard components
+  app/page.tsx                               landing page
+  app/dashboard/page.tsx                     dashboard
+  app/how-it-works/, app/docs/, app/debug/   How it works, docs, contract debugger
+  app/_components/tidepool/                  dashboard components (the Gauge is shared by every page)
+  content/docs/                              docs pages, in Markdown
   hooks/tidepool/                            vault reads, HTS association, keeper preconditions, activity
   utils/tidepool/                            constants, errors, maths, vault list
 ```
@@ -139,7 +142,7 @@ Things that work differently from Ethereum and cost time to discover. Each has a
 
 ## Dashboard
 
-The dashboard shows the vault's holdings, the position's range against spot and TWAP, your share of the vault, and the vault's activity from the mirror node. Deposit and withdraw handle association, HBAR wrapping, approvals, and 1% minimums. The keeper panel lists every condition `compound()` and `rebalance()` check on chain, so you can see why an action is unavailable before paying for it.
+The dashboard shows the position's range against spot and TWAP on a gauge, the vault's holdings, your share of the vault, and the vault's activity from the mirror node. Connected accounts without shares get a Get started checklist (associate, wrap HBAR, get SAUCE, deposit). Deposit and withdraw handle association, HBAR wrapping, approvals, and 1% minimums. The keeper panel lists every condition `compound()` and `rebalance()` check on chain, so you can see why an action is unavailable before paying for it.
 
 `deposit` and `withdraw` are simulated before sending. `compound` and `rebalance` aren't (see gotchas). Vault errors like `PriceDeviation` or `CooldownActive` show as plain-language messages, via small edits to the template's `getParsedError.ts` and `useTransactor.tsx`.
 
@@ -220,7 +223,6 @@ Fees are the network fee charged for each transaction; the SaucerSwap position f
 - Standing allowances are capped per token: a token's `maxSupply` if it has a finite supply (HTS rejects larger allowances with `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY`), otherwise `type(int64).max`. They shrink as the manager and router spend them and are not topped up automatically; once one runs low, compound and rebalance revert until someone calls the permissionless `refreshApprovals()`.
 - The swap-to-ratio step ignores its own price impact, so some tokens can stay idle until the next compound.
 - `getTotalAmounts()` excludes fees that haven't been collected yet. Every deposit, withdraw, compound and rebalance collects first, so this only affects the view.
-- The dashboard's "Fees owed" is SaucerSwap's `tokensOwed`, which only updates when the position is touched. It isn't live claimable fees.
 - Emptied position NFTs stay in the vault after a rebalance. Burning them would need an NFT approval to the manager.
 - Pools with an observation cardinality of 1 can't be used until it's increased (see [Adapt it](#adapt-it)).
 - A contract that calls `compound()` or `rebalance()` must be able to receive HBAR, or the refund reverts with `RefundFailed`.

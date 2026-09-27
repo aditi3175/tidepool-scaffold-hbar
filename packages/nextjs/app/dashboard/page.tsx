@@ -20,7 +20,7 @@ const Dashboard: NextPage = () => {
   const { vault, select } = useSelectedVault();
 
   return (
-    <div className="tp-scope mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
       {/* Keyed by vault so inputs and transaction status reset when switching. */}
       <VaultDashboard key={vault.id} config={vault} onSelect={select} />
     </div>

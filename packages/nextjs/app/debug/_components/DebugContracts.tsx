@@ -34,25 +34,23 @@ export function DebugContracts() {
   return (
     <div className="flex flex-col items-center justify-center gap-y-6 py-8 lg:gap-y-8 lg:py-10">
       {contractNames.length === 0 ? (
-        <p className="mt-14 text-lg text-base-content/60">No contracts found!</p>
+        <p className="mt-14 text-sm text-muted">No contracts are deployed on the selected network.</p>
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-[1200px] px-4 sm:px-6">
               <div
                 role="tablist"
                 aria-label="Contract"
-                className="inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-full border border-white/[0.07] bg-white/[0.025] p-1 sm:w-fit"
+                className="inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-surface p-1 sm:w-fit"
               >
                 {contractNames.map(contractName => (
                   <button
                     role="tab"
                     type="button"
                     aria-selected={contractName === selectedContract}
-                    className={`tp-num flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-all duration-200 sm:flex-none ${
-                      contractName === selectedContract
-                        ? "bg-white/[0.09] text-base-content shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
-                        : "text-base-content/50 hover:text-base-content/80"
+                    className={`tp-num flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm sm:flex-none ${
+                      contractName === selectedContract ? "bg-raised text-fg" : "text-muted hover:text-fg"
                     }`}
                     key={String(contractName)}
                     onClick={() => setSelectedContract(contractName)}

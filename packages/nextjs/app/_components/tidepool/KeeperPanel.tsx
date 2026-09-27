@@ -163,7 +163,7 @@ export const KeeperCard = ({ vault }: { vault: VaultState }) => {
 
   return (
     <Card title="Keeper">
-      <p className="-mt-2 mb-6 text-sm text-muted">
+      <p className="-mt-2 mb-4 text-sm text-muted">
         Anyone can call these. The caller pays the SaucerSwap fee and gas; nobody&apos;s shares change.
       </p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

@@ -20,16 +20,16 @@ export const ContractUI = ({ contractName }: ContractUIProps) => {
 
   if (deployedContractLoading) {
     return (
-      <div className="mt-14">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
+      <p className="mt-14 flex items-center gap-2 text-sm text-muted">
+        <span className="loading loading-spinner loading-sm text-teal" /> Loading the contract…
+      </p>
     );
   }
 
   if (!deployedContractData) {
     return (
-      <p className="text-3xl mt-14">
-        No contract found by the name of {String(contractName)} on chain {targetNetwork.name}!
+      <p className="mt-14 text-sm text-muted">
+        No {String(contractName)} deployment was found on {targetNetwork.name}.
       </p>
     );
   }

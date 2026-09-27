@@ -53,12 +53,12 @@ as the password is accepted. Never run them from an agent without the user's go-
 - `packages/hardhat/utils/preflightInitialize.ts` — both deploy scripts run `initialize()` as an `eth_call` first and
   stop, printing the revert reason, if it would revert
 - `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
-- `packages/nextjs/app/page.tsx` + `packages/nextjs/app/_components/tidepool/*` — dashboard, laid out as "the loop":
-  `VaultSelector`; `VaultHero` (holdings, `VaultStatusPill`, and `YourStake` from `YourPosition.tsx`); numbered
-  `LoopStage`s (`Loop.tsx`) for 01 Price and 02 Range (`PriceRange.tsx`, chart in `RangeChart.tsx`), 03 Fees
-  (`FeesStage.tsx`), and 04 Compound / 05 Rebalance (`KeepStages` in `KeeperPanel.tsx`); the sticky Act column
-  (`UserActions` with `DepositCard`/`WithdrawCard` and `AssociateButton`); the `ActivityFeed` timeline; shared
-  `TxRail.tsx` (transaction steps), `motion.tsx` (number tweens, reveals, range highlight) and `ui.tsx`
+- `packages/nextjs/app/` — `page.tsx` (landing), `how-it-works/`, `dashboard/`, `docs/` (renders
+  `content/docs/*.md`, listed in `app/_components/docs/manifest.ts`), `debug/` (Contracts)
+- `packages/nextjs/app/_components/tidepool/*` — `Gauge.tsx` (the shared range gauge) and `LiveGauge.tsx` (gauge from
+  vault state); dashboard cards: `PositionCard` (gauge + stats), `HoldingsCard` (vault holdings, your position),
+  `GetStarted` (first-deposit checklist), `UserActions` with `DepositCard`/`WithdrawCard`/`AssociateButton`,
+  `KeeperPanel` (compound and rebalance), `ActivityFeed`; shared `ui.tsx`, `InfoTip.tsx`, `TxRail.tsx`, `CopyButton.tsx`
 - `packages/nextjs/hooks/tidepool/` — `useVault` (vault, idle balances, `positions()`, chain time), `useUserPosition`,
   `useHtsAccount`, `useKeeperStatus` (keeper checklist and fee/gas quotes), `useTxFeedback` (inline tx status and
   mirror-node revert reasons), `useSelectedVault`, `useWalletGate`, `useVaultActivity`

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
  * is a filled band between two marks, the spot price is the water line (solid), and the TWAP is a dashed line.
  * Teal band when the TWAP is inside the range, amber when it has left it (the contract's own in-range rule).
  * Labels are placed by measured width so they never overlap: spot and TWAP merge into one label when close, and ruler
- * labels give way to the range bounds.
+ * labels give way to the range bounds. A spot or TWAP beyond the ruler is shown as an edge marker ("45.87 →"), not a line.
  */
 
 export type GaugeProps = {
@@ -21,7 +21,7 @@ export type GaugeProps = {
   price: (tick: number) => string;
   /** A previous range, drawn as a dashed outline (used to illustrate a rebalance). */
   ghost?: { lower: number; upper: number };
-  /** A fixed axis (ticks). Default: the range with half its width on each side, widened to include spot and TWAP. */
+  /** A fixed axis (ticks). Default: the range with half its width on each side. */
   domain?: { min: number; max: number };
   size?: "lg" | "md";
   /** Accessible description prefix, e.g. "WHBAR/SAUCE vault". */
@@ -63,8 +63,10 @@ export const Gauge = ({ lower, upper, spot, twap, price, ghost, domain, size = "
   const [ref, width] = useWidth<HTMLDivElement>();
 
   const span = upper - lower;
-  const min = domain?.min ?? Math.min(lower - span / 2, spot ?? lower, twap ?? lower);
-  const max = domain?.max ?? Math.max(upper + span / 2, spot ?? upper, twap ?? upper);
+  const min = domain?.min ?? lower - span / 2;
+  const max = domain?.max ?? upper + span / 2;
+  /** Where a tick sits relative to the visible ruler. */
+  const side = (tick: number) => (tick < min ? "left" : tick > max ? "right" : "in");
   const pct = (tick: number) => ((Math.min(Math.max(tick, min), max) - min) / (max - min)) * 100;
   const px = (tick: number) => (pct(tick) / 100) * width;
 
@@ -90,13 +92,20 @@ export const Gauge = ({ lower, upper, spot, twap, price, ghost, domain, size = "
   // --- Marker labels (top row): spot and TWAP, merged when they would touch.
   const markers: Placed[] = [];
   if (width > 0) {
-    const make = (text: string, tick: number, tone: string, key: string): Placed => ({
-      text,
-      x: px(tick),
-      width: text.length * CHAR_PX + PAD_PX,
-      tone,
-      key,
-    });
+    // Beyond the ruler: an arrow towards the edge, anchored at that edge.
+    const arrow = (text: string, where: string) =>
+      where === "left" ? `← ${text}` : where === "right" ? `${text} →` : text;
+    const make = (text: string, tick: number, tone: string, key: string): Placed => {
+      const where = side(tick);
+      const shown = arrow(text, where);
+      return {
+        text: shown,
+        x: where === "left" ? 0 : where === "right" ? width : px(tick),
+        width: shown.length * CHAR_PX + PAD_PX,
+        tone,
+        key,
+      };
+    };
     const s = spot !== undefined ? make(`Spot ${price(spot)}`, spot, "text-fg", "spot") : undefined;
     const t = twap !== undefined ? make(`TWAP ${price(twap)}`, twap, "text-twap", "twap") : undefined;
     if (s && t) {
@@ -105,8 +114,12 @@ export const Gauge = ({ lower, upper, spot, twap, price, ghost, domain, size = "
       const overlap = sLeft < tLeft + t.width + GAP_PX && tLeft < sLeft + s.width + GAP_PX;
       if (overlap) {
         const same = price(spot!) === price(twap!);
-        const text = same ? `Spot = TWAP ${price(spot!)}` : `Spot ${price(spot!)} · TWAP ${price(twap!)}`;
-        markers.push({ text, x: (s.x + t.x) / 2, width: text.length * CHAR_PX + PAD_PX, tone: "text-fg", key: "both" });
+        const base = same ? `Spot = TWAP ${price(spot!)}` : `Spot ${price(spot!)} · TWAP ${price(twap!)}`;
+        // Merged: towards whichever edge a marker is beyond, otherwise centred between the two.
+        const edge = side(spot!) !== "in" ? side(spot!) : side(twap!);
+        const text = arrow(base, edge);
+        const x = edge === "left" ? 0 : edge === "right" ? width : (s.x + t.x) / 2;
+        markers.push({ text, x, width: text.length * CHAR_PX + PAD_PX, tone: "text-fg", key: "both" });
       } else {
         markers.push(s, t);
       }
@@ -206,14 +219,14 @@ export const Gauge = ({ lower, upper, spot, twap, price, ghost, domain, size = "
             style={{ left: `${pct(lower)}%`, width: `${pct(upper) - pct(lower)}%` }}
             aria-hidden
           />
-          {twap !== undefined && (
+          {twap !== undefined && side(twap) === "in" && (
             <div
               className={`absolute -top-1 bottom-0 w-0 border-l-2 border-dashed border-twap ${glide}`}
               style={{ left: `calc(${pct(twap)}% - 1px)` }}
               aria-hidden
             />
           )}
-          {spot !== undefined && (
+          {spot !== undefined && side(spot) === "in" && (
             <div
               className={`absolute -top-1 bottom-0 w-0.5 bg-fg ${glide}`}
               style={{ left: `calc(${pct(spot)}% - 1px)` }}
