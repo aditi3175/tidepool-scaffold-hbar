@@ -200,6 +200,11 @@
   }
 }
 
+/* Route progress bar: a flat 2px teal line; no glow. */
+#nprogress .peg {
+  display: none;
+}
+
 /* Details/summary without the default marker. */
 .tp-details > summary {
   list-style: none;

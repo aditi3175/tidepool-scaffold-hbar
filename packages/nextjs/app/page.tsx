@@ -46,7 +46,7 @@ const Landing: NextPage = () => (
   <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-4 pt-12 sm:px-6 sm:pt-16">
     <section className="flex flex-col gap-8">
       <div className="max-w-3xl">
-        <h1 className="m-0 text-title font-semibold tracking-tight text-fg sm:text-display">
+        <h1 className="m-0 text-balance text-title font-semibold tracking-tight text-fg sm:text-display">
           Concentrated liquidity that looks after itself
         </h1>
         <p className="mt-4 max-w-2xl text-base text-muted">
@@ -90,9 +90,10 @@ const Landing: NextPage = () => (
           Scaffolds the contracts, deploy scripts, tests and this site. The dashboard already points at the testnet
           vault.
         </p>
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-line bg-surface p-2 pl-4">
-          <code className="tp-num min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-sm text-fg">
-            {SCAFFOLD_COMMAND}
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-line bg-surface p-2 pl-4">
+          {/* Shown on two lines (break before --template); the copy button copies the one-line command. */}
+          <code className="tp-num min-w-0 flex-1 whitespace-pre-wrap break-all py-1.5 text-sm text-fg">
+            {SCAFFOLD_COMMAND.replace(" --template", "\n  --template")}
           </code>
           <CopyButton text={SCAFFOLD_COMMAND} />
         </div>

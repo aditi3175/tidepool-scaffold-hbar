@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowUpRightIcon } from "@heroicons/react/20/solid";
+import { InfoTip } from "~~/app/_components/tidepool/InfoTip";
 import type { CheckStatus } from "~~/hooks/tidepool/useKeeperStatus";
 import type { TxFeedbackState } from "~~/hooks/tidepool/useTxFeedback";
 import { hashscan } from "~~/utils/tidepool/hashscan";
@@ -49,11 +50,14 @@ export const Card = ({
   </section>
 );
 
-/** A short label over a value. */
-export const Stat = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
+/** A short label over a value, with an optional "?" explanation. */
+export const Stat = ({ label, tip, children }: { label: string; tip?: ReactNode; children: ReactNode }) => (
   <div className="min-w-0">
-    <div className="text-xs text-base-content/55">{label}</div>
-    <div className="tp-num mt-1 truncate text-sm font-medium text-base-content">{children}</div>
+    <div className="flex items-center gap-1 text-xs text-muted">
+      {label}
+      {tip && <InfoTip label={label}>{tip}</InfoTip>}
+    </div>
+    <div className="tp-num mt-1 truncate text-sm font-medium text-fg">{children}</div>
   </div>
 );
 

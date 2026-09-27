@@ -8,7 +8,6 @@ import { WrongNetworkDropdown } from "./WrongNetworkDropdown";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Balance } from "@scaffold-hbar-ui/components";
 import { Address } from "viem";
-import { useNetworkColor } from "~~/hooks/scaffold-hbar";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar/useTargetNetwork";
 import { getBlockExplorerAddressLink } from "~~/utils/scaffold-hbar";
 
@@ -16,7 +15,6 @@ import { getBlockExplorerAddressLink } from "~~/utils/scaffold-hbar";
  * Custom Wagmi Connect Button (watch balance + custom design)
  */
 export const RainbowKitCustomConnectButton = () => {
-  const networkColor = useNetworkColor();
   const { targetNetwork } = useTargetNetwork();
 
   return (
@@ -57,9 +55,7 @@ export const RainbowKitCustomConnectButton = () => {
                         fontSize: "0.8em",
                       }}
                     />
-                    <span className="text-[11px]" style={{ color: networkColor }}>
-                      {chain.name}
-                    </span>
+                    <span className="text-xs text-muted">{chain.name}</span>
                   </div>
                   <AddressInfoDropdown
                     address={account.address as Address}

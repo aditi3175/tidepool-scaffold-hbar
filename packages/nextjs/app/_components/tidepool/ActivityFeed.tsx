@@ -1,4 +1,12 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
+import {
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ArrowUpTrayIcon,
+  ArrowsRightLeftIcon,
+  BanknotesIcon,
+  FlagIcon,
+} from "@heroicons/react/20/solid";
 import { Card, ExternalLink, Skeleton } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { ACTIVITY_LIMIT, type VaultEvent, useVaultActivity } from "~~/hooks/tidepool/useVaultActivity";
@@ -13,6 +21,15 @@ const LABELS: Record<string, string> = {
   FeesCollected: "Fees collected",
   Compound: "Compound",
   Rebalance: "Rebalance",
+};
+
+const ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+  Initialized: FlagIcon,
+  Deposit: ArrowDownTrayIcon,
+  Withdraw: ArrowUpTrayIcon,
+  FeesCollected: BanknotesIcon,
+  Compound: ArrowPathIcon,
+  Rebalance: ArrowsRightLeftIcon,
 };
 
 const big = (value: unknown) => (typeof value === "bigint" ? value : undefined);
@@ -58,9 +75,9 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
           ))}
         </div>
       ) : error ? (
-        <p className="text-sm text-error">Could not load activity: {error.message}</p>
+        <p className="text-sm text-danger">Could not load events from the mirror node: {error.message}</p>
       ) : !events?.length ? (
-        <p className="text-sm text-base-content/55">No activity yet</p>
+        <p className="text-sm text-muted">No events yet. Deposits, compounds and rebalances will appear here.</p>
       ) : (
         <div role="table" aria-label="Vault events" className="text-sm">
           <div
@@ -79,7 +96,11 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
               key={`${event.transactionHash}-${event.logIndex}`}
               className="grid grid-cols-1 gap-1 border-b border-base-300 py-2 last:border-b-0 sm:grid-cols-[9rem_1fr_13rem] sm:gap-4"
             >
-              <span role="cell" className="font-medium">
+              <span role="cell" className="flex items-center gap-2 font-medium">
+                {(() => {
+                  const Icon = ICONS[event.name] ?? FlagIcon;
+                  return <Icon className="h-4 w-4 shrink-0 text-muted" aria-hidden />;
+                })()}
                 {LABELS[event.name] ?? event.name}
               </span>
               <span role="cell" className="tp-num min-w-0 break-words text-base-content/70">

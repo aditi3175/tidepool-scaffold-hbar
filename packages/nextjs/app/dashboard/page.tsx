@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import { ActivityFeed } from "~~/app/_components/tidepool/ActivityFeed";
-import { HoldingsCard } from "~~/app/_components/tidepool/HoldingsCard";
+import { GetStarted } from "~~/app/_components/tidepool/GetStarted";
+import { VaultHoldingsCard, YourPositionCard } from "~~/app/_components/tidepool/HoldingsCard";
 import { KeeperCard } from "~~/app/_components/tidepool/KeeperPanel";
 import { PositionCard, SpotPrice, VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
 import { UserActions } from "~~/app/_components/tidepool/UserActions";
@@ -15,19 +16,28 @@ import { useUserPosition } from "~~/hooks/tidepool/useUserPosition";
 import { useVault } from "~~/hooks/tidepool/useVault";
 import type { TidepoolVaultConfig, TidepoolVaultId } from "~~/utils/tidepool/vaults";
 
-const Home: NextPage = () => {
+const Dashboard: NextPage = () => {
   const { vault, select } = useSelectedVault();
 
   return (
-    <div className="tp-scope mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-4 sm:px-6">
-      <p className="text-sm text-base-content/60">
-        Automated SaucerSwap V2 liquidity vault ·{" "}
-        <Link href="/docs" className="text-primary hover:underline">
-          Docs
-        </Link>
-      </p>
+    <div className="tp-scope mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
       {/* Keyed by vault so inputs and transaction status reset when switching. */}
       <VaultDashboard key={vault.id} config={vault} onSelect={select} />
+    </div>
+  );
+};
+
+/** One line on what the vault is and a Connect button, for visitors without a wallet connected. */
+const ConnectPrompt = () => {
+  const { openConnectModal } = useConnectModal();
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3">
+      <p className="text-sm text-muted">
+        This vault owns one SaucerSwap V2 position on Hedera testnet. Connect a wallet to deposit.
+      </p>
+      <button type="button" className="btn btn-primary btn-sm h-9 rounded-lg px-4" onClick={openConnectModal}>
+        Connect wallet
+      </button>
     </div>
   );
 };
@@ -44,7 +54,7 @@ const VaultDashboard = ({
   const user = useUserPosition(vault);
   const ready = !vault.isLoading && !vault.notFound;
 
-  const topRow = (
+  const topBar = (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <VaultSelector selected={config} onSelect={onSelect} />
       {ready && (
@@ -53,17 +63,20 @@ const VaultDashboard = ({
           <SpotPrice vault={vault} />
         </>
       )}
-      {config.demo && <span className="text-xs text-warning">Demo vault for rebalance tests</span>}
+      {config.demo && <span className="text-xs text-amber">Demo vault for rebalance tests</span>}
     </div>
   );
 
   if (vault.isLoading) {
     return (
       <>
-        {topRow}
+        {topBar}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]" aria-busy>
-          <Skeleton className="h-80 w-full rounded-xl" />
-          <Skeleton className="h-80 w-full rounded-xl" />
+          <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-6">
+            <p className="text-sm text-muted">Loading the vault from Hedera testnet…</p>
+            <Skeleton className="h-[172px] w-full rounded-lg" />
+          </div>
+          <Skeleton className="h-80 w-full rounded-lg" />
         </div>
       </>
     );
@@ -72,12 +85,12 @@ const VaultDashboard = ({
   if (vault.notFound) {
     return (
       <>
-        {topRow}
-        <div className="rounded-xl border border-base-300 bg-base-100 p-6 text-sm">
+        {topBar}
+        <div className="rounded-lg border border-line bg-surface p-6 text-sm">
           <h2 className="m-0 text-base font-semibold">
             {config.label} not found on {targetNetwork.name}
           </h2>
-          <p className="mt-2 text-base-content/60">
+          <p className="mt-2 text-muted">
             {config.demo
               ? "No TidepoolVaultNarrow deployment was found for this network. Deploy one with `npm run hardhat:deploy:narrow`, which regenerates contracts/deployedContracts.ts."
               : "No TidepoolVault deployment was found for this network. Deploy one with `npm run hardhat:deploy:testnet`, which regenerates contracts/deployedContracts.ts."}
@@ -87,25 +100,32 @@ const VaultDashboard = ({
     );
   }
 
+  const hasShares = (user.shares ?? 0n) > 0n;
+
   return (
     <>
-      {topRow}
+      {topBar}
+      {!user.connected && <ConnectPrompt />}
       {vault.readError && (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-sm"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/10 px-4 py-2 text-sm"
         >
           <span>Could not read the vault: {vault.readError}</span>
-          <button type="button" className="btn btn-xs shadow-none" onClick={() => void vault.refetch()}>
+          <button type="button" className="btn btn-xs rounded-lg" onClick={() => void vault.refetch()}>
             Retry
           </button>
         </div>
       )}
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <PositionCard vault={vault} />
         <div className="flex min-w-0 flex-col gap-6">
-          <HoldingsCard vault={vault} user={user} />
+          <PositionCard vault={vault} />
+          {user.connected && user.shares !== undefined && !hasShares && <GetStarted vault={vault} user={user} />}
+          {user.connected && hasShares && <YourPositionCard vault={vault} user={user} />}
+        </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <VaultHoldingsCard vault={vault} />
           <UserActions vault={vault} user={user} />
         </div>
       </div>
@@ -116,4 +136,4 @@ const VaultDashboard = ({
   );
 };
 
-export default Home;
+export default Dashboard;

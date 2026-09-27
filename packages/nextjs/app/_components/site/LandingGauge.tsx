@@ -27,7 +27,7 @@ export const LandingGauge = () => {
           Open dashboard
         </Link>
       </div>
-      <LiveGauge vault={vault} />
+      <LiveGauge vault={vault} size="md" />
       <p className="mt-4 text-xs text-muted">Live from the main vault on Hedera testnet</p>
     </section>
   );

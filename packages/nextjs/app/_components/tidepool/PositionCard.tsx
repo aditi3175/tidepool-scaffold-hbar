@@ -2,7 +2,7 @@ import { LiveGauge } from "~~/app/_components/tidepool/LiveGauge";
 import { Card, ExternalLink, Skeleton, Stat, StatePill } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { hashscan } from "~~/utils/tidepool/hashscan";
-import { formatAmount, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
+import { formatAmount, formatDuration, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
 
 /** The vault's live state, from getPriceState() and positionSerial. */
 export const VaultStatusPill = ({ vault }: { vault: VaultState }) => {
@@ -44,26 +44,50 @@ export const PositionCard = ({ vault }: { vault: VaultState }) => {
   const apart = spotTick !== undefined && twapTick !== undefined ? Math.abs(spotTick - twapTick) : undefined;
   const over = apart !== undefined && vault.maxTwapDeviation !== undefined && apart > vault.maxTwapDeviation;
 
+  const windowText =
+    vault.twapWindow === undefined
+      ? "the TWAP window"
+      : vault.twapWindow % 60 === 0
+        ? `${vault.twapWindow / 60} minutes`
+        : formatDuration(vault.twapWindow);
+  const limit = vault.maxTwapDeviation ?? "–";
+
   return (
     <Card title="Position">
       <LiveGauge vault={vault} />
-      <div className="mt-4 grid grid-cols-2 gap-4 border-t border-base-300 pt-4 sm:grid-cols-4">
-        <Stat label="TWAP">{price(twapTick)}</Stat>
-        <Stat label="Ticks apart">
-          <span className={over ? "text-error" : undefined}>
-            {apart ?? "–"} / {vault.maxTwapDeviation ?? "–"}
+      <div className="mt-4 grid grid-cols-2 gap-4 border-t border-line pt-4 sm:grid-cols-5">
+        <Stat label="Spot" tip="The pool's price right now.">
+          {price(spotTick)}
+        </Stat>
+        <Stat
+          label="TWAP"
+          tip={`The pool's average price over the last ${windowText}. The vault acts on this, not on spot.`}
+        >
+          {price(twapTick)}
+        </Stat>
+        <Stat
+          label="Ticks apart"
+          tip={`How far spot is from the TWAP. Above ${limit} ticks the vault pauses deposits, compounds and rebalances; withdrawals still work.`}
+        >
+          <span className={over ? "text-danger" : undefined}>
+            {apart ?? "–"} / {limit}
           </span>
         </Stat>
-        <Stat label="LP NFT">
+        <Stat label="LP NFT" tip="The SaucerSwap position NFT the vault owns. Opens on HashScan.">
           {vault.positionSerial !== undefined && vault.positionSerial > 0n && vault.positionNft ? (
             <ExternalLink href={hashscan.nft(vault.positionNft, vault.positionSerial)}>
               #{vault.positionSerial.toString()}
             </ExternalLink>
           ) : (
-            "–"
+            "None yet"
           )}
         </Stat>
-        <Stat label="Liquidity">{formatAmount(vault.liquidity, 0)}</Stat>
+        <Stat
+          label="Liquidity"
+          tip="The position's liquidity, in SaucerSwap's own units. It grows when fees are compounded."
+        >
+          {vault.hasPosition === false ? "0" : formatAmount(vault.liquidity, 0)}
+        </Stat>
       </div>
     </Card>
   );

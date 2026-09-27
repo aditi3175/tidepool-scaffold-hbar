@@ -237,7 +237,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
       )}
 
       <div className="flex flex-col gap-2">
-        {fields.map(field => (
+        {fields.map((field, i) => (
           <label
             key={field.symbol}
             className={`flex flex-col gap-2 rounded-lg border bg-base-200 px-3 py-2 focus-within:border-primary/60 ${
@@ -252,6 +252,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
             </span>
             <span className="flex items-center gap-3">
               <input
+                id={`deposit-input-${i}`}
                 className="tp-num w-full min-w-0 bg-transparent text-xl text-base-content outline-none placeholder:text-base-content/30 disabled:opacity-50"
                 inputMode="decimal"
                 placeholder="0.0"
@@ -337,7 +338,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
 
       <div className="flex flex-col gap-2 border-t border-base-300 pt-4 text-xs text-base-content/60">
         {whbarInPool && (
-          <details className="tp-details group">
+          <details id="wrap-hbar" className="tp-details group">
             <summary className="flex select-none items-center justify-between hover:text-base-content/80">
               Wrap HBAR to WHBAR
               <span className="tp-chevron text-base-content/50" aria-hidden>
@@ -348,6 +349,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
               <label className="flex grow flex-col gap-1.5">
                 <span>HBAR to wrap</span>
                 <input
+                  id="wrap-input"
                   className="input input-sm tp-num w-full border-base-300 bg-base-200"
                   inputMode="decimal"
                   placeholder="0.0"

@@ -58,7 +58,7 @@ export const ScaffoldHbarAppWithProviders = ({ children }: { children: React.Rea
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ProgressBar height="2px" color="#2dd4bf" />
+        <ProgressBar height="2px" color="#2dd4bf" options={{ showSpinner: false }} />
         <RainbowKitProvider avatar={BlockieAvatar} initialChain={hederaTestnet} theme={rainbowKitTheme}>
           <ScaffoldHbarApp>{children}</ScaffoldHbarApp>
         </RainbowKitProvider>

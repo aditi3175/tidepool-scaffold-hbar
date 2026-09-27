@@ -9,6 +9,23 @@ import { formatAmount } from "~~/utils/tidepool/math";
 
 type Feedback = ReturnType<typeof useTxFeedback>;
 
+/**
+ * Short, plain reasons keyed by the condition labels useKeeperStatus reports. The full text stays in the Conditions
+ * list; unknown labels fall back to the label itself.
+ */
+const SHORT_REASON: Record<string, string> = {
+  "Vault initialized": "the vault is not initialized yet.",
+  "TWAP available": "the pool's price history is too short.",
+  "Price guard": "the price moved too fast; wait for the TWAP.",
+  "Tokens to open a position": "the vault holds no tokens yet.",
+  "Tokens to add": "nothing to add yet.",
+  "Position fee quoted": "the fee quote is unavailable.",
+  "TWAP inside range": "the price left the range; use Rebalance.",
+  "Position exists": "there is no position yet.",
+  "Cooldown over": "the cooldown is still running.",
+  "TWAP outside range": "the price is still inside the range.",
+};
+
 /** One keeper action: status line, button, fee and gas limit, and the collapsed conditions checklist. */
 const KeeperAction = ({
   title,
@@ -28,7 +45,8 @@ const KeeperAction = ({
   onRun: () => void;
 }) => {
   const checking = !status.ready && status.checks.some(check => check.status === "loading");
-  const blocked = status.checks.some(check => check.status === "blocked");
+  const firstBlocked = status.checks.find(check => check.status === "blocked");
+  const blocked = Boolean(firstBlocked);
   const met = status.checks.filter(check => check.status === "ok" || check.status === "warn").length;
 
   return (
@@ -39,15 +57,19 @@ const KeeperAction = ({
           {met}/{status.checks.length} conditions
         </span>
       </div>
-      <p className="line-clamp-2 min-h-10 text-sm" role="status">
+      <p className="text-sm" role="status">
         {status.ready ? (
-          <span className="text-success">Ready</span>
+          <span className="text-teal">Ready</span>
         ) : checking && !blocked ? (
           <span className="text-base-content/60">Checking…</span>
         ) : (
           <>
-            <span className="text-error">Blocked: </span>
-            <span className="text-base-content/75">{status.reason}</span>
+            <span className="text-danger">Blocked:</span>{" "}
+            <span className="text-muted">
+              {firstBlocked
+                ? (SHORT_REASON[firstBlocked.label] ?? `${firstBlocked.label.toLowerCase()}.`)
+                : status.reason}
+            </span>
           </>
         )}
       </p>
@@ -140,7 +162,10 @@ export const KeeperCard = ({ vault }: { vault: VaultState }) => {
   const compoundLabel = vault.hasPosition === false ? "Open position" : "Compound";
 
   return (
-    <Card title="Keeper" actions={<span className="text-xs text-base-content/55">Anyone can call</span>}>
+    <Card title="Keeper">
+      <p className="-mt-2 mb-6 text-sm text-muted">
+        Anyone can call these. The caller pays the SaucerSwap fee and gas; nobody&apos;s shares change.
+      </p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <KeeperAction
           title={compoundLabel}
