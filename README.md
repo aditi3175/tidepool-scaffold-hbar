@@ -127,7 +127,7 @@ Each compound costs SaucerSwap's position fee (5 US cents in HBAR, ≈ 0.64 HBAR
 
 Things that work differently from Ethereum and cost time to discover. Each has a longer write-up with a reproduction in `docs/ARCHITECTURE.md` §7.
 
-- **HTS amounts are `int64`.** An 18-decimal share token would cap supply at about 9.2 tokens. Tidepool uses 8 decimals, and approvals use `type(int64).max`, not `uint256` max.
+- **HTS amounts are `int64`.** An 18-decimal share token would cap supply at about 9.2 tokens. Tidepool uses 8 decimals, and approvals never use `uint256` max: each standing allowance is the token's max supply (finite-supply tokens) or `type(int64).max`.
 - **Contracts must associate before receiving tokens.** The vault associates itself with both pool tokens and the SaucerSwap LP NFT collection in `initialize()`. Users associate the share token from their wallet (HIP-719: call `associate()` on the token address). The dashboard shows the button.
 - **Association from a contract is expensive gas.** Roughly 650–700k gas each. `initialize()` needs about 2.3M in total, and a 2M limit fails with `HtsCallFailed(21)`.
 - **HBAR has two unit systems.** JSON-RPC `value` is weibar (18 decimals); contracts see tinybar (8 decimals). Multiply tinybars by 1e10 in the frontend.
@@ -219,6 +219,7 @@ The full log, including the failed first `initialize` attempt that found the ass
 - Each compound or rebalance costs the SaucerSwap position fee (≈ 0.64 HBAR on testnet) plus gas (TBD-REDEPLOY). Compounding small fees loses money.
 - The vault gives the SaucerSwap position manager and swap router standing allowances (set once in `initialize()`) to avoid about 700k gas per approval on every call. Both addresses are immutable and checked against the SaucerSwap factory in the constructor.
 - compound() refuses to add to a position whose range no longer contains the TWAP (OutOfRange). Call rebalance() instead.
+- Standing allowances are capped per token: a token's `maxSupply` if it has a finite supply (HTS rejects larger allowances with `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY`), otherwise `type(int64).max`. They shrink as the manager and router spend them and are not topped up automatically; once one runs low, compound and rebalance revert until someone calls the permissionless `refreshApprovals()`.
 - The swap-to-ratio step ignores its own price impact, so some tokens can stay idle until the next compound.
 - `getTotalAmounts()` excludes fees that haven't been collected yet. Every deposit, withdraw, compound and rebalance collects first, so this only affects the view.
 - The dashboard's "Fees owed" is SaucerSwap's `tokensOwed`, which only updates when the position is touched. It isn't live claimable fees.

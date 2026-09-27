@@ -3,6 +3,7 @@ import type { DeployFunction } from "hardhat-deploy/types";
 
 import { TIDEPOOL } from "../tidepool.config";
 import { getDeployGasPrice } from "../utils/getDeployGasPrice";
+import { preflightInitialize } from "../utils/preflightInitialize";
 
 /**
  * Deploys TidepoolVault against live SaucerSwap V2 contracts, then calls initialize(),
@@ -50,9 +51,16 @@ const deployTidepoolVault: DeployFunction = async function (hre: HardhatRuntimeE
   // Testnet, before standing approvals: initialize used 2,313,512 (three associations + token creation; 2M ran out).
   // The four standing approvals add ~4 x 705,424 (the per-approval cost measured on testnet), so ~5.14M in total.
   // Not re-measured yet; 8M leaves headroom, and Hedera charges gas used, not the limit.
+  const initOverrides = {
+    value: hre.ethers.parseEther(params.initializeHbar).toString(),
+    gasLimit: 8_000_000,
+    gasPrice,
+  };
+  // Same call, value and gas as an eth_call first; a revert prints the reason and stops before anything is sent.
+  await preflightInitialize(hre, "TidepoolVault", deployer, params.shareName, params.shareSymbol, initOverrides);
   await execute(
     "TidepoolVault",
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
+    { from: deployer, ...initOverrides },
     "initialize",
     params.shareName,
     params.shareSymbol,

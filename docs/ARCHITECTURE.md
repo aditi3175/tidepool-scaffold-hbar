@@ -305,9 +305,12 @@ share token auto-renew period 7 776 000 s (90 days).
 1. `associateTokens(this, [token0, token1, positionNft])` via `0x167` → must return 22 (SUCCESS).
 2. `createFungibleToken` with treasury = vault, supply key = `contractId(vault)`, auto-renew account = vault,
    initial supply 0, decimals 8. `msg.value` is forwarded (HederaTokenService helper does `call{value: msg.value}`).
-3. Standing allowances: `forceApprove(positionManager)` and `forceApprove(swapRouter)` on token0 and token1, each
-   `type(int64).max` (HTS allowances are int64, so `type(uint256).max` is not valid). Paid once here (~705k gas
-   each) instead of six approvals on every compound/rebalance.
+3. Standing allowances: a cap per token from `getFungibleTokenInfo` (finite supply → `maxSupply`; infinite supply,
+   or a failed lookup such as a non-HTS token → `type(int64).max`), stored as `approvalCap0/1`, then a plain
+   `approve` of that cap to `positionManager` and `swapRouter` on each token, with the result checked (a rejection
+   reverts once; no `forceApprove` reset-and-retry). HTS allowances are int64, so `type(uint256).max` is never
+   valid, and HTS rejects an allowance above a finite token's max supply (`AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY`, see
+   §17a). Paid once here (~705k gas each) instead of six approvals on every compound/rebalance.
 4. Any HBAR left in the vault is refunded to the deployer. Deploy script sends **30 HBAR**
    (TokenCreate $1.00 + 20% ≈ 15.4 HBAR at 7.8 ¢/HBAR, with headroom). [CHAIN]: the token creation kept 15.27009466 HBAR
    and the vault refunded 14.72990534 HBAR, on both testnet vaults. `initialize` used ~2.31M gas (three associations)
@@ -367,9 +370,10 @@ Both computations run in the same transaction against the same `0x168` rate, so 
 1. `totalShares` equals the share token's HTS total supply (every mint/burn goes through `_mintShares`/`_burnShares`).
 2. `totalShares ≥ DEAD_SHARES` once anyone has deposited.
 3. The vault holds no HBAR at rest (all fee HBAR is forwarded or refunded in the same call).
-4. The vault's only token allowances are the standing `type(int64).max` allowances on token0 and token1 to the
-   immutable `positionManager` and `swapRouter`, granted once in `initialize()`. No function grants, raises or
-   clears an allowance after that. (The manager and router are SaucerSwap contracts checked in the constructor:
+4. The vault's only token allowances are the standing allowances on token0 and token1 to the immutable
+   `positionManager` and `swapRouter`, never above `approvalCap0/1` (set once in `initialize()`). They are granted
+   in `initialize()` and re-granted, to the same caps, only by the permissionless `refreshApprovals()`; no other
+   function grants, raises or clears an allowance. (The manager and router are SaucerSwap contracts checked in the constructor:
    the pool must come from the manager's factory and the router must report the same factory.)
 5. `tickLower`/`tickUpper` are multiples of `tickSpacing`, `tickLower < tickUpper`.
 
@@ -385,13 +389,14 @@ Both computations run in the same transaction against the same `0x168` rate, so 
 | Keeper griefing (calling repeatedly) | Caller pays the ≈ 0.64 HBAR fee each time; rebalance cooldown. |
 | Oracle unavailable | `TwapUnavailable` → deposit/compound/rebalance stop; **withdraw still works**. |
 | HBAR stuck | Exact-fee forwarding + refunds; `initialize` refunds leftovers. |
-| Standing allowances to manager and router | Both addresses are immutable and checked against the SaucerSwap factory in the constructor; the vault trusts SaucerSwap's manager and router code (it already holds its position in them). Allowance is `type(int64).max` per token and decreases as it is spent: ~9.2e10 WHBAR (8 dp) or ~9.2e12 SAUCE (6 dp) before it would run out; there is no function to top it up. |
+| Standing allowances to manager and router | Both addresses are immutable and checked against the SaucerSwap factory in the constructor; the vault trusts SaucerSwap's manager and router code (it already holds its position in them). Allowance per token is its max supply if finite (SAUCE on testnet: 1e15 units = 1e9 SAUCE), otherwise `type(int64).max` (~9.2e10 WHBAR at 8 dp). It decreases as it is spent; `refreshApprovals()` (permissionless, fixed spenders and amounts) restores it. |
 | int64 overflow of shares | `SafeCast.toInt64` reverts. Headroom: ~9.2e8× growth over the first deposit. |
 | Rounding | Deposits round amounts **up**, withdrawals round **down**, both in the vault's favour. |
 
 Known limitations (put them in the README): uncollected fees are excluded from `getTotalAmounts()` until the next
 collect; a rebalance swap ignores price impact (leftovers stay idle until the next compound); empty old NFTs accumulate;
-not audited.
+standing allowances are capped per token and not topped up automatically (compound and rebalance revert once one runs
+low, until someone calls `refreshApprovals()`); not audited.
 
 ---
 
@@ -907,8 +912,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     /// @dev Minted to the vault (HTS treasury) on the first deposit and never released: defeats share-price inflation.
     uint256 public constant DEAD_SHARES = 1e5;
     int64 private constant SHARE_AUTO_RENEW_PERIOD = 7_776_000; // 90 days, the HTS default
-    /// @dev Standing allowance granted once in initialize(). HTS allowances are int64, so uint256 max is not valid.
-    uint256 private constant STANDING_ALLOWANCE = uint256(uint64(type(int64).max));
+    /// @dev Largest allowance HTS accepts (allowances are int64, so uint256 max is not valid). Tokens with a finite
+    ///      max supply are capped lower: HTS rejects an allowance above maxSupply (AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY).
+    uint256 private constant MAX_HTS_ALLOWANCE = uint256(uint64(type(int64).max));
     address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
 
     address public immutable deployer;
@@ -933,6 +939,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     int24 public tickLower;
     int24 public tickUpper;
     uint64 public lastRebalance;
+    /// @notice Standing allowance granted to the position manager and swap router on token0 / token1, set in
+    ///         initialize(): the token's maxSupply if it has a finite supply, otherwise type(int64).max.
+    uint256 public approvalCap0;
+    uint256 public approvalCap1;
 
     event Initialized(address indexed shareToken);
     event Deposit(address indexed sender, address indexed receiver, uint256 shares, uint256 amount0, uint256 amount1);
@@ -964,6 +974,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     error OutOfRange(int24 twapTick);
     error CooldownActive(uint256 readyAt);
     error RefundFailed();
+    error ApproveFailed(address token, address spender);
 
     constructor(Config memory cfg) {
         ISaucerSwapV2Pool p = ISaucerSwapV2Pool(cfg.pool);
@@ -1002,9 +1013,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
 
     /// @notice Associates the vault with token0, token1 and the LP NFT, then creates the HTS share token
     ///         with the vault as treasury and supply key, and grants the position manager and swap router
-    ///         standing int64-max allowances on token0 and token1 (each HTS approval costs ~705k gas, so they
-    ///         are paid once here instead of on every compound/rebalance). msg.value pays the HTS
-    ///         token-creation fee; any HBAR left in the vault afterwards is returned to the caller.
+    ///         standing allowances on token0 and token1, capped per token (see approvalCap0/1). Each HTS
+    ///         approval costs ~705k gas, so they are paid once here instead of on every compound/rebalance.
+    ///         msg.value pays the HTS token-creation fee; any HBAR left in the vault afterwards is returned
+    ///         to the caller.
     function initialize(string calldata name, string calldata symbol) external payable nonReentrant {
         if (msg.sender != deployer) revert NotDeployer();
         if (shareToken != address(0)) revert AlreadyInitialized();
@@ -1047,10 +1059,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         _checkHts(rc);
         shareToken = created;
 
-        IERC20(token0).forceApprove(address(positionManager), STANDING_ALLOWANCE);
-        IERC20(token1).forceApprove(address(positionManager), STANDING_ALLOWANCE);
-        IERC20(token0).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
-        IERC20(token1).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
+        approvalCap0 = _approvalCap(token0);
+        approvalCap1 = _approvalCap(token1);
+        _grantStandingApprovals();
 
         _refund(address(this).balance);
         emit Initialized(created);
@@ -1213,6 +1224,14 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         emit Rebalance(msg.sender, twapTick, oldLower, oldUpper, lower, upper, positionSerial);
     }
 
+    /// @notice Re-grants the standing allowances to the position manager and swap router, up to approvalCap0/1.
+    ///         Permissionless: the spenders and amounts are fixed, so calling it can only restore the allowances
+    ///         that compound/rebalance spend down over time.
+    function refreshApprovals() external nonReentrant {
+        _requireInitialized();
+        _grantStandingApprovals();
+    }
+
     // ------------------------------------------------------------------------------------------
     // Views and quotes
     // ------------------------------------------------------------------------------------------
@@ -1364,6 +1383,29 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     ///      The position manager converts it with the exchange-rate system contract (0x168) and adds 1 tinybar
     ///      of rounding slop; sending exactly that amount leaves the manager with no spare HBAR, so it pulls
     ///      WHBAR from the vault instead of wrapping the caller's HBAR.
+    /// @dev maxSupply for a finite-supply HTS token, else type(int64).max. A failed lookup (for example a token
+    ///      that is not an HTS token) falls back to type(int64).max.
+    function _approvalCap(address token) private returns (uint256) {
+        (int256 rc, IHederaTokenService.FungibleTokenInfo memory info) = getFungibleTokenInfo(token);
+        if (rc != HederaResponseCodes.SUCCESS) return MAX_HTS_ALLOWANCE;
+        IHederaTokenService.HederaToken memory t = info.tokenInfo.token;
+        // tokenSupplyType: true = FINITE.
+        if (t.tokenSupplyType && t.maxSupply > 0) return uint256(uint64(t.maxSupply));
+        return MAX_HTS_ALLOWANCE;
+    }
+
+    function _grantStandingApprovals() private {
+        _approve(token0, address(positionManager), approvalCap0);
+        _approve(token1, address(positionManager), approvalCap1);
+        _approve(token0, address(swapRouter), approvalCap0);
+        _approve(token1, address(swapRouter), approvalCap1);
+    }
+
+    /// @dev A plain approve with its result checked: a rejected approval reverts once (no reset-and-retry).
+    function _approve(address token, address spender, uint256 amount) private {
+        if (!IERC20(token).approve(spender, amount)) revert ApproveFailed(token, spender);
+    }
+
     function _mintFeeTinybars() private returns (uint256) {
         uint256 tinycents = ISaucerSwapV2Factory(factory).mintFee();
         if (tinycents == 0) return 0;
@@ -1732,6 +1774,7 @@ import type { DeployFunction } from "hardhat-deploy/types";
 
 import { TIDEPOOL } from "../tidepool.config";
 import { getDeployGasPrice } from "../utils/getDeployGasPrice";
+import { preflightInitialize } from "../utils/preflightInitialize";
 
 /**
  * Deploys TidepoolVault against live SaucerSwap V2 contracts, then calls initialize(),
@@ -1779,9 +1822,16 @@ const deployTidepoolVault: DeployFunction = async function (hre: HardhatRuntimeE
   // Testnet, before standing approvals: initialize used 2,313,512 (three associations + token creation; 2M ran out).
   // The four standing approvals add ~4 x 705,424 (the per-approval cost measured on testnet), so ~5.14M in total.
   // Not re-measured yet; 8M leaves headroom, and Hedera charges gas used, not the limit.
+  const initOverrides = {
+    value: hre.ethers.parseEther(params.initializeHbar).toString(),
+    gasLimit: 8_000_000,
+    gasPrice,
+  };
+  // Same call, value and gas as an eth_call first; a revert prints the reason and stops before anything is sent.
+  await preflightInitialize(hre, "TidepoolVault", deployer, params.shareName, params.shareSymbol, initOverrides);
   await execute(
     "TidepoolVault",
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
+    { from: deployer, ...initOverrides },
     "initialize",
     params.shareName,
     params.shareSymbol,
@@ -1803,6 +1853,7 @@ import type { DeployFunction } from "hardhat-deploy/types";
 
 import { TIDEPOOL_NARROW } from "../tidepool.config";
 import { getDeployGasPrice } from "../utils/getDeployGasPrice";
+import { preflightInitialize } from "../utils/preflightInitialize";
 
 const DEPLOYMENT_NAME = "TidepoolVaultNarrow";
 
@@ -1853,9 +1904,16 @@ const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRu
 
   // Same initialize() as the main vault: three HTS associations, share-token creation and four standing
   // approvals (~5.14M gas estimated; see 00_deploy_tidepool_vault.ts).
+  const initOverrides = {
+    value: hre.ethers.parseEther(params.initializeHbar).toString(),
+    gasLimit: 8_000_000,
+    gasPrice,
+  };
+  // Same call, value and gas as an eth_call first; a revert prints the reason and stops before anything is sent.
+  await preflightInitialize(hre, DEPLOYMENT_NAME, deployer, params.shareName, params.shareSymbol, initOverrides);
   await execute(
     DEPLOYMENT_NAME,
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
+    { from: deployer, ...initOverrides },
     "initialize",
     params.shareName,
     params.shareSymbol,
@@ -1916,6 +1974,8 @@ import { RangeMath } from "../libraries/RangeMath.sol";
 contract MockToken is ERC20 {
     uint8 private immutable _dec;
     address public minter;
+    /// 0 = no limit. When set, approve() rejects allowances above it, like HTS (AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY).
+    uint256 public maxSupply;
 
     constructor(string memory n, string memory s, uint8 d) ERC20(n, s) {
         _dec = d;
@@ -1924,6 +1984,15 @@ contract MockToken is ERC20 {
 
     function decimals() public view override returns (uint8) {
         return _dec;
+    }
+
+    function setMaxSupply(uint256 value) external {
+        maxSupply = value;
+    }
+
+    function approve(address spender, uint256 value) public override returns (bool) {
+        require(maxSupply == 0 || value <= maxSupply, "AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY");
+        return super.approve(spender, value);
     }
 
     function mint(address to, uint256 amount) external {
@@ -1941,6 +2010,29 @@ contract MockHts {
     int32 internal constant SUCCESS = 22;
     mapping(address => mapping(address => bool)) public associated;
     mapping(address => address) public treasuryOf;
+    /// Supply settings getFungibleTokenInfo reports (0 = infinite).
+    mapping(address => int64) public maxSupplyOf;
+    /// 0 = answer normally, 1 = revert (as for a non-HTS address), 2 = return a non-SUCCESS response code.
+    mapping(address => uint8) public infoMode;
+
+    function setTokenSupply(address token, int64 maxSupply) external {
+        maxSupplyOf[token] = maxSupply;
+    }
+
+    function setInfoMode(address token, uint8 mode) external {
+        infoMode[token] = mode;
+    }
+
+    function getFungibleTokenInfo(
+        address token
+    ) external view returns (int64, IHederaTokenService.FungibleTokenInfo memory info) {
+        uint8 mode = infoMode[token];
+        require(mode != 1, "not an HTS token");
+        if (mode == 2) return (167, info); // INVALID_TOKEN_ID
+        info.tokenInfo.token.tokenSupplyType = maxSupplyOf[token] > 0; // true = FINITE
+        info.tokenInfo.token.maxSupply = maxSupplyOf[token];
+        return (SUCCESS, info);
+    }
 
     function associateTokens(address account, address[] memory tokens) external returns (int64) {
         require(msg.sender == account, "must self-associate");
@@ -2186,11 +2278,15 @@ contract MockSwapRouter {
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import type { TidepoolVault } from "../typechain-types";
 
 const HTS = "0x0000000000000000000000000000000000000167";
 const EXCHANGE_RATE = "0x0000000000000000000000000000000000000168";
 // tinycentsToTinybars(500_000_000) with the mock rate, plus SaucerSwap's 1-tinybar slop.
 const MINT_FEE = (500_000_000n * 100n) / 780n + 1n;
+const INT64_MAX = 2n ** 63n - 1n;
+// Testnet SAUCE (0.0.1183558) has a FINITE supply with this maxSupply; HTS rejects larger allowances.
+const SAUCE_MAX_SUPPLY = 10n ** 15n;
 
 async function etch(address: string, contractName: string) {
   const impl = await (await ethers.getContractFactory(contractName)).deploy();
@@ -2198,16 +2294,22 @@ async function etch(address: string, contractName: string) {
   await network.provider.send("hardhat_setCode", [address, code]);
 }
 
-async function deployFixture() {
+/** Mocks, tokens and SaucerSwap stand-ins, with no vault yet. */
+async function deployBase() {
   const [deployer, alice, bob, keeper] = await ethers.getSigners();
   await etch(HTS, "MockHts");
   await etch(EXCHANGE_RATE, "MockExchangeRate");
+  const hts = await ethers.getContractAt("MockHts", HTS);
 
   const Token = await ethers.getContractFactory("MockToken");
+  // Like testnet: WHBAR has an infinite supply, SAUCE a finite one (enforced by approve() and reported by HTS).
+  const whbar = await Token.deploy("Wrapped HBAR", "WHBAR", 8);
+  const sauce = await Token.deploy("Sauce", "SAUCE", 6);
+  await sauce.setMaxSupply(SAUCE_MAX_SUPPLY);
+  await hts.setTokenSupply(await sauce.getAddress(), SAUCE_MAX_SUPPLY);
   // Order the pair like SaucerSwap does: token0 has the lower address.
-  const a = await Token.deploy("Wrapped HBAR", "WHBAR", 8);
-  const b = await Token.deploy("Sauce", "SAUCE", 6);
-  const [t0, t1] = BigInt(await a.getAddress()) < BigInt(await b.getAddress()) ? [a, b] : [b, a];
+  const [t0, t1] =
+    BigInt(await whbar.getAddress()) < BigInt(await sauce.getAddress()) ? [whbar, sauce] : [sauce, whbar];
 
   const pool = await (await ethers.getContractFactory("MockPool")).deploy(await t0.getAddress(), await t1.getAddress());
   await pool.setPrice(-7680, -7680);
@@ -2220,29 +2322,43 @@ async function deployFixture() {
     await ethers.getContractFactory("MockSwapRouter")
   ).deploy(await factory.getAddress(), await pool.getAddress());
 
-  const vault = await (
-    await ethers.getContractFactory("TidepoolVault")
-  ).deploy({
-    pool: await pool.getAddress(),
-    positionManager: await npm.getAddress(),
-    swapRouter: await router.getAddress(),
-    halfWidth: 600,
-    twapWindow: 600,
-    maxTwapDeviation: 100,
-    rebalanceCooldown: 3600,
-    swapSlippageBps: 100,
-  });
+  const newVault = async () =>
+    (await ethers.getContractFactory("TidepoolVault")).deploy({
+      pool: await pool.getAddress(),
+      positionManager: await npm.getAddress(),
+      swapRouter: await router.getAddress(),
+      halfWidth: 600,
+      twapWindow: 600,
+      maxTwapDeviation: 100,
+      rebalanceCooldown: 3600,
+      swapSlippageBps: 100,
+    });
+  return { deployer, alice, bob, keeper, hts, whbar, sauce, t0, t1, pool, npm, router, newVault };
+}
+
+async function deployFixture() {
+  const base = await deployBase();
+  const { alice, bob, t0, t1 } = base;
+  const vault = await base.newVault();
   await vault.initialize("Tidepool WHBAR-SAUCE", "tpWS", { value: ethers.parseEther("1") });
   const share = await ethers.getContractAt("MockToken", await vault.shareToken());
 
   for (const user of [alice, bob]) {
     await t0.mint(user.address, 10n ** 30n);
     await t1.mint(user.address, 10n ** 30n);
-    await t0.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
-    await t1.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
+    // Users approve what each token allows (SAUCE rejects anything above its max supply).
+    for (const token of [t0, t1]) {
+      const cap = await token.maxSupply();
+      await token.connect(user).approve(await vault.getAddress(), cap === 0n ? ethers.MaxUint256 : cap);
+    }
     await share.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
   }
-  return { deployer, alice, bob, keeper, t0, t1, pool, npm, router, vault, share };
+  return { ...base, vault, share };
+}
+
+/** The vault's approval cap for `token` (approvalCap0 or approvalCap1, depending on the pair order). */
+async function capOf(vault: TidepoolVault, token: { getAddress(): Promise<string> }) {
+  return (await token.getAddress()) === (await vault.token0()) ? vault.approvalCap0() : vault.approvalCap1();
 }
 
 describe("TidepoolVault", function () {
@@ -2273,6 +2389,42 @@ describe("TidepoolVault", function () {
         "NotDeployer",
       );
       await expect(vault.initialize("x", "y", { value: 1 })).to.be.revertedWithCustomError(vault, "AlreadyInitialized");
+    });
+
+    it("caps a finite-supply token's standing allowances at its max supply", async function () {
+      const { vault, sauce, npm, router } = await loadFixture(deployFixture);
+      expect(await capOf(vault, sauce)).to.equal(SAUCE_MAX_SUPPLY);
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+      expect(await sauce.allowance(await vault.getAddress(), await router.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+    });
+
+    it("gives an infinite-supply token int64-max standing allowances", async function () {
+      const { vault, whbar, npm, router } = await loadFixture(deployFixture);
+      expect(await capOf(vault, whbar)).to.equal(INT64_MAX);
+      expect(await whbar.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(INT64_MAX);
+      expect(await whbar.allowance(await vault.getAddress(), await router.getAddress())).to.equal(INT64_MAX);
+    });
+
+    it("falls back to int64 max when the token-info lookup fails", async function () {
+      const { hts, whbar, npm, newVault } = await loadFixture(deployBase);
+      // HTS would report WHBAR as finite (5e14) if the lookup worked, so a cap of int64 max proves the fallback.
+      await hts.setTokenSupply(await whbar.getAddress(), 5n * 10n ** 14n);
+      // Mode 1: the lookup reverts (as for a non-HTS token). Mode 2: it returns a non-SUCCESS response code.
+      for (const mode of [1, 2]) {
+        await hts.setInfoMode(await whbar.getAddress(), mode);
+        const vault = await newVault();
+        await vault.initialize("x", "y", { value: 1 });
+        expect(await capOf(vault, whbar)).to.equal(INT64_MAX);
+        expect(await whbar.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(INT64_MAX);
+      }
+    });
+
+    it("reverts initialize once when a standing approval is rejected", async function () {
+      const { hts, sauce, newVault } = await loadFixture(deployBase);
+      // The testnet failure: HTS does not report SAUCE's limit, so the vault asks for int64 max and SAUCE rejects it.
+      await hts.setTokenSupply(await sauce.getAddress(), 0);
+      const vault = await newVault();
+      await expect(vault.initialize("x", "y", { value: 1 })).to.be.revertedWith("AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY");
     });
   });
 
@@ -2342,10 +2494,10 @@ describe("TidepoolVault", function () {
 
     it("grants standing manager and router allowances once, so compound works twice without re-approving", async function () {
       const { vault, t0, t1, npm, router, alice, bob } = await loadFixture(deployFixture);
-      const standing = 2n ** 63n - 1n; // type(int64).max
       for (const token of [t0, t1]) {
-        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(standing);
-        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(standing);
+        const cap = await capOf(vault, token);
+        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(cap);
+        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(cap);
       }
       await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
       await vault.compound({ value: MINT_FEE });
@@ -2395,6 +2547,24 @@ describe("TidepoolVault", function () {
         .withArgs(10n ** 8n, 10n ** 7n);
       const [, , , , , liqAfter] = await npm.positions(1);
       expect(liqAfter).to.be.greaterThan(liqBefore);
+    });
+  });
+
+  describe("refreshApprovals", function () {
+    it("lets anyone restore allowances that compound has spent down", async function () {
+      const { vault, sauce, npm, alice, keeper } = await loadFixture(deployFixture);
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.be.lessThan(SAUCE_MAX_SUPPLY);
+
+      await vault.connect(keeper).refreshApprovals();
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+    });
+
+    it("requires an initialized vault", async function () {
+      const { newVault } = await loadFixture(deployBase);
+      const vault = await newVault();
+      await expect(vault.refreshApprovals()).to.be.revertedWithCustomError(vault, "NotInitialized");
     });
   });
 
@@ -4650,7 +4820,8 @@ as the password is accepted. Never run them from an agent without the user's go-
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
 8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas. The vault grants
-   the manager and router standing `type(int64).max` allowances once, in `initialize()`, so `compound()`/`rebalance()`
+   the manager and router standing allowances once, in `initialize()` (capped at each token's max supply when it is
+   finite, since HTS rejects anything larger; `type(int64).max` otherwise), so `compound()`/`rebalance()`
    make no approvals (the deployed testnet vaults predate this and make six per call). Observed on testnet with the
    old per-call approvals: `initialize` 2.31M, first `compound` 5.13M,
    `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.
@@ -4787,6 +4958,13 @@ Narrow test vault `TidepoolVaultNarrow`: **0.0.10716411** / `0x91EdDBE42CFF874Fd
 
 **Gas findings:**
 - **Each HTS allowance approval made by the vault costs 705,424 gas.** In the deployed version `compound()` made six (set and clear, for router and manager), 4,232,544 gas, 83% of the call. The source now grants standing allowances once in `initialize()` instead; expected cost after redeploying (not yet measured): `initialize` ≈ 5.14M, first `compound` / `rebalance` ≈ 0.9–1.1M.
+- **Allowances above a finite token's max supply are rejected.** A redeployed vault's `initialize()` (standing
+  `type(int64).max` approvals, 26 Sep 2026) reverted: vault `0x2a0BB90055Fa38A913C137D5f920b01417cb2d6C`, tx
+  `0x9e32377405a59e025ba270bba0012298a339aa52078724c9d3504458f6e6513c`, 5,136,540 / 8,000,000 gas. Child records:
+  TOKENASSOCIATE, TOKENCREATION and the WHBAR approval `REVERTED_SUCCESS`; the SAUCE approval to the position manager
+  `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY` (289), then `forceApprove`'s reset to 0 and retry, the retry again 289. SAUCE
+  (0.0.1183558) is FINITE with maxSupply 1e15; WHBAR (0.0.15058) is INFINITE. The vault now caps each allowance at the
+  token's max supply and uses a plain, checked `approve`; the deploy scripts run `initialize()` as an `eth_call` first.
 - Inside `compound()`: router swap ~104k gas, SaucerSwap `mint` ~633k, HTS NFT mint ~283k.
 - An EOA's HTS association is estimated at ~782k gas, an EOA approval at ~783k, and a WhbarHelper wrap at ~839k (before association).
 - **Hedera charged by gas used (about 109 tinybars per gas) in every transaction observed**, not by 80% of the gas limit, so generous limits cost nothing extra on success.

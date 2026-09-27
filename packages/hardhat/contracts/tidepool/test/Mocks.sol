@@ -16,6 +16,8 @@ import { RangeMath } from "../libraries/RangeMath.sol";
 contract MockToken is ERC20 {
     uint8 private immutable _dec;
     address public minter;
+    /// 0 = no limit. When set, approve() rejects allowances above it, like HTS (AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY).
+    uint256 public maxSupply;
 
     constructor(string memory n, string memory s, uint8 d) ERC20(n, s) {
         _dec = d;
@@ -24,6 +26,15 @@ contract MockToken is ERC20 {
 
     function decimals() public view override returns (uint8) {
         return _dec;
+    }
+
+    function setMaxSupply(uint256 value) external {
+        maxSupply = value;
+    }
+
+    function approve(address spender, uint256 value) public override returns (bool) {
+        require(maxSupply == 0 || value <= maxSupply, "AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY");
+        return super.approve(spender, value);
     }
 
     function mint(address to, uint256 amount) external {
@@ -41,6 +52,29 @@ contract MockHts {
     int32 internal constant SUCCESS = 22;
     mapping(address => mapping(address => bool)) public associated;
     mapping(address => address) public treasuryOf;
+    /// Supply settings getFungibleTokenInfo reports (0 = infinite).
+    mapping(address => int64) public maxSupplyOf;
+    /// 0 = answer normally, 1 = revert (as for a non-HTS address), 2 = return a non-SUCCESS response code.
+    mapping(address => uint8) public infoMode;
+
+    function setTokenSupply(address token, int64 maxSupply) external {
+        maxSupplyOf[token] = maxSupply;
+    }
+
+    function setInfoMode(address token, uint8 mode) external {
+        infoMode[token] = mode;
+    }
+
+    function getFungibleTokenInfo(
+        address token
+    ) external view returns (int64, IHederaTokenService.FungibleTokenInfo memory info) {
+        uint8 mode = infoMode[token];
+        require(mode != 1, "not an HTS token");
+        if (mode == 2) return (167, info); // INVALID_TOKEN_ID
+        info.tokenInfo.token.tokenSupplyType = maxSupplyOf[token] > 0; // true = FINITE
+        info.tokenInfo.token.maxSupply = maxSupplyOf[token];
+        return (SUCCESS, info);
+    }
 
     function associateTokens(address account, address[] memory tokens) external returns (int64) {
         require(msg.sender == account, "must self-associate");

@@ -3,6 +3,7 @@ import type { DeployFunction } from "hardhat-deploy/types";
 
 import { TIDEPOOL_NARROW } from "../tidepool.config";
 import { getDeployGasPrice } from "../utils/getDeployGasPrice";
+import { preflightInitialize } from "../utils/preflightInitialize";
 
 const DEPLOYMENT_NAME = "TidepoolVaultNarrow";
 
@@ -53,9 +54,16 @@ const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRu
 
   // Same initialize() as the main vault: three HTS associations, share-token creation and four standing
   // approvals (~5.14M gas estimated; see 00_deploy_tidepool_vault.ts).
+  const initOverrides = {
+    value: hre.ethers.parseEther(params.initializeHbar).toString(),
+    gasLimit: 8_000_000,
+    gasPrice,
+  };
+  // Same call, value and gas as an eth_call first; a revert prints the reason and stops before anything is sent.
+  await preflightInitialize(hre, DEPLOYMENT_NAME, deployer, params.shareName, params.shareSymbol, initOverrides);
   await execute(
     DEPLOYMENT_NAME,
-    { from: deployer, value: hre.ethers.parseEther(params.initializeHbar).toString(), gasLimit: 8_000_000, gasPrice },
+    { from: deployer, ...initOverrides },
     "initialize",
     params.shareName,
     params.shareSymbol,

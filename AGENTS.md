@@ -73,7 +73,8 @@ as the password is accepted. Never run them from an agent without the user's go-
 7. **TWAP.** `observe()` reverts (`OLD`) when the pool's observation history is shorter than `twapWindow`;
    the vault surfaces it as `TwapUnavailable`. Pools with cardinality 1 need `increaseObservationCardinalityNext`.
 8. **Gas is not Ethereum-sized.** Each HTS association or allowance approval costs ~700-780k gas. The vault grants
-   the manager and router standing `type(int64).max` allowances once, in `initialize()`, so `compound()`/`rebalance()`
+   the manager and router standing allowances once, in `initialize()` (capped at each token's max supply when it is
+   finite, since HTS rejects anything larger; `type(int64).max` otherwise), so `compound()`/`rebalance()`
    make no approvals (the deployed testnet vaults predate this and make six per call). Observed on testnet with the
    old per-call approvals: `initialize` 2.31M, first `compound` 5.13M,
    `rebalance` 5.26M, `withdraw` 0.36M. Hedera charged the gas used, not the limit.

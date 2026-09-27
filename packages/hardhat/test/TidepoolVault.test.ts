@@ -1,11 +1,15 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import type { TidepoolVault } from "../typechain-types";
 
 const HTS = "0x0000000000000000000000000000000000000167";
 const EXCHANGE_RATE = "0x0000000000000000000000000000000000000168";
 // tinycentsToTinybars(500_000_000) with the mock rate, plus SaucerSwap's 1-tinybar slop.
 const MINT_FEE = (500_000_000n * 100n) / 780n + 1n;
+const INT64_MAX = 2n ** 63n - 1n;
+// Testnet SAUCE (0.0.1183558) has a FINITE supply with this maxSupply; HTS rejects larger allowances.
+const SAUCE_MAX_SUPPLY = 10n ** 15n;
 
 async function etch(address: string, contractName: string) {
   const impl = await (await ethers.getContractFactory(contractName)).deploy();
@@ -13,16 +17,22 @@ async function etch(address: string, contractName: string) {
   await network.provider.send("hardhat_setCode", [address, code]);
 }
 
-async function deployFixture() {
+/** Mocks, tokens and SaucerSwap stand-ins, with no vault yet. */
+async function deployBase() {
   const [deployer, alice, bob, keeper] = await ethers.getSigners();
   await etch(HTS, "MockHts");
   await etch(EXCHANGE_RATE, "MockExchangeRate");
+  const hts = await ethers.getContractAt("MockHts", HTS);
 
   const Token = await ethers.getContractFactory("MockToken");
+  // Like testnet: WHBAR has an infinite supply, SAUCE a finite one (enforced by approve() and reported by HTS).
+  const whbar = await Token.deploy("Wrapped HBAR", "WHBAR", 8);
+  const sauce = await Token.deploy("Sauce", "SAUCE", 6);
+  await sauce.setMaxSupply(SAUCE_MAX_SUPPLY);
+  await hts.setTokenSupply(await sauce.getAddress(), SAUCE_MAX_SUPPLY);
   // Order the pair like SaucerSwap does: token0 has the lower address.
-  const a = await Token.deploy("Wrapped HBAR", "WHBAR", 8);
-  const b = await Token.deploy("Sauce", "SAUCE", 6);
-  const [t0, t1] = BigInt(await a.getAddress()) < BigInt(await b.getAddress()) ? [a, b] : [b, a];
+  const [t0, t1] =
+    BigInt(await whbar.getAddress()) < BigInt(await sauce.getAddress()) ? [whbar, sauce] : [sauce, whbar];
 
   const pool = await (await ethers.getContractFactory("MockPool")).deploy(await t0.getAddress(), await t1.getAddress());
   await pool.setPrice(-7680, -7680);
@@ -35,29 +45,43 @@ async function deployFixture() {
     await ethers.getContractFactory("MockSwapRouter")
   ).deploy(await factory.getAddress(), await pool.getAddress());
 
-  const vault = await (
-    await ethers.getContractFactory("TidepoolVault")
-  ).deploy({
-    pool: await pool.getAddress(),
-    positionManager: await npm.getAddress(),
-    swapRouter: await router.getAddress(),
-    halfWidth: 600,
-    twapWindow: 600,
-    maxTwapDeviation: 100,
-    rebalanceCooldown: 3600,
-    swapSlippageBps: 100,
-  });
+  const newVault = async () =>
+    (await ethers.getContractFactory("TidepoolVault")).deploy({
+      pool: await pool.getAddress(),
+      positionManager: await npm.getAddress(),
+      swapRouter: await router.getAddress(),
+      halfWidth: 600,
+      twapWindow: 600,
+      maxTwapDeviation: 100,
+      rebalanceCooldown: 3600,
+      swapSlippageBps: 100,
+    });
+  return { deployer, alice, bob, keeper, hts, whbar, sauce, t0, t1, pool, npm, router, newVault };
+}
+
+async function deployFixture() {
+  const base = await deployBase();
+  const { alice, bob, t0, t1 } = base;
+  const vault = await base.newVault();
   await vault.initialize("Tidepool WHBAR-SAUCE", "tpWS", { value: ethers.parseEther("1") });
   const share = await ethers.getContractAt("MockToken", await vault.shareToken());
 
   for (const user of [alice, bob]) {
     await t0.mint(user.address, 10n ** 30n);
     await t1.mint(user.address, 10n ** 30n);
-    await t0.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
-    await t1.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
+    // Users approve what each token allows (SAUCE rejects anything above its max supply).
+    for (const token of [t0, t1]) {
+      const cap = await token.maxSupply();
+      await token.connect(user).approve(await vault.getAddress(), cap === 0n ? ethers.MaxUint256 : cap);
+    }
     await share.connect(user).approve(await vault.getAddress(), ethers.MaxUint256);
   }
-  return { deployer, alice, bob, keeper, t0, t1, pool, npm, router, vault, share };
+  return { ...base, vault, share };
+}
+
+/** The vault's approval cap for `token` (approvalCap0 or approvalCap1, depending on the pair order). */
+async function capOf(vault: TidepoolVault, token: { getAddress(): Promise<string> }) {
+  return (await token.getAddress()) === (await vault.token0()) ? vault.approvalCap0() : vault.approvalCap1();
 }
 
 describe("TidepoolVault", function () {
@@ -88,6 +112,42 @@ describe("TidepoolVault", function () {
         "NotDeployer",
       );
       await expect(vault.initialize("x", "y", { value: 1 })).to.be.revertedWithCustomError(vault, "AlreadyInitialized");
+    });
+
+    it("caps a finite-supply token's standing allowances at its max supply", async function () {
+      const { vault, sauce, npm, router } = await loadFixture(deployFixture);
+      expect(await capOf(vault, sauce)).to.equal(SAUCE_MAX_SUPPLY);
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+      expect(await sauce.allowance(await vault.getAddress(), await router.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+    });
+
+    it("gives an infinite-supply token int64-max standing allowances", async function () {
+      const { vault, whbar, npm, router } = await loadFixture(deployFixture);
+      expect(await capOf(vault, whbar)).to.equal(INT64_MAX);
+      expect(await whbar.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(INT64_MAX);
+      expect(await whbar.allowance(await vault.getAddress(), await router.getAddress())).to.equal(INT64_MAX);
+    });
+
+    it("falls back to int64 max when the token-info lookup fails", async function () {
+      const { hts, whbar, npm, newVault } = await loadFixture(deployBase);
+      // HTS would report WHBAR as finite (5e14) if the lookup worked, so a cap of int64 max proves the fallback.
+      await hts.setTokenSupply(await whbar.getAddress(), 5n * 10n ** 14n);
+      // Mode 1: the lookup reverts (as for a non-HTS token). Mode 2: it returns a non-SUCCESS response code.
+      for (const mode of [1, 2]) {
+        await hts.setInfoMode(await whbar.getAddress(), mode);
+        const vault = await newVault();
+        await vault.initialize("x", "y", { value: 1 });
+        expect(await capOf(vault, whbar)).to.equal(INT64_MAX);
+        expect(await whbar.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(INT64_MAX);
+      }
+    });
+
+    it("reverts initialize once when a standing approval is rejected", async function () {
+      const { hts, sauce, newVault } = await loadFixture(deployBase);
+      // The testnet failure: HTS does not report SAUCE's limit, so the vault asks for int64 max and SAUCE rejects it.
+      await hts.setTokenSupply(await sauce.getAddress(), 0);
+      const vault = await newVault();
+      await expect(vault.initialize("x", "y", { value: 1 })).to.be.revertedWith("AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY");
     });
   });
 
@@ -157,10 +217,10 @@ describe("TidepoolVault", function () {
 
     it("grants standing manager and router allowances once, so compound works twice without re-approving", async function () {
       const { vault, t0, t1, npm, router, alice, bob } = await loadFixture(deployFixture);
-      const standing = 2n ** 63n - 1n; // type(int64).max
       for (const token of [t0, t1]) {
-        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(standing);
-        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(standing);
+        const cap = await capOf(vault, token);
+        expect(await token.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(cap);
+        expect(await token.allowance(await vault.getAddress(), await router.getAddress())).to.equal(cap);
       }
       await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
       await vault.compound({ value: MINT_FEE });
@@ -210,6 +270,24 @@ describe("TidepoolVault", function () {
         .withArgs(10n ** 8n, 10n ** 7n);
       const [, , , , , liqAfter] = await npm.positions(1);
       expect(liqAfter).to.be.greaterThan(liqBefore);
+    });
+  });
+
+  describe("refreshApprovals", function () {
+    it("lets anyone restore allowances that compound has spent down", async function () {
+      const { vault, sauce, npm, alice, keeper } = await loadFixture(deployFixture);
+      await vault.connect(alice).deposit(10n ** 10n, 10n ** 9n, 0, alice.address);
+      await vault.compound({ value: MINT_FEE });
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.be.lessThan(SAUCE_MAX_SUPPLY);
+
+      await vault.connect(keeper).refreshApprovals();
+      expect(await sauce.allowance(await vault.getAddress(), await npm.getAddress())).to.equal(SAUCE_MAX_SUPPLY);
+    });
+
+    it("requires an initialized vault", async function () {
+      const { newVault } = await loadFixture(deployBase);
+      const vault = await newVault();
+      await expect(vault.refreshApprovals()).to.be.revertedWithCustomError(vault, "NotInitialized");
     });
   });
 

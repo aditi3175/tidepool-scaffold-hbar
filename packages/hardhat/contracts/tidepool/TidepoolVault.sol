@@ -41,8 +41,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     /// @dev Minted to the vault (HTS treasury) on the first deposit and never released: defeats share-price inflation.
     uint256 public constant DEAD_SHARES = 1e5;
     int64 private constant SHARE_AUTO_RENEW_PERIOD = 7_776_000; // 90 days, the HTS default
-    /// @dev Standing allowance granted once in initialize(). HTS allowances are int64, so uint256 max is not valid.
-    uint256 private constant STANDING_ALLOWANCE = uint256(uint64(type(int64).max));
+    /// @dev Largest allowance HTS accepts (allowances are int64, so uint256 max is not valid). Tokens with a finite
+    ///      max supply are capped lower: HTS rejects an allowance above maxSupply (AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY).
+    uint256 private constant MAX_HTS_ALLOWANCE = uint256(uint64(type(int64).max));
     address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
 
     address public immutable deployer;
@@ -67,6 +68,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     int24 public tickLower;
     int24 public tickUpper;
     uint64 public lastRebalance;
+    /// @notice Standing allowance granted to the position manager and swap router on token0 / token1, set in
+    ///         initialize(): the token's maxSupply if it has a finite supply, otherwise type(int64).max.
+    uint256 public approvalCap0;
+    uint256 public approvalCap1;
 
     event Initialized(address indexed shareToken);
     event Deposit(address indexed sender, address indexed receiver, uint256 shares, uint256 amount0, uint256 amount1);
@@ -98,6 +103,7 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     error OutOfRange(int24 twapTick);
     error CooldownActive(uint256 readyAt);
     error RefundFailed();
+    error ApproveFailed(address token, address spender);
 
     constructor(Config memory cfg) {
         ISaucerSwapV2Pool p = ISaucerSwapV2Pool(cfg.pool);
@@ -136,9 +142,10 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
 
     /// @notice Associates the vault with token0, token1 and the LP NFT, then creates the HTS share token
     ///         with the vault as treasury and supply key, and grants the position manager and swap router
-    ///         standing int64-max allowances on token0 and token1 (each HTS approval costs ~705k gas, so they
-    ///         are paid once here instead of on every compound/rebalance). msg.value pays the HTS
-    ///         token-creation fee; any HBAR left in the vault afterwards is returned to the caller.
+    ///         standing allowances on token0 and token1, capped per token (see approvalCap0/1). Each HTS
+    ///         approval costs ~705k gas, so they are paid once here instead of on every compound/rebalance.
+    ///         msg.value pays the HTS token-creation fee; any HBAR left in the vault afterwards is returned
+    ///         to the caller.
     function initialize(string calldata name, string calldata symbol) external payable nonReentrant {
         if (msg.sender != deployer) revert NotDeployer();
         if (shareToken != address(0)) revert AlreadyInitialized();
@@ -181,10 +188,9 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         _checkHts(rc);
         shareToken = created;
 
-        IERC20(token0).forceApprove(address(positionManager), STANDING_ALLOWANCE);
-        IERC20(token1).forceApprove(address(positionManager), STANDING_ALLOWANCE);
-        IERC20(token0).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
-        IERC20(token1).forceApprove(address(swapRouter), STANDING_ALLOWANCE);
+        approvalCap0 = _approvalCap(token0);
+        approvalCap1 = _approvalCap(token1);
+        _grantStandingApprovals();
 
         _refund(address(this).balance);
         emit Initialized(created);
@@ -347,6 +353,14 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
         emit Rebalance(msg.sender, twapTick, oldLower, oldUpper, lower, upper, positionSerial);
     }
 
+    /// @notice Re-grants the standing allowances to the position manager and swap router, up to approvalCap0/1.
+    ///         Permissionless: the spenders and amounts are fixed, so calling it can only restore the allowances
+    ///         that compound/rebalance spend down over time.
+    function refreshApprovals() external nonReentrant {
+        _requireInitialized();
+        _grantStandingApprovals();
+    }
+
     // ------------------------------------------------------------------------------------------
     // Views and quotes
     // ------------------------------------------------------------------------------------------
@@ -498,6 +512,29 @@ contract TidepoolVault is HederaTokenService, ReentrancyGuard {
     ///      The position manager converts it with the exchange-rate system contract (0x168) and adds 1 tinybar
     ///      of rounding slop; sending exactly that amount leaves the manager with no spare HBAR, so it pulls
     ///      WHBAR from the vault instead of wrapping the caller's HBAR.
+    /// @dev maxSupply for a finite-supply HTS token, else type(int64).max. A failed lookup (for example a token
+    ///      that is not an HTS token) falls back to type(int64).max.
+    function _approvalCap(address token) private returns (uint256) {
+        (int256 rc, IHederaTokenService.FungibleTokenInfo memory info) = getFungibleTokenInfo(token);
+        if (rc != HederaResponseCodes.SUCCESS) return MAX_HTS_ALLOWANCE;
+        IHederaTokenService.HederaToken memory t = info.tokenInfo.token;
+        // tokenSupplyType: true = FINITE.
+        if (t.tokenSupplyType && t.maxSupply > 0) return uint256(uint64(t.maxSupply));
+        return MAX_HTS_ALLOWANCE;
+    }
+
+    function _grantStandingApprovals() private {
+        _approve(token0, address(positionManager), approvalCap0);
+        _approve(token1, address(positionManager), approvalCap1);
+        _approve(token0, address(swapRouter), approvalCap0);
+        _approve(token1, address(swapRouter), approvalCap1);
+    }
+
+    /// @dev A plain approve with its result checked: a rejected approval reverts once (no reset-and-retry).
+    function _approve(address token, address spender, uint256 amount) private {
+        if (!IERC20(token).approve(spender, amount)) revert ApproveFailed(token, spender);
+    }
+
     function _mintFeeTinybars() private returns (uint256) {
         uint256 tinycents = ISaucerSwapV2Factory(factory).mintFee();
         if (tinycents == 0) return 0;
