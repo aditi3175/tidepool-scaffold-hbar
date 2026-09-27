@@ -10,7 +10,7 @@ export type TidepoolVaultId = "main" | "narrow";
 
 export type TidepoolVaultConfig = {
   id: TidepoolVaultId;
-  /** Name in deployedContracts.ts (main) or externalContracts.ts (narrow demo). */
+  /** Deployment name in the generated deployedContracts.ts. */
   contractName: "TidepoolVault" | "TidepoolVaultNarrow";
   label: string;
   description: string;
@@ -18,8 +18,8 @@ export type TidepoolVaultConfig = {
 };
 
 /**
- * Vaults the dashboard can show. The main vault's address comes from the generated deployment;
- * the narrow demo vault's address is configured in contracts/externalContracts.ts.
+ * Vaults the dashboard can show. Both addresses come from the generated contracts/deployedContracts.ts
+ * (`hardhat:deploy:testnet` writes the main vault, `hardhat:deploy:narrow` the narrow demo vault).
  * Range width, TWAP window, deviation limit and cooldown are read from each vault, not written here.
  */
 export const TIDEPOOL_VAULTS: readonly TidepoolVaultConfig[] = [

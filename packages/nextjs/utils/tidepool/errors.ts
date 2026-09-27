@@ -33,6 +33,9 @@ const MESSAGES: Record<string, (args: readonly unknown[]) => string> = {
   HtsCallFailed: ([responseCode]) =>
     `A Hedera Token Service call failed (response code ${responseCode}). Check token associations and balances.`,
   RefundFailed: () => "The vault could not refund the unused HBAR to the caller.",
+  ApproveFailed: () =>
+    "The vault could not grant SaucerSwap its token allowance. The token rejected the approval, so nothing changed. " +
+    "If the allowance has been spent down, call refreshApprovals(); otherwise check the token's supply limits.",
 };
 
 export type FriendlyError = {

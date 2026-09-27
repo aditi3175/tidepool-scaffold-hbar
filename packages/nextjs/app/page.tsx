@@ -96,7 +96,7 @@ const VaultDashboard = ({ config }: { config: TidepoolVaultConfig }) => {
         </h2>
         <p className="mt-2 text-base-content/55">
           {config.demo
-            ? "The narrow demo vault is configured in contracts/externalContracts.ts for Hedera testnet only."
+            ? "No TidepoolVaultNarrow deployment was found for this network. Deploy one with `npm run hardhat:deploy:narrow`, which regenerates contracts/deployedContracts.ts."
             : "No TidepoolVault deployment was found for this network. Deploy one with `npm run hardhat:deploy:testnet`, which regenerates contracts/deployedContracts.ts."}
         </p>
       </div>
