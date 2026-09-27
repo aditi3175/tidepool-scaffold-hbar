@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { emitSuccess } from "~~/app/_components/tidepool/motion";
 import type { TxFeedbackState } from "~~/hooks/tidepool/useTxFeedback";
 
-export type RailStep = {
+type RailStep = {
   label: string;
   /** Already satisfied on chain (for example an allowance that covers the amount), so the flow will skip it. */
   done: boolean;

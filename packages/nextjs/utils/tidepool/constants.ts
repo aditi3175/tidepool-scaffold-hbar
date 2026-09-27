@@ -10,6 +10,9 @@ export const MIRROR_NODE_URL = process.env.NEXT_PUBLIC_MIRROR_NODE_URL ?? "https
 export const HASHSCAN_URL = "https://hashscan.io/testnet";
 /** Where to get SAUCE on testnet. Tidepool does not swap for the user. */
 export const SAUCERSWAP_TESTNET_URL = "https://testnet.saucerswap.finance";
+/** The architecture write-up, linked from the dashboard's "How it works" row. */
+export const ARCHITECTURE_DOC_URL =
+  "https://github.com/aditi3175/tidepool-scaffold-hbar/blob/main/docs/ARCHITECTURE.md";
 
 /** Vault share token decimals (TidepoolVault.SHARE_DECIMALS). */
 export const SHARE_DECIMALS = 8;
@@ -37,7 +40,7 @@ export const GAS = {
 } as const;
 
 /** Gas the keeper actions used on testnet, for display next to the fixed limit. */
-export const OBSERVED_KEEPER_GAS = { compound: "4.8M–5.13M", rebalance: "5.26M" } as const;
+export const OBSERVED_KEEPER_GAS = { compound: "0.56M–0.94M", rebalance: "0.98M" } as const;
 
 /** HTS tokens expose an ERC-20 facade plus the HIP-719 association functions. */
 export const HTS_TOKEN_ABI = parseAbi([

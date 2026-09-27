@@ -28,7 +28,7 @@ type HeaderMenuLink = {
  * Developer tools, grouped away from the product. The template's built-in block explorer only works on a local
  * chain, so on Hedera Testnet the menu links to HashScan instead (the /blockexplorer route still exists).
  */
-export const developerLinks: HeaderMenuLink[] = [
+const developerLinks: HeaderMenuLink[] = [
   {
     label: "Debug Contracts",
     href: "/debug",
@@ -118,7 +118,7 @@ export const Header = () => {
               onClick={() => burgerMenuRef?.current?.removeAttribute("open")}
             >
               <MenuLink label="Dashboard" href="/" />
-              <li className="menu-title text-[11px] uppercase tracking-widest text-base-content/40">Developer</li>
+              <li className="menu-title text-xs text-base-content/45">Developer</li>
               {developerLinks.map(link => (
                 <MenuLink key={link.href} {...link} />
               ))}
@@ -133,9 +133,7 @@ export const Header = () => {
             <TidepoolMark className="h-8 w-8 transition-transform duration-300 group-hover:rotate-[-8deg]" />
             <span className="flex flex-col leading-none">
               <span className="tp-display text-[23px] text-base-content">Tidepool</span>
-              <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-base-content/40">
-                on Hedera
-              </span>
+              <span className="mt-0.5 text-[11px] text-base-content/45">on Hedera</span>
             </span>
           </Link>
           <ul className="menu menu-horizontal menu-sm ml-6 hidden items-center gap-1 px-1 lg:flex">

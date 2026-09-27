@@ -12,8 +12,7 @@ const Debug: NextPage = () => {
   return (
     <div className="tp-debug">
       <header className="tp-scope tp-rise mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8">
-        <div className="tp-eyebrow text-primary/80">Developer · Contract debugger</div>
-        <h1 className="tp-display m-0 text-[2.4rem] text-base-content sm:text-5xl">Inspect Tidepool contracts.</h1>
+        <h1 className="m-0 text-2xl font-semibold tracking-tight text-base-content sm:text-3xl">Contracts</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-base-content/55">
           Raw ABI-level access to <span className="tp-num text-base-content/75">TidepoolVault</span> and{" "}
           <span className="tp-num text-base-content/75">TidepoolVaultNarrow</span>: read every view function and call

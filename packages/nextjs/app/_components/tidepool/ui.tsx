@@ -27,7 +27,7 @@ export const ExternalLink = ({
   </a>
 );
 
-/** Section container: eyebrow label, title, optional actions, restrained surface. */
+/** Section container: optional small label, title, optional actions, restrained surface. */
 export const Panel = ({
   title,
   subtitle,
@@ -77,34 +77,6 @@ export const Panel = ({
   );
 };
 
-/**
- * A labelled value. `size` sets its weight in the hierarchy; `note` explains where the number comes from or what
- * it excludes, and is kept quiet.
- */
-export const Metric = ({
-  label,
-  value,
-  note,
-  size = "md",
-}: {
-  label: ReactNode;
-  value: ReactNode;
-  note?: ReactNode;
-  size?: "lg" | "md" | "sm";
-}) => (
-  <div className="min-w-0">
-    <div className="tp-eyebrow">{label}</div>
-    <div
-      className={`tp-num mt-1.5 break-words text-base-content ${
-        size === "lg" ? "text-2xl sm:text-[28px] leading-tight" : size === "md" ? "text-base sm:text-lg" : "text-sm"
-      }`}
-    >
-      {value}
-    </div>
-    {note && <div className="mt-1 text-[11px] leading-snug text-base-content/40">{note}</div>}
-  </div>
-);
-
 /** An amount with its token symbol set smaller, like a financial figure. */
 export const TokenAmount = ({
   amount,
@@ -117,8 +89,6 @@ export const TokenAmount = ({
   className?: string;
   /** Stable metric id: lets the value glide from the previous vault's real value after a vault switch. */
   id?: string;
-  /** @deprecated kept for call sites; every amount now glides between real values when it changes. */
-  flash?: boolean;
 }) => (
   <span className={`inline-flex items-baseline gap-1.5 ${className}`}>
     <Num text={amount} id={id} />
@@ -130,7 +100,7 @@ export const Skeleton = ({ className = "h-4 w-24" }: { className?: string }) => 
   <span className={`inline-block animate-pulse rounded-md bg-white/[0.06] ${className}`} aria-hidden />
 );
 
-export type Tone = "success" | "warning" | "error" | "neutral" | "accent";
+type Tone = "success" | "warning" | "error" | "neutral" | "accent";
 
 const TONES: Record<Tone, { text: string; dot: string; ring: string }> = {
   success: { text: "text-success", dot: "bg-success", ring: "border-success/25 bg-success/[0.07]" },
@@ -166,7 +136,7 @@ export const StatePill = ({
 }) => (
   <span
     key={tone}
-    className={`tp-pill-in inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] transition-colors duration-500 ${TONES[tone].ring} ${TONES[tone].text} ${className}`}
+    className={`tp-pill-in inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-500 ${TONES[tone].ring} ${TONES[tone].text} ${className}`}
   >
     {live ? (
       <LiveDot className={TONES[tone].dot} />
@@ -187,7 +157,7 @@ const CHECK_TONE: Record<CheckStatus, { tone: Tone; text: string }> = {
 /** Status of one keeper condition. */
 export const StatusBadge = ({ status }: { status: CheckStatus }) => (
   <span
-    className={`inline-flex w-[4.5rem] shrink-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider ${TONES[CHECK_TONE[status].tone].text}`}
+    className={`inline-flex w-[4.5rem] shrink-0 items-center gap-1.5 text-xs font-medium ${TONES[CHECK_TONE[status].tone].text}`}
   >
     <span className={`h-1.5 w-1.5 rounded-full ${TONES[CHECK_TONE[status].tone].dot}`} aria-hidden />
     {CHECK_TONE[status].text}

@@ -11,7 +11,6 @@ export const UserActions = ({ vault, user }: { vault: VaultState; user: UserPosi
 
   return (
     <Panel
-      eyebrow="Act"
       title={tab === "deposit" ? "Deposit for shares" : "Withdraw your tokens"}
       subtitle="Deposit tokens for shares, or burn shares for tokens."
       style={{ animationDelay: "120ms" }}

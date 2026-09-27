@@ -25,7 +25,7 @@ export const FeesStage = ({ vault }: { vault: VaultState }) => {
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
       <div className="lg:col-span-5">
-        <div className="tp-eyebrow">Collected into the vault</div>
+        <div className="tp-eyebrow">Fees collected, from the last {ACTIVITY_LIMIT} events</div>
         {isLoading ? (
           <Skeleton className="mt-4 h-20 w-64" />
         ) : (
@@ -35,17 +35,19 @@ export const FeesStage = ({ vault }: { vault: VaultState }) => {
           </div>
         )}
         <p className="mt-2 text-[11px] leading-snug text-base-content/45">
-          Sum of the {fees.length} FeesCollected events in the vault&apos;s last {ACTIVITY_LIMIT} mirror-node logs.
+          The sum of {fees.length} fee {fees.length === 1 ? "collection" : "collections"} among the vault&apos;s last{" "}
+          {ACTIVITY_LIMIT} events. Older collections are not counted.
         </p>
 
         <div className="mt-6 border-t border-white/[0.07] pt-5">
-          <div className="tp-eyebrow">Fees owed</div>
+          <div className="tp-eyebrow">Fees owed, updated only when the position is touched</div>
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-lg">
             <TokenAmount id="pos-owed0" amount={formatAmount(vault.tokensOwed0, decimals0)} symbol={symbol0} />
             <TokenAmount id="pos-owed1" amount={formatAmount(vault.tokensOwed1, decimals1)} symbol={symbol1} />
           </div>
           <p className="mt-1.5 text-[11px] leading-snug text-base-content/45">
-            Fees owed — updates on next collection. Not the live claimable amount.
+            SaucerSwap updates this figure only when the position is touched (a deposit, withdrawal, compound or
+            rebalance), so it is not the live amount earned.
           </p>
         </div>
       </div>

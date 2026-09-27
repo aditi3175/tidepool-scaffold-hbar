@@ -185,7 +185,7 @@ export const RangeChart = ({
         {/* Band label, when the band is wide enough to hold it */}
         {target.hi - target.lo > 18 && !highlight && (
           <div
-            className={`tp-glide absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.16em] ${
+            className={`tp-glide absolute -translate-x-1/2 whitespace-nowrap text-[11px] font-medium ${
               inRange ? "text-success/75" : "text-warning/75"
             }`}
             style={{ left: `${(layout.lo + layout.hi) / 2}%`, top: "26%", opacity: layout.visible ? 1 : 0 }}
@@ -194,7 +194,7 @@ export const RangeChart = ({
           </div>
         )}
         {highlight && (
-          <div className="tp-fade-in absolute left-3 top-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.12em]">
+          <div className="tp-fade-in absolute left-3 top-3 flex flex-wrap gap-2 text-[11px]">
             {highlight.oldLower !== undefined && (
               <span className="rounded-md border border-dashed border-white/40 bg-black/60 px-2 py-0.5 text-base-content/70">
                 Previous range

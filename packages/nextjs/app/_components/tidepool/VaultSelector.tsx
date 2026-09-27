@@ -52,7 +52,7 @@ export const VaultSelector = ({
               <span className="hidden sm:inline">{vault.label}</span>
               <span className="sm:hidden">{vault.label.replace(/ Vault$/, "")}</span>
               {vault.demo && (
-                <span className="rounded-full border border-warning/35 px-1.5 py-px text-[10px] font-medium uppercase tracking-wider text-warning/90">
+                <span className="rounded-full border border-warning/35 px-1.5 py-px text-[11px] font-medium text-warning/90">
                   Demo
                 </span>
               )}

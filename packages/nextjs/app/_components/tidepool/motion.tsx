@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  type PointerEvent,
-  type ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { type PointerEvent, createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /**
  * Motion helpers for the Tidepool dashboard. Presentation only: nothing here reads chain data, polls, or changes a
@@ -28,7 +19,7 @@ function subscribeReduced(onChange: () => void) {
   return () => media.removeEventListener("change", onChange);
 }
 
-export function useReducedMotion(): boolean {
+function useReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribeReduced,
     () => window.matchMedia(REDUCED_QUERY).matches,
@@ -44,7 +35,7 @@ export function useReducedMotion(): boolean {
 const REFRESH_EVENT = "tidepool:refresh";
 const SUCCESS_EVENT = "tidepool:tx-success";
 
-export const emitRefresh = () => window.dispatchEvent(new Event(REFRESH_EVENT));
+const emitRefresh = () => window.dispatchEvent(new Event(REFRESH_EVENT));
 export const emitSuccess = () => window.dispatchEvent(new Event(SUCCESS_EVENT));
 
 export function onSuccessEvent(handler: () => void): () => void {
@@ -82,34 +73,6 @@ export function useEmitRefreshOnChange(stamp: number | undefined) {
 // ---------------------------------------------------------------------------------------------------------------
 // Values
 // ---------------------------------------------------------------------------------------------------------------
-
-/**
- * Renders `children` unchanged and briefly brightens them when `value` changes. No animation on first render and
- * no count-up: the displayed text is always the real value.
- */
-export const Changing = ({
-  value,
-  children,
-  className = "",
-}: {
-  value: string;
-  children: ReactNode;
-  className?: string;
-}) => {
-  const previous = useRef(value);
-  const [flash, setFlash] = useState(0);
-  useEffect(() => {
-    if (previous.current !== value) {
-      previous.current = value;
-      setFlash(f => f + 1);
-    }
-  }, [value]);
-  return (
-    <span key={flash} className={`${flash > 0 ? "tp-flash" : ""} ${className}`}>
-      {children}
-    </span>
-  );
-};
 
 // ---------------------------------------------------------------------------------------------------------------
 // Live numbers: tween between two REAL values. The final text is always exactly the formatted value passed in.

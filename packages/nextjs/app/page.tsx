@@ -26,7 +26,6 @@ const Home: NextPage = () => {
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-6 pt-8 sm:gap-8 sm:pt-12">
         <div className="tp-in flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <p className="m-0 max-w-md text-sm leading-relaxed text-base-content/55">
-            <span className="tp-eyebrow mb-2 block text-primary/90">Tidepool · Automated concentrated liquidity</span>
             One SaucerSwap V2 position per vault, owned by the contract. Fees compound back into the position; the range
             re-centres on the pool&apos;s TWAP when the price leaves it.
           </p>
@@ -141,7 +140,7 @@ const VaultDashboard = ({ config }: { config: TidepoolVaultConfig }) => {
             index="02"
             name="Range"
             title="Where the liquidity works."
-            lead="The vault's single SaucerSwap V2 position provides liquidity only inside this range. Hover the chart to read any price."
+            lead="The range drawn at the top of the page, in detail: where the TWAP sits between the bounds, and the position behind it."
             aside={<VaultStatusPill vault={vault} size="lg" />}
           >
             <RangeStage vault={vault} />
@@ -150,9 +149,6 @@ const VaultDashboard = ({ config }: { config: TidepoolVaultConfig }) => {
 
         <aside id="act" className="mb-16 min-w-0 lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:mb-0">
           <div className="flex flex-col gap-6 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pb-2">
-            <div className="tp-eyebrow flex items-center gap-3 lg:hidden">
-              <span className="tp-num text-primary/90">↳</span> Act on the vault
-            </div>
             <UserActions vault={vault} user={user} />
           </div>
         </aside>

@@ -179,8 +179,7 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
     <section ref={revealRef} aria-label="Timeline" className={`tp-reveal ${revealed ? "tp-shown" : ""}`}>
       <header className="flex flex-wrap items-end justify-between gap-6 border-t border-white/[0.08] pt-10">
         <div>
-          <div className="tp-eyebrow">History of the loop</div>
-          <h2 className="tp-display m-0 mt-3 text-[2.1rem] leading-[1.05] sm:text-5xl">Timeline</h2>
+          <h2 className="tp-display m-0 text-[2.1rem] leading-[1.05] sm:text-5xl">Timeline</h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-base-content/55">
             The vault&apos;s last {ACTIVITY_LIMIT} events, from the Hedera mirror node.
             {hasRebalance ? " Hover a rebalance to see its ranges on the range chart." : ""}

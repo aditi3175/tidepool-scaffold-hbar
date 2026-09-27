@@ -136,7 +136,7 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
           />
           <button
             type="button"
-            className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-accent transition-colors hover:bg-primary/20 disabled:opacity-40"
+            className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-accent transition-colors hover:bg-primary/20 disabled:opacity-40"
             disabled={!balance || feedback.busy}
             onClick={() => setInput(formatUnits(balance ?? 0n, SHARE_DECIMALS))}
           >

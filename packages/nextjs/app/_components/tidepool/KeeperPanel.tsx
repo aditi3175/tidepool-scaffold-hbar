@@ -248,8 +248,8 @@ const KeeperFlow = ({
           <TxStates state={feedback.state} />
           <TxFeedback state={feedback.state} />
           <p className="text-[11px] text-base-content/40">
-            Gas limit <span className="tp-num">{GAS.keeper.toLocaleString()}</span> (fixed, no simulation); used on
-            testnet: <span className="tp-num">{observedGas}</span>.
+            Sent with a gas limit of <span className="tp-num">{GAS.keeper.toLocaleString()}</span>; it used about{" "}
+            <span className="tp-num">{observedGas}</span> gas on testnet. You pay only for the gas used.
           </p>
         </div>
       </div>
@@ -317,9 +317,7 @@ const LastRebalance = ({ vault }: { vault: VaultState }) => {
         </div>
       </div>
       <p className="mt-9 text-[11px] text-base-content/45">
-        {opened
-          ? "The range this event opened, in ticks (from the event)."
-          : "Dashed = previous range, solid = new range, in ticks (from the event)."}
+        {opened ? "The range this event opened, in ticks." : "Dashed: previous range. Solid: new range. In ticks."}
       </p>
     </div>
   );
@@ -486,9 +484,9 @@ export const KeepStages = ({ vault }: { vault: VaultState }) => {
             </p>
           )}
           <p className="text-[11px] leading-relaxed text-base-content/40">
-            Compound and rebalance cannot be simulated on Hedera before sending (a SaucerSwap position mint returns
-            INVALID_NFT_ID in eth_call), so the dashboard checks the contract&apos;s conditions from on-chain reads
-            instead. If the state changes between the check and execution, the contract reverts and only gas is charged.
+            Compound and rebalance can&apos;t be previewed on Hedera before sending, so the dashboard checks the
+            vault&apos;s conditions first. If something changes in between, the transaction fails and only the network
+            fee is charged.
           </p>
         </div>
       </LoopStage>

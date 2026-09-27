@@ -50,7 +50,7 @@ export const PriceStage = ({ vault }: { vault: VaultState }) => {
             text={price(vault.spotTick)}
             className="mt-3 block text-4xl leading-none text-base-content"
           />
-          <div className="tp-num mt-3 text-xs text-base-content/45">tick {vault.spotTick ?? "–"} · pool slot0</div>
+          <div className="tp-num mt-3 text-xs text-base-content/45">tick {vault.spotTick ?? "–"}</div>
         </div>
         <div className="sm:px-8">
           <div className="tp-eyebrow">TWAP · reference</div>
@@ -93,19 +93,51 @@ export const PriceStage = ({ vault }: { vault: VaultState }) => {
   );
 };
 
-/** 02 RANGE: the centrepiece — the position's range on a large, interactive price axis. */
+/**
+ * The range visual: the position's bounds with the spot and TWAP markers, green in range and amber out of range.
+ * The dashboard's centrepiece, shown in the hero. Loading and no-position states keep the same footprint.
+ */
+export const RangeVisual = ({ vault }: { vault: VaultState }) => {
+  const { decimals0, decimals1, symbol0, symbol1, twapTick, tickLower, tickUpper, spotTick } = vault;
+  const ready = decimals0 !== undefined && decimals1 !== undefined;
+
+  if (!ready || vault.hasPosition === undefined)
+    return <Skeleton className="h-[22rem] w-full rounded-2xl sm:h-[28rem]" />;
+
+  if (vault.hasPosition === false) {
+    return (
+      <div className="flex h-[22rem] flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 px-6 text-center sm:h-[28rem]">
+        <VaultStatusPill vault={vault} size="lg" />
+        <p className="mx-auto mt-4 max-w-md text-sm text-base-content/55">
+          The vault has no liquidity position yet. The first Compound opens one, centred on the TWAP.
+        </p>
+      </div>
+    );
+  }
+
+  if (tickLower === undefined || tickUpper === undefined || spotTick === undefined || twapTick === undefined) {
+    return <Skeleton className="h-[22rem] w-full rounded-2xl sm:h-[28rem]" />;
+  }
+
+  return (
+    <RangeChart
+      tickLower={tickLower}
+      tickUpper={tickUpper}
+      spotTick={spotTick}
+      twapTick={twapTick}
+      decimals0={decimals0!}
+      decimals1={decimals1!}
+      quoteLabel={`${symbol1 ?? "token1"} per ${symbol0 ?? "token0"}`}
+      tall
+    />
+  );
+};
+
+/** 02 RANGE: where the TWAP sits inside the range drawn in the hero, and the position's details. */
 export const RangeStage = ({ vault }: { vault: VaultState }) => {
   const price = usePrice(vault);
-  const { decimals0, decimals1, symbol0, symbol1, twapTick, tickLower, tickUpper } = vault;
+  const { decimals0, decimals1, twapTick, tickLower, tickUpper } = vault;
   const ready = decimals0 !== undefined && decimals1 !== undefined;
-  const quote = `${symbol1 ?? "token1"} per ${symbol0 ?? "token0"}`;
-  const showChart =
-    ready &&
-    vault.hasPosition &&
-    tickLower !== undefined &&
-    tickUpper !== undefined &&
-    vault.spotTick !== undefined &&
-    twapTick !== undefined;
   const statusKnown =
     vault.hasPosition &&
     vault.inRange !== undefined &&
@@ -113,16 +145,13 @@ export const RangeStage = ({ vault }: { vault: VaultState }) => {
     tickLower !== undefined &&
     tickUpper !== undefined;
 
-  if (!ready || vault.hasPosition === undefined) return <Skeleton className="h-96 w-full rounded-2xl" />;
+  if (!ready || vault.hasPosition === undefined) return <Skeleton className="h-40 w-full rounded-2xl" />;
 
   if (vault.hasPosition === false) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/15 px-6 py-16 text-center">
-        <VaultStatusPill vault={vault} size="lg" />
-        <p className="mx-auto mt-4 max-w-md text-sm text-base-content/55">
-          The vault has no liquidity position yet. The first Compound opens one, centred on the TWAP.
-        </p>
-      </div>
+      <p className="rounded-2xl border border-dashed border-white/15 px-6 py-10 text-center text-sm text-base-content/55">
+        No position yet. The first Compound opens one, centred on the TWAP.
+      </p>
     );
   }
 
@@ -155,19 +184,6 @@ export const RangeStage = ({ vault }: { vault: VaultState }) => {
             )}
           </p>
         </div>
-      )}
-
-      {showChart && (
-        <RangeChart
-          tickLower={tickLower!}
-          tickUpper={tickUpper!}
-          spotTick={vault.spotTick!}
-          twapTick={twapTick!}
-          decimals0={decimals0!}
-          decimals1={decimals1!}
-          quoteLabel={quote}
-          tall
-        />
       )}
 
       {/* Distance ruler: where the TWAP sits between the bounds */}
@@ -224,7 +240,7 @@ export const RangeStage = ({ vault }: { vault: VaultState }) => {
           <dt className="tp-eyebrow">Liquidity</dt>
           <dd className="m-0 mt-1.5 text-sm">
             <Num id="pos-liquidity" text={formatAmount(vault.liquidity, 0)} />
-            <span className="mt-1 block text-[11px] text-base-content/45">L, from the position manager</span>
+            <span className="mt-1 block text-[11px] text-base-content/45">Size of the position</span>
           </dd>
         </div>
         <div>

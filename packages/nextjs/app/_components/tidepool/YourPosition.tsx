@@ -53,7 +53,7 @@ export const YourStake = ({ vault, user }: { vault: VaultState; user: UserPositi
                   <TokenAmount id="your-slice1" amount={formatAmount(user.slice1, decimals1)} symbol={symbol1} />
                 </span>
               )}
-              <div className="mt-1 text-[11px] text-base-content/45">estimated slice, before uncollected fees</div>
+              <div className="mt-1 text-[11px] text-base-content/45">your estimated share of the holdings</div>
             </div>
           </div>
           <div className="mt-3 text-xs">
