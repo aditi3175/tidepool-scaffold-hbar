@@ -14,7 +14,7 @@
     "deploy:narrow": "ts-node scripts/runNarrowDeployWithPK.ts",
     "flatten": "hardhat flatten",
     "fork": "MAINNET_FORKING_ENABLED=true HEDERA_FORKING=true hardhat node --network hardhat --no-deploy",
-    "format": "prettier --write './**/*.(ts|sol)'",
+    "format": "prettier --write \"./**/*.(ts|sol)\"",
     "lint": "eslint",
     "lint-staged": "eslint",
     "test": "hardhat test",
