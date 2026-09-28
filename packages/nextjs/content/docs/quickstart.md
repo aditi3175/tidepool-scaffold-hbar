@@ -16,6 +16,8 @@ cd <your-project>
 npm run next:dev
 ```
 
+The CLI will ask for the Hedera network (choose testnet) and whether to install Hedera Skills (optional).
+
 Open http://localhost:3000/dashboard, connect a wallet on Hedera Testnet (chain 296), and you're looking at the live reference vault.
 
 The commands in these docs use npm, the template's default. If you scaffolded with Yarn, drop the `run` (`yarn hardhat:test`). Pass extra flags to npm scripts after `--`, because npm swallows flags like `--network` otherwise.

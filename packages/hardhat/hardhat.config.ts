@@ -23,6 +23,8 @@ import generateTsAbis from "./scripts/generateTsAbis";
 const hederaRpcUrl = process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api";
 
 // Deployer key: run `yarn account:generate` or `yarn account:import`, or set __RUNTIME_DEPLOYER_PRIVATE_KEY at runtime.
+// The fallback below is Hardhat's public test account #0. It is only there so config loading doesn't fail
+// when no deployer key is set; it is never a real key and must never hold funds.
 const deployerPrivateKey =
   process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
