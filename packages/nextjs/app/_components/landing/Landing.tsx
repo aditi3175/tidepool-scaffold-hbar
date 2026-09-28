@@ -245,21 +245,23 @@ const Rules = ({ d }: { d: LandingData }) => {
   const minutes = d.twapWindow ? Math.round(d.twapWindow / 60) : 10;
   return (
     <section className="mx-auto max-w-[1280px] px-4 py-24 sm:px-6" aria-labelledby="rules-title">
-      <Eyebrow>How it works</Eyebrow>
+      <Eyebrow>Live status</Eyebrow>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
         <h2
           id="rules-title"
           className="m-0 max-w-2xl text-[clamp(32px,3.6vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-fg"
         >
-          Three rules, <GradientText>enforced on chain.</GradientText>
+          The vault, <GradientText>right now.</GradientText>
         </h2>
-        <p className="max-w-sm text-[15px] text-muted">Each card reads the main vault right now.</p>
+        <p className="flex items-center gap-2 text-[15px] text-muted">
+          <LiveDot /> Read from the main vault on Hedera testnet
+        </p>
       </div>
       <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
         <Rule
           n="01"
-          title="Earn inside the range"
-          text="The position is liquidity between two prices. Every swap inside them pays the vault a fee; compounding puts those fees back to work."
+          title="Range"
+          text="Swaps inside the range pay the vault a fee."
           status={<Status ok={d.inRange !== false}>{d.inRange === false ? "Out of range" : "In range"}</Status>}
         >
           <Label className="mb-3">Spot within the range</Label>
@@ -267,8 +269,8 @@ const Rules = ({ d }: { d: LandingData }) => {
         </Rule>
         <Rule
           n="02"
-          title="Ignore one-trade moves"
-          text={`The vault compares spot with the ${minutes}-minute TWAP. Too far apart and it refuses deposits, compounds and rebalances. Withdrawals always work.`}
+          title="TWAP guard"
+          text={`Spot must stay within ${d.maxTicksApart ?? 50} ticks of the ${minutes}-minute TWAP.`}
           status={<Status ok={!over}>{over ? "Paused" : "Clear"}</Status>}
         >
           <Label className="mb-2">Ticks apart / limit</Label>
@@ -282,8 +284,8 @@ const Rules = ({ d }: { d: LandingData }) => {
         </Rule>
         <Rule
           n="03"
-          title="Re-centre on the average"
-          text="When the TWAP leaves the range and the cooldown has passed, anyone can call rebalance: the vault opens a new position of the same width, centred on the TWAP."
+          title="Rebalance"
+          text="Anyone can re-centre once the TWAP leaves the range and the cooldown passes."
           status={<Status ok>Open to anyone</Status>}
         >
           <div className="grid grid-cols-2 gap-4">
@@ -300,6 +302,12 @@ const Rules = ({ d }: { d: LandingData }) => {
           </div>
         </Rule>
       </div>
+      <Link
+        href="/how-it-works"
+        className="mt-8 inline-flex items-center gap-2 text-[15px] font-semibold text-fg hover:text-neon"
+      >
+        How the vault decides, step by step <span aria-hidden>→</span>
+      </Link>
     </section>
   );
 };
