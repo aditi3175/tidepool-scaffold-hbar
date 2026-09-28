@@ -31,7 +31,7 @@ export const RainbowKitCustomConnectButton = () => {
               if (!connected) {
                 return (
                   <button
-                    className="btn btn-primary btn-sm tp-cta rounded-full px-4 shadow-none"
+                    className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-neon/40 bg-neon/10 px-4 text-sm font-semibold text-neon transition-colors duration-150 hover:bg-neon/20"
                     onClick={openConnectModal}
                     type="button"
                   >
@@ -46,7 +46,8 @@ export const RainbowKitCustomConnectButton = () => {
 
               return (
                 <>
-                  <div className="mr-1 hidden flex-col items-end leading-tight sm:flex">
+                  {/* The network is already shown in the header badge, so only the balance sits here. */}
+                  <div className="mr-1 hidden items-center font-mono text-xs sm:flex">
                     <Balance
                       address={account.address as Address}
                       style={{
@@ -55,7 +56,6 @@ export const RainbowKitCustomConnectButton = () => {
                         fontSize: "0.8em",
                       }}
                     />
-                    <span className="text-xs text-muted">{chain.name}</span>
                   </div>
                   <AddressInfoDropdown
                     address={account.address as Address}
