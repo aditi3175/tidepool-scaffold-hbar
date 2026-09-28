@@ -21,6 +21,21 @@
   --color-twap: #7aa2f7;
   --color-danger: #f87171;
 
+  /* UI v3 (in review on /lab/ui; replaces the palette above once approved). Graphite neutrals, one accent. */
+  --color-ui-bg: #0b0d10;
+  --color-ui-panel: #111419;
+  --color-ui-raised: #171b21;
+  --color-ui-line: #1e232b;
+  --color-ui-line-strong: #2a313b;
+  --color-ui-fg: #e8eaed;
+  --color-ui-muted: #8b93a1;
+  --color-ui-faint: #5c6470;
+  --color-ui-accent: #3dd6a3;
+  --color-ui-accent-ink: #06140f;
+  --color-ui-warn: #e8a33d;
+  --color-ui-bad: #f0655a;
+  --color-ui-twap: #b8c0cc;
+
   /* Type scale: 12 / 14 / 16 / 20 / 28 / 40 */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
