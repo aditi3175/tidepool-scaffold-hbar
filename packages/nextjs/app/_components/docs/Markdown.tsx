@@ -47,13 +47,16 @@ const CodeBlock = ({ children }: { children: ReactNode }) => {
   const language = /language-(\w+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
   const text = textOf(code?.props.children ?? children).replace(/\n$/, "");
   return (
-    <figure className="my-4 overflow-hidden rounded-lg border border-line bg-surface">
-      <figcaption className="flex items-center justify-between border-b border-line px-3 py-1">
-        <span className="tp-num text-xs text-muted">{language}</span>
+    <figure className="my-6 overflow-hidden rounded-xl border border-white/10 bg-surface">
+      <figcaption className="flex items-center justify-between border-b border-white/[0.06] px-4 py-1.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
+          <span className="h-1.5 w-1.5 rounded-full bg-neon" aria-hidden />
+          {language}
+        </span>
         <CopyButton text={text} />
       </figcaption>
-      <pre className="m-0 overflow-x-auto p-4 text-sm leading-5">
-        <code className="tp-num text-fg">{text}</code>
+      <pre className="m-0 overflow-x-auto p-5 text-[13px] leading-6">
+        <code className="font-mono text-fg">{text}</code>
       </pre>
     </figure>
   );
@@ -74,7 +77,7 @@ const components: Components = {
     );
   },
   table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-lg border border-line">
+    <div className="my-6 overflow-x-auto rounded-xl border border-white/10">
       <table>{children}</table>
     </div>
   ),

@@ -170,6 +170,23 @@
 .btn {
   @apply shadow-none;
 }
+/* Primary buttons everywhere (dashboard, 404): the neon-to-cyan gradient with a soft glow. */
+.btn.btn-primary {
+  border: 0;
+  background: linear-gradient(90deg, #00f5a0, #00d1ff);
+  color: var(--color-ink);
+  font-weight: 700;
+  box-shadow: 0 0 28px -8px rgb(0 245 160 / 0.6);
+}
+.btn.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn.btn-primary:disabled,
+.btn.btn-primary[disabled] {
+  background: var(--color-raised);
+  color: var(--color-faint);
+  box-shadow: none;
+}
 
 .link {
   text-underline-offset: 2px;
@@ -240,37 +257,44 @@
 .tp-prose {
   overflow-wrap: break-word;
   color: var(--color-fg);
-  font-size: var(--text-base);
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.75;
 }
 .tp-prose > * + * {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
 }
 .tp-prose h2 {
-  margin-top: 2.5rem;
-  font-size: var(--text-xl);
-  line-height: var(--text-xl--line-height);
-  font-weight: 600;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .tp-prose h3 {
-  margin-top: 2rem;
-  font-size: var(--text-base);
-  font-weight: 600;
+  margin-top: 2.25rem;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 .tp-prose p,
 .tp-prose li {
-  color: rgb(230 237 243 / 0.85);
+  color: var(--color-muted);
 }
 .tp-prose strong {
   color: var(--color-fg);
   font-weight: 600;
 }
 .tp-prose a {
-  color: var(--color-teal);
+  color: var(--color-neon);
+  text-decoration: underline;
+  text-decoration-color: rgb(0 245 160 / 0.35);
   text-underline-offset: 3px;
 }
 .tp-prose a:hover {
-  text-decoration: underline;
+  text-decoration-color: var(--color-neon);
 }
 .tp-prose ul,
 .tp-prose ol {
@@ -286,22 +310,36 @@
   margin-top: 0.5rem;
 }
 .tp-prose li::marker {
-  color: var(--color-muted);
+  color: var(--color-neon);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
 }
 .tp-prose :not(pre) > code {
   overflow-wrap: anywhere;
   font-family: var(--font-mono);
-  font-size: 0.875em;
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
-  background: var(--color-raised);
-  border: 1px solid var(--color-line);
+  font-size: 0.84em;
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  color: #9ff5d5;
+  background: rgb(0 245 160 / 0.06);
+  border: 1px solid rgb(0 245 160 / 0.14);
 }
 .tp-prose blockquote {
-  border-left: 2px solid var(--color-amber);
-  padding: 0.5rem 1rem;
-  background: var(--color-surface);
-  border-radius: 0 8px 8px 0;
+  position: relative;
+  padding: 1rem 1.25rem 1rem 1.5rem;
+  background: rgb(255 176 32 / 0.05);
+  border: 1px solid rgb(255 176 32 / 0.2);
+  border-radius: 12px;
+}
+.tp-prose blockquote::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-amber);
 }
 .tp-prose blockquote p {
   color: var(--color-fg);
@@ -309,26 +347,33 @@
 .tp-prose table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-sm);
-  line-height: var(--text-sm--line-height);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .tp-prose th {
   text-align: left;
-  font-weight: 600;
-  color: var(--color-fg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-faint);
   background: var(--color-surface);
 }
 .tp-prose th,
 .tp-prose td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-line);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
   vertical-align: top;
+}
+.tp-prose td {
+  color: var(--color-muted);
 }
 .tp-prose tr:last-child td {
   border-bottom: 0;
 }
 .tp-prose hr {
-  border-color: var(--color-line);
+  border-color: rgb(255 255 255 / 0.06);
 }
 
 /* Route progress bar: a flat 2px teal line; no glow. */
@@ -355,23 +400,23 @@
 .tp-debug {
   /* The package's hidden hover tooltips are wider than a phone screen; don't let them widen the page. */
   overflow-x: clip;
-  --color-sui-primary: #2dd4bf;
-  --color-sui-primary-content: #e6edf3;
-  --color-sui-primary-subtle: #1c2b38;
-  --color-sui-primary-neutral: #0f1820;
-  --color-sui-accent: #2dd4bf;
-  --color-sui-base-content: #e6edf3;
-  --color-sui-base-100: #0f1820;
-  --color-sui-neutral: #e6edf3;
-  --color-sui-neutral-content: #0a1016;
-  --color-sui-input-text: #e6edf3;
-  --color-sui-input-placeholder: #8a9bab;
-  --color-sui-input-background: #0a1016;
-  --color-sui-input-border: #1c2b38;
-  --color-sui-input-border-disabled: #1c2b38;
-  --color-sui-input-border-error: #f87171;
-  --color-sui-skeleton-base: #0f1820;
-  --color-sui-skeleton-highlight: #1c2b38;
+  --color-sui-primary: #00f5a0;
+  --color-sui-primary-content: #f2f5f8;
+  --color-sui-primary-subtle: #16202b;
+  --color-sui-primary-neutral: #080c12;
+  --color-sui-accent: #00f5a0;
+  --color-sui-base-content: #f2f5f8;
+  --color-sui-base-100: #080c12;
+  --color-sui-neutral: #f2f5f8;
+  --color-sui-neutral-content: #04060a;
+  --color-sui-input-text: #f2f5f8;
+  --color-sui-input-placeholder: #5e6b7a;
+  --color-sui-input-background: #04060a;
+  --color-sui-input-border: #16202b;
+  --color-sui-input-border-disabled: #16202b;
+  --color-sui-input-border-error: #ff5470;
+  --color-sui-skeleton-base: #080c12;
+  --color-sui-skeleton-highlight: #16202b;
 }
 /* No shadows, 8px corners, no letter-spaced uppercase, teal buttons: the site's rules, applied to the debugger. */
 .tp-debug * {
@@ -379,11 +424,24 @@
 }
 .tp-debug .rounded-3xl,
 .tp-debug [class*="rounded-[22px]"] {
-  border-radius: 8px;
+  border-radius: 16px;
 }
 .tp-debug .rounded-b-3xl {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+/* Inputs: 10px corners instead of pills, neon focus. */
+.tp-debug [class*="bg-sui-input-background"] {
+  border-radius: 10px;
+  border-width: 1px;
+}
+.tp-debug [class*="bg-sui-input-background"]:focus-within {
+  border-color: rgb(0 245 160 / 0.5);
+}
+/* Function and variable names in the mono face. */
+.tp-debug .font-medium.break-words,
+.tp-debug .font-bold.break-words {
+  font-family: var(--font-mono);
 }
 .tp-debug .uppercase {
   text-transform: none;
@@ -397,8 +455,10 @@
   background-color: var(--color-bg);
 }
 .tp-debug .btn-dc-secondary {
-  background-color: var(--color-teal);
-  color: var(--color-bg);
+  background: linear-gradient(90deg, #00f5a0, #00d1ff);
+  color: var(--color-ink);
+  font-weight: 700;
+  border-radius: 8px;
 }
 .tp-debug .btn-dc-secondary:hover:not(:disabled) {
   opacity: 0.9;

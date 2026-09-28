@@ -42,7 +42,7 @@ export const DocsSidebar = ({ index }: { index: IndexEntry[] }) => {
           placeholder="Search the docs"
           value={query}
           onChange={event => setQuery(event.target.value)}
-          className="h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted"
+          className="h-10 w-full rounded-lg border border-white/10 bg-surface px-3 text-sm text-fg outline-none placeholder:text-faint focus:border-neon/50"
         />
         {query.trim() && (
           <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0" aria-live="polite">
@@ -54,7 +54,7 @@ export const DocsSidebar = ({ index }: { index: IndexEntry[] }) => {
                   <Link
                     href={hit.href}
                     onClick={() => setQuery("")}
-                    className="block rounded-lg px-2 py-1 text-fg hover:bg-raised"
+                    className="block rounded-lg px-3 py-1.5 text-fg hover:bg-white/[0.04]"
                   >
                     {hit.label}
                     {hit.page && <span className="block text-xs text-muted">{hit.page}</span>}
@@ -68,8 +68,8 @@ export const DocsSidebar = ({ index }: { index: IndexEntry[] }) => {
 
       {sections.map(section => (
         <div key={section}>
-          <div className="mb-2 px-2 text-xs font-medium text-muted">{section}</div>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          <div className="mb-2 px-3 font-mono text-[11px] uppercase tracking-[0.14em] text-faint">{section}</div>
+          <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
             {DOCS.filter(doc => doc.section === section).map(doc => {
               const href = docHref(doc.slug);
               const active = pathname === href;
@@ -78,7 +78,11 @@ export const DocsSidebar = ({ index }: { index: IndexEntry[] }) => {
                   <Link
                     href={href}
                     aria-current={active ? "page" : undefined}
-                    className={`block rounded-lg px-2 py-1 ${active ? "bg-raised text-fg" : "text-muted hover:text-fg"}`}
+                    className={`relative block rounded-lg px-3 py-1.5 transition-colors ${
+                      active
+                        ? "bg-neon/[0.07] text-fg before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-neon before:shadow-[0_0_8px_#00F5A0]"
+                        : "text-muted hover:bg-white/[0.03] hover:text-fg"
+                    }`}
                   >
                     {doc.title}
                   </Link>

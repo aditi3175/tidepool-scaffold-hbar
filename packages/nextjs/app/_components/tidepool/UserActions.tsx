@@ -71,15 +71,21 @@ export const UserActions = ({
   return (
     <div id="deposit-panel" className={className}>
       <Card className="flex-1">
-        <div role="tablist" aria-label="Action" className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-bg p-1">
+        <div
+          role="tablist"
+          aria-label="Action"
+          className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/[0.06] bg-bg p-1"
+        >
           {(["deposit", "withdraw"] as const).map(id => (
             <button
               key={id}
               role="tab"
               type="button"
               aria-selected={tab === id}
-              className={`rounded-lg py-2 text-sm capitalize ${
-                tab === id ? "bg-raised font-medium text-fg" : "text-muted hover:text-fg"
+              className={`cursor-pointer rounded-lg py-2 text-sm font-semibold capitalize transition-colors ${
+                tab === id
+                  ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]"
+                  : "text-muted hover:text-fg"
               }`}
               onClick={() => setTab(id)}
             >

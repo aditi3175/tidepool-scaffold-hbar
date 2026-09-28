@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { NextPage } from "next";
 import { type Illustration, IllustrationGauge, InteractiveGauge } from "~~/app/_components/site/HowItWorksGauges";
+import { Eyebrow, GradientText, Tile, btn } from "~~/components/pulse";
+import { PageHero } from "~~/components/pulse/PageHero";
 import { getMetadata } from "~~/utils/scaffold-hbar/getMetadata";
 
 export const metadata = getMetadata({
@@ -52,66 +54,74 @@ const STEPS = [
 ];
 
 const HowItWorks: NextPage = () => (
-  <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-4 pt-12 sm:px-6 sm:pt-16">
-    <header className="max-w-2xl">
-      <h1 className="m-0 text-title font-semibold tracking-tight text-fg">How it works</h1>
-      <p className="mt-3 text-base text-muted">
-        One vault, one SaucerSwap V2 position, and a few rules that decide when it may act.
-      </p>
-    </header>
+  <div>
+    <PageHero eyebrow="How it works" title="How the vault" accent="decides.">
+      A few rules decide when the vault may act. Each is checked on chain, so anyone can press the buttons and nobody
+      can steer it.
+    </PageHero>
 
-    {SECTIONS.map(section => (
-      <section
-        key={section.id}
-        aria-labelledby={section.id}
-        className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12"
-      >
-        <div>
-          <h2 id={section.id} className="m-0 text-xl font-semibold text-fg">
-            {section.title}
-          </h2>
-          {section.text.map(paragraph => (
-            <p key={paragraph} className="mt-3 text-sm text-muted">
-              {paragraph}
-            </p>
-          ))}
-        </div>
-        <div className="rounded-lg border border-line bg-surface p-4">
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-20 px-4 pb-8 sm:px-6">
+      {SECTIONS.map((section, i) => (
+        <section
+          key={section.id}
+          aria-labelledby={section.id}
+          className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
+        >
+          <div>
+            <span className="font-mono text-sm text-faint">0{i + 1}</span>
+            <h2 id={section.id} className="m-0 mt-3 text-[28px] font-bold leading-tight tracking-[-0.02em] text-fg">
+              {section.title}
+            </h2>
+            {section.text.map(paragraph => (
+              <p key={paragraph} className="mt-4 text-[16px] leading-relaxed text-muted">
+                {paragraph}
+              </p>
+            ))}
+          </div>
           <IllustrationGauge kind={section.id} />
-        </div>
-      </section>
-    ))}
+        </section>
+      ))}
+    </div>
 
-    <section aria-labelledby="try-it" className="flex flex-col gap-4">
-      <div className="max-w-2xl">
-        <h2 id="try-it" className="m-0 text-xl font-semibold text-fg">
-          Move the price
-        </h2>
-        <p className="mt-2 text-sm text-muted">
-          Drag the price and see which action the vault would accept. Nothing is sent; this runs in your browser.
-        </p>
+    <section aria-labelledby="try-it" className="mx-auto max-w-[1280px] px-4 py-24 sm:px-6">
+      <Eyebrow>Try it</Eyebrow>
+      <h2
+        id="try-it"
+        className="m-0 mt-4 text-[clamp(32px,3.6vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-fg"
+      >
+        Move the price. <GradientText>Watch the rules.</GradientText>
+      </h2>
+      <p className="mt-4 max-w-2xl text-[16px] text-muted">
+        Drag the price and see which actions the vault would accept. Nothing is sent; this runs in your browser.
+      </p>
+      <div className="mt-10">
+        <InteractiveGauge />
       </div>
-      <InteractiveGauge />
     </section>
 
-    <section aria-labelledby="as-a-user" className="flex flex-col gap-4">
-      <h2 id="as-a-user" className="m-0 text-xl font-semibold text-fg">
-        What you do as a user
+    <section aria-labelledby="as-a-user" className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6">
+      <Eyebrow>As a user</Eyebrow>
+      <h2
+        id="as-a-user"
+        className="m-0 mt-4 text-[clamp(32px,3.6vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-fg"
+      >
+        Five steps, <GradientText>then it runs itself.</GradientText>
       </h2>
-      <ol className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-5">
+      <ol className="m-0 mt-10 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-5">
         {STEPS.map((step, i) => (
-          <li key={step.title} className="rounded-lg border border-line bg-surface p-4">
-            <div className="flex items-baseline gap-2">
-              <span className="tp-num text-xs text-teal">{i + 1}</span>
-              <h3 className="m-0 text-sm font-semibold text-fg">{step.title}</h3>
-            </div>
-            <p className="mt-1 text-sm text-muted">{step.text}</p>
-          </li>
+          <Tile as="li" key={step.title} innerClassName="p-5">
+            <span className="font-mono text-sm text-neon">0{i + 1}</span>
+            <h3 className="m-0 mt-4 text-lg font-bold text-fg">{step.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
+          </Tile>
         ))}
       </ol>
-      <div>
-        <Link href="/dashboard" className="btn btn-primary h-10 min-h-10 rounded-lg px-4 text-sm font-medium">
-          Open dashboard
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Link href="/dashboard" className={btn.primary}>
+          Open the dashboard
+        </Link>
+        <Link href="/docs/using-the-vault" className={btn.ghost}>
+          Read the guide
         </Link>
       </div>
     </section>

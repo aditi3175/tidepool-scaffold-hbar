@@ -45,26 +45,36 @@ export const Card = ({
   stretch?: boolean;
 }) => (
   <section
-    className={`rounded-lg border border-line bg-surface p-4 sm:p-6 ${stretch ? "flex flex-1 flex-col" : ""} ${className}`}
+    className={`rounded-2xl bg-[linear-gradient(160deg,rgba(0,245,160,0.3),rgba(255,255,255,0.06)_28%,rgba(255,255,255,0.04)_72%,rgba(0,209,255,0.26))] flex flex-col p-px ${
+      stretch ? "flex-1" : ""
+    } ${className}`}
   >
-    {(title || actions) && (
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        {title && <h2 className="m-0 text-base font-semibold leading-6">{title}</h2>}
-        {actions}
-      </header>
-    )}
-    {stretch ? <div className="flex flex-1 flex-col justify-between gap-6">{children}</div> : children}
+    <div className={`flex-1 rounded-[15px] bg-surface p-5 sm:p-6 ${stretch ? "flex flex-col" : ""}`}>
+      {(title || actions) && (
+        <header className="mb-5 flex flex-wrap items-center justify-between gap-2">
+          {title && (
+            <h2 className="m-0 font-mono text-[11px] font-medium uppercase leading-5 tracking-[0.14em] text-muted">
+              {title}
+            </h2>
+          )}
+          {actions}
+        </header>
+      )}
+      {stretch ? <div className="flex flex-1 flex-col justify-between gap-6">{children}</div> : children}
+    </div>
   </section>
 );
 
 /** A short label over a value, with an optional "?" explanation. */
 export const Stat = ({ label, tip, children }: { label: string; tip?: ReactNode; children: ReactNode }) => (
   <div className="min-w-0">
-    <div className="flex items-center gap-1 text-xs text-muted">
+    <div className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
       {label}
       {tip && <InfoTip label={label}>{tip}</InfoTip>}
     </div>
-    <div className="tp-num mt-1 truncate text-sm font-medium text-fg">{children}</div>
+    <div className="mt-1.5 font-mono text-base font-semibold tabular-nums text-fg [overflow-wrap:anywhere]">
+      {children}
+    </div>
   </div>
 );
 
@@ -85,7 +95,7 @@ export const TokenAmount = ({
 );
 
 export const Skeleton = ({ className = "h-4 w-24" }: { className?: string }) => (
-  <span className={`inline-block animate-pulse rounded bg-base-300/70 ${className}`} aria-hidden />
+  <span className={`inline-block animate-pulse rounded bg-white/[0.06] ${className}`} aria-hidden />
 );
 
 type Tone = "success" | "warning" | "error" | "neutral" | "accent";
@@ -109,9 +119,12 @@ export const StatePill = ({
   className?: string;
 }) => (
   <span
-    className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium ${TONES[tone].ring} ${TONES[tone].text} ${className}`}
+    className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md border px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.08em] ${TONES[tone].ring} ${TONES[tone].text} ${className}`}
   >
-    <span className={`h-1.5 w-1.5 rounded-full ${TONES[tone].dot}`} aria-hidden />
+    <span
+      className={`h-1.5 w-1.5 rounded-full ${TONES[tone].dot} ${tone === "success" ? "shadow-[0_0_8px_#00F5A0]" : ""}`}
+      aria-hidden
+    />
     {children}
   </span>
 );

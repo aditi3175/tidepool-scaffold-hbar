@@ -38,19 +38,21 @@ export function DebugContracts() {
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="w-full max-w-[1200px] px-4 sm:px-6">
+            <div className="w-full max-w-[1280px] px-4 sm:px-6">
               <div
                 role="tablist"
                 aria-label="Contract"
-                className="inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-surface p-1 sm:w-fit"
+                className="inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-xl border border-white/10 bg-surface p-1 sm:w-fit"
               >
                 {contractNames.map(contractName => (
                   <button
                     role="tab"
                     type="button"
                     aria-selected={contractName === selectedContract}
-                    className={`tp-num flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm sm:flex-none ${
-                      contractName === selectedContract ? "bg-raised text-fg" : "text-muted hover:text-fg"
+                    className={`flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 font-mono text-sm transition-colors sm:flex-none ${
+                      contractName === selectedContract
+                        ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]"
+                        : "text-muted hover:text-fg"
                     }`}
                     key={String(contractName)}
                     onClick={() => setSelectedContract(contractName)}

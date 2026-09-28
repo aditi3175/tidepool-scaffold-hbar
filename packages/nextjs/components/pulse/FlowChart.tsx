@@ -9,6 +9,8 @@ export type FlowChartProps = {
   twap?: number;
   /** The vault's own flag. Out of range: the band turns amber and trades pass through without sparking. */
   inRange?: boolean;
+  /** The range before the last rebalance, drawn as a dotted outline. */
+  previous?: { lower: number; upper: number };
   className?: string;
   label: string;
 };
@@ -25,12 +27,21 @@ export function priceDomain(lower: number, upper: number, extra: number[]) {
  * The range with swaps flowing across it. The flowing dots are illustrative; the band, spot (white) and TWAP (dashed
  * cyan, shown when apart) are live. Pauses off screen and in hidden tabs; draws still frames with reduced motion.
  */
-export const FlowChart = ({ lower, upper, spot, twap, inRange = true, className = "", label }: FlowChartProps) => {
+export const FlowChart = ({
+  lower,
+  upper,
+  spot,
+  twap,
+  inRange = true,
+  previous,
+  className = "",
+  label,
+}: FlowChartProps) => {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const props = useRef({ lower, upper, spot, twap, inRange });
+  const props = useRef({ lower, upper, spot, twap, inRange, previous });
   useEffect(() => {
-    props.current = { lower, upper, spot, twap, inRange };
+    props.current = { lower, upper, spot, twap, inRange, previous };
   });
 
   useEffect(() => {
@@ -83,13 +94,24 @@ export const FlowChart = ({ lower, upper, spot, twap, inRange = true, className 
         ctx!.fillText("Reading the vault…", w / 2, h / 2);
         return;
       }
-      const { min, max } = priceDomain(s.lower, s.upper, [s.spot, s.twap ?? s.spot]);
+      const { min, max } = priceDomain(s.lower, s.upper, [
+        s.spot,
+        s.twap ?? s.spot,
+        ...(s.previous ? [s.previous.lower, s.previous.upper] : []),
+      ]);
       const X = (p: number) => ((p - min) / (max - min)) * w;
       const x0 = X(s.lower);
       const x1 = X(s.upper);
       const xs = X(s.spot);
       const edge = s.inRange ? "#00F5A0" : "#FFB020";
 
+      if (s.previous) {
+        ctx!.strokeStyle = "rgba(154,167,182,0.55)";
+        ctx!.setLineDash([3, 4]);
+        ctx!.lineWidth = 1;
+        ctx!.strokeRect(X(s.previous.lower) + 0.5, 0.5, X(s.previous.upper) - X(s.previous.lower), h - 1);
+        ctx!.setLineDash([]);
+      }
       const band = ctx!.createLinearGradient(0, 0, 0, h);
       band.addColorStop(0, s.inRange ? "rgba(0,245,160,0.22)" : "rgba(255,176,32,0.18)");
       band.addColorStop(1, s.inRange ? "rgba(0,209,255,0.04)" : "rgba(255,176,32,0.03)");

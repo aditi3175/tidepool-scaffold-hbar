@@ -3,80 +3,108 @@ import { DocsSidebar } from "~~/app/_components/docs/DocsSidebar";
 import { Markdown } from "~~/app/_components/docs/Markdown";
 import { type LoadedDoc, searchIndex } from "~~/app/_components/docs/load";
 import { DOCS, docHref } from "~~/app/_components/docs/manifest";
+import { Eyebrow } from "~~/components/pulse";
 import { GITHUB_URL } from "~~/utils/tidepool/constants";
 
 /** A docs page: sidebar with search, the article, an "On this page" list, and previous/next links. */
 export const DocsPage = ({ doc }: { doc: LoadedDoc }) => {
   const index = searchIndex();
   const position = DOCS.findIndex(entry => entry.slug === doc.slug);
+  const entry = DOCS[position];
   const previous = position > 0 ? DOCS[position - 1] : undefined;
   const next = position < DOCS.length - 1 ? DOCS[position + 1] : undefined;
+  const source = `${GITHUB_URL}/blob/main/packages/nextjs/content/docs/${doc.file}`;
 
   return (
-    <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 pt-8 sm:px-6 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[208px_minmax(0,1fr)_200px]">
-      {/* Sidebar: a disclosure on small screens, a sticky column on large ones */}
-      <aside className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
-        <details className="rounded-lg border border-line bg-surface lg:hidden">
-          <summary className="cursor-pointer px-3 py-2 text-sm text-fg">Docs menu</summary>
-          <div className="border-t border-line p-3">
+    <div className="relative isolate overflow-x-clip">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[360px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(0,245,160,0.08),transparent)]"
+      />
+      <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[232px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)_220px]">
+        {/* Sidebar: a disclosure on small screens, a sticky column on large ones */}
+        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+          <details className="rounded-xl border border-white/10 bg-surface lg:hidden">
+            <summary className="cursor-pointer px-4 py-3 font-mono text-xs uppercase tracking-[0.12em] text-muted">
+              Docs menu
+            </summary>
+            <div className="border-t border-white/[0.06] p-3">
+              <DocsSidebar index={index} />
+            </div>
+          </details>
+          <div className="hidden lg:block">
             <DocsSidebar index={index} />
           </div>
-        </details>
-        <div className="hidden lg:block">
-          <DocsSidebar index={index} />
-        </div>
-      </aside>
+        </aside>
 
-      <article className="min-w-0 max-w-[720px]">
-        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="m-0 text-title font-semibold tracking-tight text-fg">{doc.title}</h1>
+        <article className="min-w-0 max-w-[760px]">
+          <Eyebrow>{entry?.section ?? "Docs"}</Eyebrow>
+          <h1 className="m-0 mt-4 text-[clamp(34px,4vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-fg">
+            {doc.title}
+          </h1>
+          <div className="mt-8">
+            <Markdown body={doc.body} />
+          </div>
+
+          <nav
+            aria-label="Previous and next page"
+            className="mt-16 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-8"
+          >
+            {previous ? (
+              <Link
+                href={docHref(previous.slug)}
+                className="group rounded-xl border border-white/10 bg-surface p-4 transition-colors hover:border-neon/40"
+              >
+                <span className="block font-mono text-[11px] uppercase tracking-[0.12em] text-faint">← Previous</span>
+                <span className="mt-1 block font-bold text-fg group-hover:text-neon">{previous.title}</span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <Link
+                href={docHref(next.slug)}
+                className="group rounded-xl border border-white/10 bg-surface p-4 text-right transition-colors hover:border-neon/40"
+              >
+                <span className="block font-mono text-[11px] uppercase tracking-[0.12em] text-faint">Next →</span>
+                <span className="mt-1 block font-bold text-fg group-hover:text-neon">{next.title}</span>
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        </article>
+
+        <aside className="hidden xl:sticky xl:top-24 xl:block xl:max-h-[calc(100vh-7rem)] xl:self-start xl:overflow-y-auto">
+          {doc.headings.length > 0 && (
+            <nav aria-label="On this page" className="text-sm">
+              <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-faint">On this page</div>
+              <ul className="m-0 flex list-none flex-col border-l border-white/[0.08] p-0">
+                {doc.headings.map(heading => (
+                  <li key={heading.id}>
+                    <a
+                      href={`#${heading.id}`}
+                      className={`-ml-px block border-l border-transparent py-1.5 text-muted hover:border-neon hover:text-fg ${
+                        heading.level === 3 ? "pl-7" : "pl-4"
+                      }`}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
           <a
-            href={`${GITHUB_URL}/blob/main/packages/nextjs/content/docs/${doc.file}`}
+            href={source}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-muted hover:text-fg"
+            className="mt-8 inline-flex items-center gap-1.5 font-mono text-xs text-faint hover:text-neon"
           >
-            View source on GitHub
+            Edit on GitHub ↗
           </a>
-        </div>
-        <Markdown body={doc.body} />
-
-        <nav aria-label="Previous and next page" className="mt-12 grid grid-cols-2 gap-4 border-t border-line pt-6">
-          {previous ? (
-            <Link href={docHref(previous.slug)} className="rounded-lg border border-line p-3 hover:border-muted">
-              <span className="block text-xs text-muted">Previous</span>
-              <span className="text-sm text-fg">{previous.title}</span>
-            </Link>
-          ) : (
-            <span />
-          )}
-          {next ? (
-            <Link href={docHref(next.slug)} className="rounded-lg border border-line p-3 text-right hover:border-muted">
-              <span className="block text-xs text-muted">Next</span>
-              <span className="text-sm text-fg">{next.title}</span>
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      </article>
-
-      <aside className="hidden xl:sticky xl:top-20 xl:block xl:max-h-[calc(100vh-6rem)] xl:self-start xl:overflow-y-auto">
-        {doc.headings.length > 0 && (
-          <nav aria-label="On this page" className="text-sm">
-            <div className="mb-2 text-xs font-medium text-muted">On this page</div>
-            <ul className="m-0 flex list-none flex-col gap-1 p-0">
-              {doc.headings.map(heading => (
-                <li key={heading.id} className={heading.level === 3 ? "pl-3" : undefined}>
-                  <a href={`#${heading.id}`} className="block py-0.5 text-muted hover:text-fg">
-                    {heading.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 };

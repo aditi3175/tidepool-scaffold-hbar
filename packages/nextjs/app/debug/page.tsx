@@ -1,6 +1,8 @@
 import { DebugContracts } from "./_components/DebugContracts";
 import type { NextPage } from "next";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
+import { Label, Tile } from "~~/components/pulse";
+import { PageHero } from "~~/components/pulse/PageHero";
 import { getMetadata } from "~~/utils/scaffold-hbar/getMetadata";
 
 export const metadata = getMetadata({
@@ -16,37 +18,42 @@ const WORTH_READING = [
 ];
 
 const Contracts: NextPage = () => (
-  <div className="tp-debug">
-    <header className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pt-10 sm:px-6">
-      <h1 className="m-0 text-title font-semibold tracking-tight text-fg">Contracts</h1>
-      <p className="max-w-2xl text-sm text-muted">
-        Every function of <span className="tp-num text-fg">TidepoolVault</span> and{" "}
-        <span className="tp-num text-fg">TidepoolVaultNarrow</span>, straight from the ABI, without the dashboard&apos;s
-        checks.
-      </p>
-      <div role="note" className="flex max-w-2xl gap-3 rounded-lg border border-amber/40 bg-surface px-4 py-3 text-sm">
-        <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber" aria-hidden />
+  <div>
+    <PageHero eyebrow="Contracts" title="Every function," accent="straight from the ABI." compact>
+      Read and call <span className="font-mono text-fg">TidepoolVault</span> and{" "}
+      <span className="font-mono text-fg">TidepoolVaultNarrow</span> directly, without the dashboard&apos;s checks.
+    </PageHero>
+    <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-4 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+      <div
+        role="note"
+        className="flex gap-3 rounded-2xl border border-amber/30 bg-amber/[0.05] p-5 text-[15px] leading-relaxed"
+      >
+        <ExclamationTriangleIcon className="mt-1 h-5 w-5 shrink-0 text-amber" aria-hidden />
         <p className="text-fg">
-          Writes here send real Hedera Testnet transactions from your wallet. Use the dashboard for deposit, withdraw,
-          compound and rebalance.
+          Writes here send <strong>real Hedera Testnet transactions</strong> from your wallet. Use the dashboard for
+          deposit, withdraw, compound and rebalance: it runs the same checks the contract does first.
         </p>
       </div>
-      <div className="max-w-2xl text-sm">
-        <h2 className="m-0 text-sm font-semibold text-fg">Worth reading</h2>
-        <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0 text-muted">
+      <Tile innerClassName="p-5">
+        <Label>Worth reading</Label>
+        <ul className="m-0 mt-3 grid list-none grid-cols-1 gap-x-6 gap-y-2.5 p-0 text-sm sm:grid-cols-2">
           {WORTH_READING.map(item => (
             <li key={item.name}>
-              <span className="tp-num text-fg">{item.name}</span>: {item.text}
+              <span className="font-mono text-neon">{item.name}</span>
+              <span className="block text-muted">{item.text}</span>
             </li>
           ))}
+          <li>
+            <span className="font-mono text-neon">refreshApprovals</span>
+            <span className="block text-muted">safe for anyone: only restores the vault&apos;s fixed allowances</span>
+          </li>
         </ul>
-        <p className="mt-3 text-muted">
-          <span className="tp-num text-fg">refreshApprovals</span> is safe for anyone to call: it only restores the
-          vault&apos;s fixed allowances to SaucerSwap.
-        </p>
-      </div>
-    </header>
-    <DebugContracts />
+      </Tile>
+    </div>
+    {/* .tp-debug maps the debugger package onto the site's palette; it wraps only the package. */}
+    <div className="tp-debug">
+      <DebugContracts />
+    </div>
   </div>
 );
 

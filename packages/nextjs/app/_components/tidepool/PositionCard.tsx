@@ -1,4 +1,4 @@
-import { LiveGauge } from "~~/app/_components/tidepool/LiveGauge";
+import { VaultFlow } from "~~/app/_components/tidepool/VaultFlow";
 import { Card, ExternalLink, Skeleton, Stat, StatePill } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { hashscan } from "~~/utils/tidepool/hashscan";
@@ -54,8 +54,8 @@ export const PositionCard = ({ vault }: { vault: VaultState }) => {
 
   return (
     <Card title="Position">
-      <LiveGauge vault={vault} />
-      <div className="mt-4 grid grid-cols-2 gap-4 border-t border-line pt-4 sm:grid-cols-5">
+      <VaultFlow vault={vault} />
+      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-5 sm:grid-cols-5">
         <Stat label="Spot" tip="The pool's price right now.">
           {price(spotTick)}
         </Stat>

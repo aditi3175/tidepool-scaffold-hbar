@@ -8,11 +8,7 @@ export const VaultSelector = ({
   selected: TidepoolVaultConfig;
   onSelect: (id: TidepoolVaultId) => void;
 }) => (
-  <div
-    role="tablist"
-    aria-label="Vault"
-    className="inline-flex gap-1 rounded-lg border border-base-300 bg-base-100 p-1"
-  >
+  <div role="tablist" aria-label="Vault" className="inline-flex gap-1 rounded-xl border border-white/10 bg-surface p-1">
     {TIDEPOOL_VAULTS.map(vault => {
       const active = vault.id === selected.id;
       return (
@@ -21,13 +17,13 @@ export const VaultSelector = ({
           role="tab"
           type="button"
           aria-selected={active}
-          className={`flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${
-            active ? "bg-base-300 font-medium text-base-content" : "text-base-content/60 hover:text-base-content"
+          className={`flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+            active ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]" : "text-muted hover:text-fg"
           }`}
           onClick={() => onSelect(vault.id)}
         >
           {vault.label.replace(/ (Demo )?Vault$/, "")}
-          {vault.demo && <span className="text-xs text-warning">Demo</span>}
+          {vault.demo && <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-amber">Demo</span>}
         </button>
       );
     })}
