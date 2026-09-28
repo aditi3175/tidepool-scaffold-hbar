@@ -16,6 +16,9 @@ cd <your-project>
 npm run next:dev
 ```
 
+> Keep the `--` before `--template`. npm 7+ swallows `--template` without it and the CLI falls back to its
+> built-in templates. Alternative: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`.
+
 The CLI will ask for the Hedera network (choose testnet) and whether to install Hedera Skills (optional).
 
 Open http://localhost:3000/dashboard, connect a wallet on Hedera Testnet (chain 296), and you're looking at the live reference vault.
