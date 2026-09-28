@@ -1,13 +1,10 @@
 "use client";
 
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import { ActivityFeed } from "~~/app/_components/tidepool/ActivityFeed";
-import { GetStarted } from "~~/app/_components/tidepool/GetStarted";
-import { VaultHoldingsCard, YourPositionCard } from "~~/app/_components/tidepool/HoldingsCard";
+import { DashboardColumns } from "~~/app/_components/tidepool/DashboardColumns";
 import { KeeperCard } from "~~/app/_components/tidepool/KeeperPanel";
-import { PositionCard, SpotPrice, VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
-import { UserActions } from "~~/app/_components/tidepool/UserActions";
+import { SpotPrice, VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
 import { VaultSelector } from "~~/app/_components/tidepool/VaultSelector";
 import { Skeleton } from "~~/app/_components/tidepool/ui";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
@@ -23,21 +20,6 @@ const Dashboard: NextPage = () => {
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
       {/* Keyed by vault so inputs and transaction status reset when switching. */}
       <VaultDashboard key={vault.id} config={vault} onSelect={select} />
-    </div>
-  );
-};
-
-/** One line on what the vault is and a Connect button, for visitors without a wallet connected. */
-const ConnectPrompt = () => {
-  const { openConnectModal } = useConnectModal();
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3">
-      <p className="text-sm text-muted">
-        This vault owns one SaucerSwap V2 position on Hedera testnet. Connect a wallet to deposit.
-      </p>
-      <button type="button" className="btn btn-primary btn-sm h-9 rounded-lg px-4" onClick={openConnectModal}>
-        Connect wallet
-      </button>
     </div>
   );
 };
@@ -100,12 +82,9 @@ const VaultDashboard = ({
     );
   }
 
-  const hasShares = (user.shares ?? 0n) > 0n;
-
   return (
     <>
       {topBar}
-      {!user.connected && <ConnectPrompt />}
       {vault.readError && (
         <div
           role="alert"
@@ -118,17 +97,7 @@ const VaultDashboard = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <PositionCard vault={vault} />
-          {user.connected && user.shares !== undefined && !hasShares && <GetStarted vault={vault} user={user} />}
-          {user.connected && hasShares && <YourPositionCard vault={vault} user={user} />}
-        </div>
-        <div className="flex min-w-0 flex-col gap-6">
-          <VaultHoldingsCard vault={vault} />
-          <UserActions vault={vault} user={user} />
-        </div>
-      </div>
+      <DashboardColumns vault={vault} user={user} />
 
       <KeeperCard vault={vault} />
       <ActivityFeed vault={vault} />

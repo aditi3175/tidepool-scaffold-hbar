@@ -19,7 +19,16 @@ export function openDepositPanel(target: "wrap" | "deposit") {
 }
 
 /** Deposit and withdraw, the actions that change the connected account's shares. */
-export const UserActions = ({ vault, user }: { vault: VaultState; user: UserPosition }) => {
+export const UserActions = ({
+  vault,
+  user,
+  className = "",
+}: {
+  vault: VaultState;
+  user: UserPosition;
+  /** Applied to the panel's wrapper (the dashboard uses it to fill the column). */
+  className?: string;
+}) => {
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
   const { openConnectModal } = useConnectModal();
 
@@ -44,8 +53,8 @@ export const UserActions = ({ vault, user }: { vault: VaultState; user: UserPosi
 
   if (!user.connected) {
     return (
-      <div id="deposit-panel">
-        <Card title="Deposit or withdraw">
+      <div id="deposit-panel" className={className}>
+        <Card title="Deposit or withdraw" className="flex-1">
           <p className="text-sm text-muted">Connect a wallet to deposit tokens for shares or withdraw them.</p>
           <button
             type="button"
@@ -60,8 +69,8 @@ export const UserActions = ({ vault, user }: { vault: VaultState; user: UserPosi
   }
 
   return (
-    <div id="deposit-panel">
-      <Card>
+    <div id="deposit-panel" className={className}>
+      <Card className="flex-1">
         <div role="tablist" aria-label="Action" className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-bg p-1">
           {(["deposit", "withdraw"] as const).map(id => (
             <button

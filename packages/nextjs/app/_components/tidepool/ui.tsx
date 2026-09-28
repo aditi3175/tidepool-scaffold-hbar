@@ -27,26 +27,33 @@ export const ExternalLink = ({
   </a>
 );
 
-/** A flat surface with an optional title row. */
+/**
+ * A flat surface with an optional title row. With `stretch`, the card fills its container's height and spreads its
+ * body from top to bottom (used to line up the two dashboard columns; no fixed heights).
+ */
 export const Card = ({
   title,
   actions,
   children,
   className = "",
+  stretch = false,
 }: {
   title?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  stretch?: boolean;
 }) => (
-  <section className={`rounded-xl border border-base-300 bg-base-100 p-4 sm:p-6 ${className}`}>
+  <section
+    className={`rounded-lg border border-line bg-surface p-4 sm:p-6 ${stretch ? "flex flex-1 flex-col" : ""} ${className}`}
+  >
     {(title || actions) && (
       <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
         {title && <h2 className="m-0 text-base font-semibold leading-6">{title}</h2>}
         {actions}
       </header>
     )}
-    {children}
+    {stretch ? <div className="flex flex-1 flex-col justify-between gap-6">{children}</div> : children}
   </section>
 );
 

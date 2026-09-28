@@ -87,7 +87,7 @@ export const GetStarted = ({ vault, user }: { vault: VaultState; user: UserPosit
   const current = steps.findIndex(step => !step.done);
 
   return (
-    <Card title="Get started">
+    <Card title="Get started" stretch>
       <ol className="m-0 flex list-none flex-col gap-3 p-0">
         {steps.map((step, i) => {
           const state = step.done ? "done" : i === current ? "current" : "todo";
@@ -118,6 +118,14 @@ export const GetStarted = ({ vault, user }: { vault: VaultState; user: UserPosit
           );
         })}
       </ol>
+      <div className="border-t border-line pt-4">
+        <h3 className="m-0 text-xs font-normal text-muted">What happens after you deposit</h3>
+        <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0 text-sm text-fg">
+          <li>You receive vault shares, an HTS token, for your part of the vault.</li>
+          <li>Anyone can compound: fees are collected and added back to the position.</li>
+          <li>You can withdraw your share at any time; the TWAP guard never blocks it.</li>
+        </ul>
+      </div>
     </Card>
   );
 };
