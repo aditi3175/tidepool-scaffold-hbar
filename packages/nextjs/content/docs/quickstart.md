@@ -61,7 +61,8 @@ packages/nextjs/
   app/page.tsx                               landing page
   app/dashboard/page.tsx                     dashboard
   app/how-it-works/, app/docs/, app/debug/   How it works, docs, contract debugger
-  app/_components/tidepool/                  dashboard components (the Gauge is shared by every page)
+  app/_components/tidepool/                  dashboard components (cards, range chart, keeper panel)
+  components/pulse/                          shared UI: tiles, labels, the TWAP dial, the range flow chart
   content/docs/                              docs pages, in Markdown
   hooks/tidepool/                            vault reads, HTS association, keeper preconditions, activity
   utils/tidepool/                            constants, errors, maths, vault list

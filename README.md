@@ -68,7 +68,8 @@ packages/nextjs/
   app/page.tsx                               landing page
   app/dashboard/page.tsx                     dashboard
   app/how-it-works/, app/docs/, app/debug/   How it works, docs, contract debugger
-  app/_components/tidepool/                  dashboard components (the Gauge is shared by every page)
+  app/_components/tidepool/                  dashboard components (cards, range chart, keeper panel)
+  components/pulse/                          shared UI: tiles, labels, the TWAP dial, the range flow chart
   content/docs/                              docs pages, in Markdown
   hooks/tidepool/                            vault reads, HTS association, keeper preconditions, activity
   utils/tidepool/                            constants, errors, maths, vault list
@@ -144,7 +145,7 @@ Things that work differently from Ethereum and cost time to discover. Each has a
 
 ## Dashboard
 
-The dashboard shows the position's range against spot and TWAP on a gauge, the vault's holdings, your share of the vault, and the vault's activity from the mirror node. Connected accounts without shares get a Get started checklist (associate, wrap HBAR, get SAUCE, deposit). Deposit and withdraw handle association, HBAR wrapping, approvals, and 1% minimums. The keeper panel lists every condition `compound()` and `rebalance()` check on chain, so you can see why an action is unavailable before paying for it.
+The dashboard shows the position's range against spot and TWAP on a live range chart, the vault's holdings, your share of the vault, and the vault's activity from the mirror node. Connected accounts without shares get a Get started checklist (associate, wrap HBAR, get SAUCE, deposit). Deposit and withdraw handle association, HBAR wrapping, approvals, and 1% minimums. The keeper panel lists every condition `compound()` and `rebalance()` check on chain, so you can see why an action is unavailable before paying for it.
 
 `deposit` and `withdraw` are simulated before sending. `compound` and `rebalance` aren't (see gotchas). Vault errors like `PriceDeviation` or `CooldownActive` show as plain-language messages, via small edits to the template's `getParsedError.ts` and `useTransactor.tsx`.
 

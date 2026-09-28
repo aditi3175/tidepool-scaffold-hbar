@@ -158,7 +158,7 @@ WhbarHelper 0.0.5808826. Not tested by this project.
   Browser (Next.js)        │  Hedera testnet                              │
  ┌──────────────────┐      │                                              │
  │ Dashboard        │ JSON-RPC (hashio)                                   │
- │  Gauge           │─────►│  TidepoolVault ──────────┐                   │
+ │  Range chart     │─────►│  TidepoolVault ──────────┐                   │
  │  Deposit/Withdraw│      │   │ HTS 0x167: create/mint/burn share token  │
  │  Keeper          │      │   │           associate token0/1 + LP NFT    │
  │  Activity        │      │   │ 0x168: tinycents → tinybars              │
@@ -455,7 +455,7 @@ tidepool/                                 (GitHub: <you>/tidepool, public, MIT)
 
 > **Shipped frontend differs.** This section records the design-stage frontend. The shipped site (`packages/nextjs`,
 > see `AGENTS.md`) has a landing page, How it works, the dashboard at `/dashboard`, docs at `/docs` and the contract
-> debugger at `/debug`, all built around one Gauge component (range band, spot line, dashed TWAP). The dashboard has a
+> debugger at `/debug`, all built around one range chart (range band, spot line, dashed TWAP). The dashboard has a
 > Main / Narrow Demo vault selector and a keeper card (`KeeperPanel.tsx`) that sends `compound`/`rebalance` with
 > `disableSimulate: true`, fixed 8M gas and fee + 0.1 HBAR, and maps custom errors to plain language. The code and
 > the README's Dashboard section are authoritative.
@@ -617,9 +617,11 @@ as the password is accepted. Never run them from an agent without the user's go-
 - `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
 - `packages/nextjs/app/` — `page.tsx` (landing), `how-it-works/`, `dashboard/`, `docs/` (renders
   `content/docs/*.md`, listed in `app/_components/docs/manifest.ts`), `debug/` (Contracts)
-- `packages/nextjs/app/_components/tidepool/*` — `Gauge.tsx` (the shared range gauge) and `LiveGauge.tsx` (gauge from
-  vault state); dashboard cards: `PositionCard` (gauge + stats), `HoldingsCard` (vault holdings, your position),
-  `GetStarted` (first-deposit checklist), `UserActions` with `DepositCard`/`WithdrawCard`/`AssociateButton`,
+- `packages/nextjs/components/pulse/*` — shared UI: `Tile`, `Label`, `Arc` (TWAP-guard dial), button styles, and
+  `FlowChart.tsx` (the range chart: band, spot, dashed TWAP; the flowing dots are illustrative); `PageHero.tsx`
+- `packages/nextjs/app/_components/tidepool/*` — `VaultFlow.tsx` (the range chart from vault state) and
+  `DashboardStats.tsx` (live stat strip); dashboard cards: `PositionCard` (chart + stats), `HoldingsCard` (vault
+  holdings, your position), `GetStarted` (first-deposit checklist), `UserActions` with `DepositCard`/`WithdrawCard`/`AssociateButton`,
   `KeeperPanel` (compound and rebalance), `ActivityFeed`; shared `ui.tsx`, `InfoTip.tsx`, `TxRail.tsx`, `CopyButton.tsx`
 - `packages/nextjs/hooks/tidepool/` — `useVault` (vault, idle balances, `positions()`, chain time), `useUserPosition`,
   `useHtsAccount`, `useKeeperStatus` (keeper checklist and fee/gas quotes), `useTxFeedback` (inline tx status and

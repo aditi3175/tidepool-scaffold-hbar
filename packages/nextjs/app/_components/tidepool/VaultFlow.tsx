@@ -6,7 +6,7 @@ import { tickToPrice } from "~~/utils/tidepool/math";
 
 /**
  * The vault's live range as the flow chart (the flowing swaps are illustrative), with a real message for every state
- * that has no range to draw. Same states as the older LiveGauge.
+ * that has no range to draw.
  */
 export const VaultFlow = ({ vault, height = "h-[240px]" }: { vault: VaultState; height?: string }) => {
   const { decimals0, decimals1, symbol0, symbol1, tickLower, tickUpper, spotTick, twapTick } = vault;

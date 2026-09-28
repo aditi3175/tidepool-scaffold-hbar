@@ -37,7 +37,7 @@ Withdrawals skip the TWAP guard, so you can always exit.
 
 ## Reading the dashboard
 
-The gauge at the top is the position. The filled band is the range, the solid line is spot (the pool's price now), and the dashed line is the TWAP (the pool's average over `twapWindow`, 600 seconds on the reference vaults). The band is teal while the TWAP is inside the range and amber when it has left.
+The chart at the top is the position. The glowing band is the range, the solid line is spot (the pool's price now), and the dashed line is the TWAP (the pool's average over `twapWindow`, 600 seconds on the reference vaults). The band is green while the TWAP is inside the range and amber when it has left. The dots flowing across it are an illustration of swaps, not live trades.
 
 | Stat | Meaning |
 |---|---|

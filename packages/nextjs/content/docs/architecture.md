@@ -9,7 +9,7 @@ This page summarises how the vault is built: its contracts, parameters, function
   Browser (Next.js)        │  Hedera testnet                              │
  ┌──────────────────┐      │                                              │
  │ Dashboard        │ JSON-RPC (hashio)                                   │
- │  Gauge           │─────►│  TidepoolVault ──────────┐                   │
+ │  Range chart     │─────►│  TidepoolVault ──────────┐                   │
  │  Deposit/Withdraw│      │   │ HTS 0x167: create/mint/burn share token  │
  │  Keeper          │      │   │           associate token0/1 + LP NFT    │
  │  Activity        │      │   │ 0x168: tinycents → tinybars              │
