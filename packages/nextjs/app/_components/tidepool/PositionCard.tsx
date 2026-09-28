@@ -1,6 +1,7 @@
 import { VaultFlow } from "~~/app/_components/tidepool/VaultFlow";
 import { Card, ExternalLink, Skeleton, Stat, StatePill } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
+import { formatToken } from "~~/utils/tidepool/format";
 import { hashscan } from "~~/utils/tidepool/hashscan";
 import { formatAmount, formatDuration, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
 
@@ -86,7 +87,13 @@ export const PositionCard = ({ vault }: { vault: VaultState }) => {
           label="Liquidity"
           tip="The position's liquidity, in SaucerSwap's own units. It grows when fees are compounded."
         >
-          {vault.hasPosition === false ? "0" : formatAmount(vault.liquidity, 0)}
+          {vault.hasPosition === false ? (
+            "0"
+          ) : (
+            <span title={formatAmount(vault.liquidity, 0)}>
+              {vault.liquidity === undefined ? "–" : formatToken(Number(vault.liquidity), { compact: true })}
+            </span>
+          )}
         </Stat>
       </div>
     </Card>

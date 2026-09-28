@@ -42,6 +42,9 @@ const Heading = ({ level, children }: { level: 2 | 3; children: ReactNode }) => 
   );
 };
 
+const DIAGRAM = /[─-╿]/;
+const DIAGRAM_FONTS = '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", "Courier New", monospace';
+
 const CodeBlock = ({ children }: { children: ReactNode }) => {
   const code = isValidElement<{ className?: string; children?: ReactNode }>(children) ? children : undefined;
   const language = /language-(\w+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
@@ -55,8 +58,15 @@ const CodeBlock = ({ children }: { children: ReactNode }) => {
         </span>
         <CopyButton text={text} />
       </figcaption>
-      <pre className="m-0 overflow-x-auto p-5 text-[13px] leading-6">
-        <code className="font-mono text-fg">{text}</code>
+      {/* Diagrams (box-drawing characters) use a system monospace that has those glyphs at the same width as letters;
+          the web font's Latin subset does not. Tighter lines let the vertical strokes join. */}
+      <pre className={`m-0 overflow-x-auto p-5 text-[13px] ${DIAGRAM.test(text) ? "leading-[1.3]" : "leading-6"}`}>
+        <code
+          className="text-fg"
+          style={{ fontFamily: DIAGRAM.test(text) ? DIAGRAM_FONTS : "var(--font-mono), ui-monospace, monospace" }}
+        >
+          {DIAGRAM.test(text) ? text.replace(/▶/g, "►") : text}
+        </code>
       </pre>
     </figure>
   );
