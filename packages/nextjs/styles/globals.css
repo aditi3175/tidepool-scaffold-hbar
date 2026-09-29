@@ -502,34 +502,55 @@
 }
 
 /*
-  Contracts page (/debug): the @scaffold-hbar-ui/debug-contracts palette mapped onto the Tidepool tokens. The package
-  reads --color-sui-* from the root element; redefining them on the .tp-debug wrapper only affects the debugger.
+  Contracts page (/debug): the @scaffold-hbar-ui/debug-contracts package, restyled from outside to match the rest of
+  the site (flat panels, grey hairlines, mono names, one accent). The package reads --color-sui-* from the root
+  element; redefining them on the .tp-debug wrapper only affects the debugger. Its behaviour is untouched.
 */
 .tp-debug {
   /* The package's hidden hover tooltips are wider than a phone screen; don't let them widen the page. */
   overflow-x: clip;
   --color-sui-primary: #2ee6c8;
-  --color-sui-primary-content: #f2f5f8;
-  --color-sui-primary-subtle: #16202b;
-  --color-sui-primary-neutral: #080c12;
+  --color-sui-primary-content: #eef6f5;
+  --color-sui-primary-subtle: #14262a;
+  --color-sui-primary-neutral: #0a1417;
   --color-sui-accent: #2ee6c8;
-  --color-sui-base-content: #f2f5f8;
-  --color-sui-base-100: #080c12;
-  --color-sui-neutral: #f2f5f8;
-  --color-sui-neutral-content: #04060a;
-  --color-sui-input-text: #f2f5f8;
-  --color-sui-input-placeholder: #5e6b7a;
-  --color-sui-input-background: #04060a;
-  --color-sui-input-border: #16202b;
-  --color-sui-input-border-disabled: #16202b;
+  --color-sui-base-content: #eef6f5;
+  --color-sui-base-100: #0a1417;
+  --color-sui-neutral: #eef6f5;
+  --color-sui-neutral-content: #050b0d;
+  --color-sui-input-text: #eef6f5;
+  --color-sui-input-placeholder: #5f7674;
+  --color-sui-input-background: #050b0d;
+  --color-sui-input-border: #1e373c;
+  --color-sui-input-border-disabled: #14262a;
   --color-sui-input-border-error: #ff5470;
-  --color-sui-skeleton-base: #080c12;
-  --color-sui-skeleton-highlight: #16202b;
+  --color-sui-skeleton-base: #0a1417;
+  --color-sui-skeleton-highlight: #14262a;
 }
-/* No shadows, 8px corners, no letter-spaced uppercase, teal buttons: the site's rules, applied to the debugger. */
 .tp-debug * {
   box-shadow: none;
 }
+
+/* The same width and gutters as every other page. */
+.tp-debug .max-w-6xl {
+  max-width: 1480px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+@media (min-width: 640px) {
+  .tp-debug .max-w-6xl {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .tp-debug .max-w-6xl {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+/* Panels: flat surface, grey hairline, 16px corners. */
 .tp-debug .rounded-3xl,
 .tp-debug [class*="rounded-[22px]"] {
   border-radius: 16px;
@@ -538,7 +559,51 @@
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
 }
-/* Inputs: 10px corners instead of pills, neon focus. */
+.tp-debug .bg-sui-base-100,
+.tp-debug .bg-sui-primary-subtle {
+  background-color: rgb(10 20 23 / 0.4);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+.tp-debug .border-sui-primary-subtle {
+  border-color: rgb(255 255 255 / 0.08);
+}
+.tp-debug .divide-sui-primary-subtle > :not(:last-child) {
+  border-color: rgb(255 255 255 / 0.06);
+}
+
+/* The Read / Write tabs above each panel: a small mono label. */
+.tp-debug [class*="-top-[38px]"] p {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Variable names and function names in mono; values in the text font with aligned digits. */
+.tp-debug h3.text-lg {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-neon);
+}
+.tp-debug [class*="text-sui-primary-content/80"] {
+  color: var(--color-fg);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.tp-debug .font-medium.break-words,
+.tp-debug .font-bold.break-words {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-fg);
+}
+.tp-debug .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Inputs: 10px corners instead of pills, a hairline border, accent on focus. */
 .tp-debug [class*="bg-sui-input-background"] {
   border-radius: 10px;
   border-width: 1px;
@@ -546,31 +611,43 @@
 .tp-debug [class*="bg-sui-input-background"]:focus-within {
   border-color: rgb(46 230 200 / 0.5);
 }
-/* Function and variable names in the mono face. */
-.tp-debug .font-medium.break-words,
-.tp-debug .font-bold.break-words {
-  font-family: var(--font-mono);
-}
-.tp-debug .uppercase {
-  text-transform: none;
-  letter-spacing: normal;
-}
-/* The package paints its panels with the same colour it uses for borders; use surfaces instead. */
-.tp-debug .bg-sui-primary-subtle {
-  background-color: var(--color-surface);
-}
-.tp-debug .bg-sui-primary-subtle.text-sm {
-  background-color: var(--color-bg);
-}
+
+/* Send buttons: the site's primary button, labelled "Send" (the package's label carries an emoji). */
 .tp-debug .btn-dc-secondary {
-  background: linear-gradient(90deg, #2ee6c8, #22d3ee);
+  background: var(--color-neon);
   color: var(--color-ink);
-  font-weight: 700;
+  border: 0;
   border-radius: 8px;
+  font-size: 0;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+}
+.tp-debug .btn-dc-secondary::after {
+  content: "Send";
+  font-size: 13px;
 }
 .tp-debug .btn-dc-secondary:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: brightness(1.08);
+}
+.tp-debug .btn-dc-secondary:disabled {
+  background: var(--color-raised);
+  color: var(--color-faint);
 }
 .tp-debug [class*="border-gray-300"] {
   border-color: var(--color-line);
+}
+
+/* Two columns from lg up: state on the left (a third), the functions on the right (two thirds). The package names
+   these classes but its own build does not ship the breakpoint rules. */
+@media (min-width: 1024px) {
+  .tp-debug [class~="lg:grid-cols-3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 1.5rem;
+  }
+  .tp-debug [class~="lg:col-span-2"] {
+    grid-column: span 2 / span 2;
+  }
+  .tp-debug [class~="lg:col-span-1"] {
+    grid-column: span 1 / span 1;
+  }
 }

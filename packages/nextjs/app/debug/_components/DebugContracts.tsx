@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ContractUI } from "./ContractUI";
 import { useSessionStorage } from "usehooks-ts";
 import { BarsArrowUpIcon } from "@heroicons/react/20/solid";
@@ -25,6 +25,24 @@ export function DebugContracts() {
     { initializeWithValue: false },
   );
 
+  // The package always renders a "Read" panel; the vault has no read functions that take arguments (its views are
+  // listed on the left), so it only ever says "No read methods". Hide that empty panel.
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const hideEmpty = () => {
+      el.querySelectorAll<HTMLElement>(".p-5").forEach(panel => {
+        const card = panel.closest<HTMLElement>(".z-10");
+        if (card) card.style.display = panel.textContent?.trim() === "No read methods" ? "none" : "";
+      });
+    };
+    hideEmpty();
+    const observer = new MutationObserver(hideEmpty);
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!contractNames.includes(selectedContract)) {
       setSelectedContract(contractNames[0]);
@@ -32,7 +50,7 @@ export function DebugContracts() {
   }, [contractNames, selectedContract, setSelectedContract]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-y-6 py-8 lg:gap-y-8 lg:py-10">
+    <div ref={root} className="flex flex-col items-center justify-center gap-y-6 py-8 lg:gap-y-8 lg:py-10">
       {contractNames.length === 0 ? (
         <p className="mt-14 text-sm text-muted">No contracts are deployed on the selected network.</p>
       ) : (
