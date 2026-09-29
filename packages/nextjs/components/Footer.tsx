@@ -14,7 +14,7 @@ const LINKS: { label: string; href: string; external?: boolean }[] = [
 
 /** Site footer: wordmark and tagline, links, the network, and the testnet disclaimer. */
 export const Footer = () => (
-  <footer className="mt-24 border-t border-neon/[0.08]">
+  <footer className="mt-20 border-t border-neon/[0.08]">
     <div className="mx-auto flex max-w-[1480px] flex-col gap-8 px-5 py-10 sm:px-8 lg:px-12 md:flex-row md:items-center md:justify-between">
       <div>
         <Logo />

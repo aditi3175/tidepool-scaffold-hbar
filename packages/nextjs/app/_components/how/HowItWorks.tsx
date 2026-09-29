@@ -1,7 +1,6 @@
 "use client";
 
 import { type CSSProperties, type ReactNode, useState } from "react";
-import Link from "next/link";
 import { ArrowRightIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { RangeGraph } from "~~/app/_components/landing/RangeGraph";
 import { Arc, GradientText } from "~~/components/pulse";
@@ -378,7 +377,7 @@ const Compound = () => (
 /* ------------------------------------------------------------------ Page */
 
 export const HowItWorks = () => (
-  <div className="pb-8">
+  <div>
     <section className={`${WRAP} pt-20 sm:pt-28`}>
       <h1 className="m-0 text-balance text-[clamp(44px,6vw,88px)] font-extrabold leading-[0.98] tracking-[-0.045em] text-fg">
         <span className="tp-line">
@@ -434,27 +433,5 @@ export const HowItWorks = () => (
     >
       <Compound />
     </Move>
-
-    <section className={`${WRAP} pt-24`}>
-      <Reveal>
-        <div className="h-px bg-white/[0.07]" aria-hidden />
-        <div className="mt-10 flex flex-wrap gap-x-10 gap-y-3">
-          <Link
-            href="/dashboard"
-            className="group inline-flex items-center gap-1.5 text-[17px] font-semibold text-fg hover:text-neon"
-          >
-            See the live vault
-            <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
-          </Link>
-          <Link
-            href="/docs"
-            className="group inline-flex items-center gap-1.5 text-[17px] font-semibold text-fg hover:text-neon"
-          >
-            Read the docs
-            <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
-          </Link>
-        </div>
-      </Reveal>
-    </section>
   </div>
 );
