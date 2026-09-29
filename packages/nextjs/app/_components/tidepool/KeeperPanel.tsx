@@ -53,18 +53,18 @@ const KeeperAction = ({
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="m-0 text-sm font-semibold">{title}</h3>
-        <span className="tp-num text-xs text-base-content/55">
+        <span className="tp-num text-xs text-faint">
           {met}/{status.checks.length} conditions
         </span>
       </div>
       <p className="text-sm" role="status">
         {status.ready ? (
-          <span className="text-teal">Ready</span>
+          <span className="font-medium text-neon">Ready</span>
         ) : checking && !blocked ? (
-          <span className="text-base-content/60">Checking…</span>
+          <span className="text-muted">Checking…</span>
         ) : (
           <>
-            <span className="text-danger">Blocked:</span>{" "}
+            <span className="font-medium text-amber">Waiting:</span>{" "}
             <span className="text-muted">
               {firstBlocked
                 ? (SHORT_REASON[firstBlocked.label] ?? `${firstBlocked.label.toLowerCase()}.`)
@@ -83,26 +83,26 @@ const KeeperAction = ({
         {buttonLabel}
       </button>
       {status.ready && disabledReason && !feedback.busy && (
-        <p className="-mt-1 text-center text-xs text-base-content/55">{disabledReason}</p>
+        <p className="-mt-1 text-center text-xs text-faint">{disabledReason}</p>
       )}
-      <p className="tp-num text-xs text-base-content/55">{feeLine}</p>
+      <p className="tp-num text-xs text-faint">{feeLine}</p>
       <TxFeedback state={feedback.state} />
-      <details className="tp-details rounded-lg border border-base-300">
-        <summary className="flex items-center justify-between px-3 py-2 text-sm text-base-content/75 hover:text-base-content">
+      <details className="tp-details rounded-lg border border-white/10">
+        <summary className="flex items-center justify-between px-3 py-2 text-sm text-muted hover:text-fg">
           Conditions
-          <span className="tp-chevron text-base-content/50" aria-hidden>
+          <span className="tp-chevron text-faint" aria-hidden>
             ▾
           </span>
         </summary>
-        <ul className="m-0 flex list-none flex-col gap-2 border-t border-base-300 p-3">
+        <ul className="m-0 flex list-none flex-col gap-2 border-t border-white/10 p-3">
           {status.checks.map(check => (
             <li key={check.label} className="text-sm">
               <span className="flex items-baseline justify-between gap-3">
-                <span className="text-base-content/85">{check.label}</span>
+                <span className="text-fg">{check.label}</span>
                 <StatusBadge status={check.status} />
               </span>
               {check.detail && check.status !== "ok" && check.status !== "loading" && (
-                <span className="mt-0.5 block text-xs text-base-content/55">{check.detail}</span>
+                <span className="mt-0.5 block text-xs text-faint">{check.detail}</span>
               )}
             </li>
           ))}
@@ -191,7 +191,7 @@ export const KeeperCard = ({ vault }: { vault: VaultState }) => {
         />
       </div>
       {lowBalance && (
-        <p className="mt-4 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-base-content/80">
+        <p className="mt-4 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-fg">
           Low HBAR: {formatAmount(quotes.walletBalance, 18, 4)} may not cover fee + gas
         </p>
       )}

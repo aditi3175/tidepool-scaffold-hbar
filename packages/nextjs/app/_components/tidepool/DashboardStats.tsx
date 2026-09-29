@@ -21,6 +21,10 @@ export const DashboardStats = ({ vault }: { vault: VaultState }) => {
     spotTick !== undefined && decimals0 !== undefined && decimals1 !== undefined
       ? tickToPrice(spotTick, decimals0, decimals1)
       : undefined;
+  const twap =
+    twapTick !== undefined && decimals0 !== undefined && decimals1 !== undefined
+      ? tickToPrice(twapTick, decimals0, decimals1)
+      : undefined;
   const total0 = units(vault.total0, decimals0);
   const total1 = units(vault.total1, decimals1);
   const value1 =
@@ -48,8 +52,10 @@ export const DashboardStats = ({ vault }: { vault: VaultState }) => {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       <Tile>
         <Label>Spot</Label>
-        <div className="mt-3 font-mono text-2xl font-bold tabular-nums text-fg">{formatPriceSig(spot)}</div>
-        <div className="mt-1 truncate text-xs text-faint">{unit}</div>
+        <div className="mt-3 text-2xl font-bold tabular-nums tracking-[-0.02em] text-fg">{formatPriceSig(spot)}</div>
+        <div className="mt-1 truncate text-xs text-faint">
+          TWAP {formatPriceSig(twap)} · {unit}
+        </div>
       </Tile>
       <Tile>
         <Label>TWAP guard</Label>
@@ -63,14 +69,14 @@ export const DashboardStats = ({ vault }: { vault: VaultState }) => {
       </Tile>
       <Tile>
         <Label>Vault value</Label>
-        <div className="mt-3 font-mono text-2xl font-bold tabular-nums text-fg">
+        <div className="mt-3 text-2xl font-bold tabular-nums tracking-[-0.02em] text-fg">
           {formatToken(value1, { compact: true })}
         </div>
         <div className="mt-1 text-xs text-faint">{s1 ? `${s1}, at spot` : " "}</div>
       </Tile>
       <Tile>
         <Label>Fees · last 50 events</Label>
-        <div className="mt-3 font-mono text-2xl font-bold tabular-nums text-neon">
+        <div className="mt-3 text-2xl font-bold tabular-nums tracking-[-0.02em] text-neon">
           {activity.isLoading || fee1 === undefined ? "–" : `+${formatToken(fee1)}`}
         </div>
         <div className="mt-1 truncate text-xs text-faint">
@@ -80,7 +86,7 @@ export const DashboardStats = ({ vault }: { vault: VaultState }) => {
       </Tile>
       <Tile className="col-span-2 md:col-span-1">
         <Label>Last rebalance</Label>
-        <div className="mt-3 font-mono text-2xl font-bold text-fg">{formatAgo(lastRebalance)}</div>
+        <div className="mt-3 text-2xl font-bold tracking-[-0.02em] text-fg">{formatAgo(lastRebalance)}</div>
         <div className="mt-1 text-xs text-faint">re-centred on the TWAP</div>
       </Tile>
     </div>

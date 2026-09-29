@@ -72,7 +72,7 @@ export const Stat = ({ label, tip, children }: { label: string; tip?: ReactNode;
       {label}
       {tip && <InfoTip label={label}>{tip}</InfoTip>}
     </div>
-    <div className="mt-1.5 font-mono text-base font-semibold tabular-nums text-fg [overflow-wrap:anywhere]">
+    <div className="mt-1.5 text-[17px] font-semibold tabular-nums tracking-[-0.01em] text-fg [overflow-wrap:anywhere]">
       {children}
     </div>
   </div>
@@ -88,7 +88,7 @@ export const TokenAmount = ({
   symbol?: string;
   className?: string;
 }) => (
-  <span className={`tp-num inline-flex items-baseline gap-1 ${className}`}>
+  <span className={`inline-flex items-baseline gap-1 tabular-nums ${className}`}>
     <span>{amount}</span>
     {symbol && <span className="text-[0.75em] font-normal text-base-content/55">{symbol}</span>}
   </span>

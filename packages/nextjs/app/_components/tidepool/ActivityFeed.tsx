@@ -11,8 +11,9 @@ import { Card, ExternalLink, Skeleton } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { ACTIVITY_LIMIT, type VaultEvent, useVaultActivity } from "~~/hooks/tidepool/useVaultActivity";
 import { SHARE_DECIMALS } from "~~/utils/tidepool/constants";
+import { formatAgo, formatToken, formatTokenUnits } from "~~/utils/tidepool/format";
 import { hashscan } from "~~/utils/tidepool/hashscan";
-import { formatAmount, shortAddress } from "~~/utils/tidepool/math";
+import { shortAddress } from "~~/utils/tidepool/math";
 
 const LABELS: Record<string, string> = {
   Initialized: "Vault initialized",
@@ -38,16 +39,16 @@ function describe(event: VaultEvent, vault: VaultState): ReactNode {
   const { symbol0, symbol1, decimals0, decimals1 } = vault;
   const a = event.args;
   const tokens = (x: unknown, y: unknown) =>
-    `${formatAmount(big(x), decimals0)} ${symbol0 ?? ""} + ${formatAmount(big(y), decimals1)} ${symbol1 ?? ""}`;
+    `${formatTokenUnits(big(x), decimals0)} ${symbol0 ?? ""} + ${formatTokenUnits(big(y), decimals1)} ${symbol1 ?? ""}`;
   switch (event.name) {
     case "Deposit":
-      return `${tokens(a.amount0, a.amount1)} in, ${formatAmount(big(a.shares), SHARE_DECIMALS)} shares to ${shortAddress(String(a.receiver))}`;
+      return `${tokens(a.amount0, a.amount1)} in, ${formatTokenUnits(big(a.shares), SHARE_DECIMALS)} shares to ${shortAddress(String(a.receiver))}`;
     case "Withdraw":
-      return `${formatAmount(big(a.shares), SHARE_DECIMALS)} shares burned, ${tokens(a.amount0, a.amount1)} to ${shortAddress(String(a.receiver))}`;
+      return `${formatTokenUnits(big(a.shares), SHARE_DECIMALS)} shares burned, ${tokens(a.amount0, a.amount1)} to ${shortAddress(String(a.receiver))}`;
     case "FeesCollected":
       return tokens(a.fee0, a.fee1);
     case "Compound":
-      return `${tokens(a.amount0, a.amount1)} added (liquidity +${formatAmount(big(a.liquidityAdded), 0)}) by ${shortAddress(String(a.caller))}`;
+      return `${tokens(a.amount0, a.amount1)} added (liquidity +${formatToken(Number(big(a.liquidityAdded) ?? 0n), { compact: true })}) by ${shortAddress(String(a.caller))}`;
     case "Rebalance": {
       const opened = a.oldTickLower === 0 && a.oldTickUpper === 0;
       const range = opened
@@ -67,7 +68,7 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
   const { data: events, isLoading, error } = useVaultActivity(vault.address, vault.abi);
 
   return (
-    <Card title="Activity" actions={<span className="text-xs text-base-content/55">Last {ACTIVITY_LIMIT} events</span>}>
+    <Card title="Activity" actions={<span className="text-xs text-faint">Last {ACTIVITY_LIMIT} events</span>}>
       {isLoading ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -82,7 +83,7 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
         <div role="table" aria-label="Vault events" className="text-sm">
           <div
             role="row"
-            className="hidden grid-cols-[9rem_1fr_13rem] gap-4 border-b border-base-300 pb-2 text-xs text-base-content/55 sm:grid"
+            className="hidden grid-cols-[10rem_1fr_8rem] gap-4 border-b border-white/[0.07] pb-2 text-xs text-faint sm:grid"
           >
             <span role="columnheader">Event</span>
             <span role="columnheader">Details</span>
@@ -94,7 +95,7 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
             <div
               role="row"
               key={`${event.transactionHash}-${event.logIndex}`}
-              className="grid grid-cols-1 gap-1 border-b border-base-300 py-2 last:border-b-0 sm:grid-cols-[9rem_1fr_13rem] sm:gap-4"
+              className="grid grid-cols-1 gap-1 border-b border-white/[0.06] py-3 last:border-b-0 sm:grid-cols-[10rem_1fr_8rem] sm:gap-4"
             >
               <span role="cell" className="flex items-center gap-2 font-medium">
                 {(() => {
@@ -103,12 +104,12 @@ export const ActivityFeed = ({ vault }: { vault: VaultState }) => {
                 })()}
                 {LABELS[event.name] ?? event.name}
               </span>
-              <span role="cell" className="tp-num min-w-0 break-words text-base-content/70">
+              <span role="cell" className="min-w-0 break-words tabular-nums text-muted">
                 {describe(event, vault)}
               </span>
-              <span role="cell" className="tp-num text-xs text-base-content/55 sm:text-right sm:text-sm">
+              <span role="cell" className="text-xs text-faint sm:text-right sm:text-sm">
                 <ExternalLink href={hashscan.tx(event.transactionHash)}>
-                  {new Date(event.timestamp * 1000).toLocaleString()}
+                  <span title={new Date(event.timestamp * 1000).toLocaleString()}>{formatAgo(event.timestamp)}</span>
                 </ExternalLink>
               </span>
             </div>

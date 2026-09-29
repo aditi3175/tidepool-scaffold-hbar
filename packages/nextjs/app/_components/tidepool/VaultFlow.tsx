@@ -1,14 +1,14 @@
+import { RangeGraph } from "~~/app/_components/landing/RangeGraph";
 import { Skeleton } from "~~/app/_components/tidepool/ui";
-import { FlowChart } from "~~/components/pulse/FlowChart";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { formatPriceSig } from "~~/utils/tidepool/format";
 import { tickToPrice } from "~~/utils/tidepool/math";
 
 /**
- * The vault's live range as the flow chart (the flowing swaps are illustrative), with a real message for every state
+ * The vault's live range as a price bar (the same chart as the landing page), with a real message for every state
  * that has no range to draw.
  */
-export const VaultFlow = ({ vault, height = "h-[240px]" }: { vault: VaultState; height?: string }) => {
+export const VaultFlow = ({ vault, height = "h-[250px]" }: { vault: VaultState; height?: string }) => {
   const { decimals0, decimals1, symbol0, symbol1, tickLower, tickUpper, spotTick, twapTick } = vault;
 
   const message = (text: string) => (
@@ -42,34 +42,12 @@ export const VaultFlow = ({ vault, height = "h-[240px]" }: { vault: VaultState; 
   const unit = symbol0 && symbol1 ? `${symbol1} per ${symbol0}` : "";
 
   return (
-    <div>
-      <div className="mb-3 flex items-center justify-between gap-2 font-mono text-[11px] text-faint">
-        <span className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span className="h-3 w-0.5 bg-white" aria-hidden /> spot
-          </span>
-          {Math.abs((spotTick ?? 0) - (twapTick ?? 0)) > 0 && (
-            <span className="flex items-center gap-1.5">
-              <span className="h-3 w-0.5 border-l border-dashed border-cyan" aria-hidden /> TWAP
-            </span>
-          )}
-        </span>
-        <span>flow illustrative</span>
-      </div>
-      <FlowChart
-        className={height}
-        lower={lower}
-        upper={upper}
-        spot={spot}
-        twap={twap}
-        inRange={vault.inRange !== false}
-        label={`Range ${formatPriceSig(lower)} to ${formatPriceSig(upper)} ${unit}; spot ${formatPriceSig(spot)}; TWAP ${formatPriceSig(twap)}`}
-      />
-      <div className="mt-3 flex justify-between font-mono text-xs text-muted">
-        <span>LOW {formatPriceSig(lower)}</span>
-        <span className="text-faint">{unit}</span>
-        <span>HIGH {formatPriceSig(upper)}</span>
-      </div>
+    <div
+      role="img"
+      aria-label={`Range ${formatPriceSig(lower)} to ${formatPriceSig(upper)} ${unit}; spot ${formatPriceSig(spot)}; TWAP ${formatPriceSig(twap)}`}
+    >
+      <RangeGraph lower={lower} upper={upper} spot={spot} twap={twap} inRange={vault.inRange} />
+      {unit && <p className="m-0 -mt-4 text-center text-xs text-faint">Prices in {unit}</p>}
     </div>
   );
 };

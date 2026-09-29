@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { InfoTip } from "~~/app/_components/tidepool/InfoTip";
@@ -8,6 +7,7 @@ import type { UserPosition } from "~~/hooks/tidepool/useUserPosition";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { ACTIVITY_LIMIT, useVaultActivity } from "~~/hooks/tidepool/useVaultActivity";
 import { SHARE_DECIMALS } from "~~/utils/tidepool/constants";
+import { formatFull, formatTokenUnits } from "~~/utils/tidepool/format";
 import { hashscan } from "~~/utils/tidepool/hashscan";
 import { entityIdFromAddress, formatAmount, shortAddress, tickToPrice } from "~~/utils/tidepool/math";
 
@@ -20,8 +20,12 @@ export const VaultHoldingsCard = ({ vault }: { vault: VaultState }) => {
     <Card title="Vault holdings">
       {ready ? (
         <div className="flex flex-col gap-1 text-xl font-medium">
-          <TokenAmount amount={formatAmount(vault.total0, decimals0)} symbol={symbol0} />
-          <TokenAmount amount={formatAmount(vault.total1, decimals1)} symbol={symbol1} />
+          <span title={formatFull(vault.total0, decimals0)}>
+            <TokenAmount amount={formatTokenUnits(vault.total0, decimals0)} symbol={symbol0} />
+          </span>
+          <span title={formatFull(vault.total1, decimals1)}>
+            <TokenAmount amount={formatTokenUnits(vault.total1, decimals1)} symbol={symbol1} />
+          </span>
         </div>
       ) : vault.readError ? (
         <p className="text-sm text-muted">Holdings could not be read. Retrying.</p>
@@ -33,7 +37,9 @@ export const VaultHoldingsCard = ({ vault }: { vault: VaultState }) => {
       )}
       <div className="mt-4 grid grid-cols-2 gap-4">
         <Stat label="Total shares" tip="All vault shares in existence, including 0.001 locked in the vault forever.">
-          {formatAmount(vault.totalShares, SHARE_DECIMALS)}
+          <span title={formatFull(vault.totalShares, SHARE_DECIMALS)}>
+            {formatTokenUnits(vault.totalShares, SHARE_DECIMALS)}
+          </span>
         </Stat>
         <Stat label="Share token" tip="The HTS token that represents vault shares. Opens on HashScan.">
           {vault.shareToken ? (
@@ -229,23 +235,15 @@ const AFTER_CONNECTING = [
   "Press Compound or Rebalance when the keeper card shows Ready.",
 ];
 
-/** Disconnected: what the vault is, a Connect button, and what you can do once connected. */
+/** Disconnected: what the vault is and what you can do once connected. The Connect button is in the deposit panel. */
 export const ConnectCard = () => {
-  const { openConnectModal } = useConnectModal();
   return (
-    <Card title="Connect a wallet" stretch>
+    <Card title="Get started" stretch>
       <div>
         <p className="text-sm text-muted">
           This vault owns one SaucerSwap V2 position on Hedera testnet. Connect a wallet on Hedera Testnet (chain 296)
-          to use it.
+          to use it. Connect from the deposit panel or the top of the page.
         </p>
-        <button
-          type="button"
-          className="btn btn-primary mt-4 h-10 min-h-10 rounded-lg px-4 text-sm font-medium"
-          onClick={openConnectModal}
-        >
-          Connect wallet
-        </button>
       </div>
       <div>
         <h3 className="m-0 text-xs font-normal text-muted">After connecting you can</h3>

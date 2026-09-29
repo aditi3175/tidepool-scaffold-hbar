@@ -1,9 +1,9 @@
 import { VaultFlow } from "~~/app/_components/tidepool/VaultFlow";
 import { Card, ExternalLink, Skeleton, Stat, StatePill } from "~~/app/_components/tidepool/ui";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
-import { formatToken } from "~~/utils/tidepool/format";
+import { formatPriceSig, formatToken } from "~~/utils/tidepool/format";
 import { hashscan } from "~~/utils/tidepool/hashscan";
-import { formatAmount, formatDuration, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
+import { formatAmount, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
 
 /** The vault's live state, from getPriceState() and positionSerial. */
 export const VaultStatusPill = ({ vault }: { vault: VaultState }) => {
@@ -38,41 +38,28 @@ export const SpotPrice = ({ vault }: { vault: VaultState }) => {
 
 /** The range chart and one row of position stats. */
 export const PositionCard = ({ vault }: { vault: VaultState }) => {
-  const { decimals0, decimals1, spotTick, twapTick } = vault;
+  const { decimals0, decimals1 } = vault;
   const ready = decimals0 !== undefined && decimals1 !== undefined;
   const price = (tick: number | undefined) =>
-    tick === undefined || !ready ? "–" : formatPrice(tickToPrice(tick, decimals0!, decimals1!));
-  const apart = spotTick !== undefined && twapTick !== undefined ? Math.abs(spotTick - twapTick) : undefined;
-  const over = apart !== undefined && vault.maxTwapDeviation !== undefined && apart > vault.maxTwapDeviation;
-
-  const windowText =
-    vault.twapWindow === undefined
-      ? "the TWAP window"
-      : vault.twapWindow % 60 === 0
-        ? `${vault.twapWindow / 60} minutes`
-        : formatDuration(vault.twapWindow);
-  const limit = vault.maxTwapDeviation ?? "–";
+    tick === undefined || !ready ? "–" : formatPriceSig(tickToPrice(tick, decimals0!, decimals1!));
+  const halfWidthPct =
+    ready && vault.tickLower !== undefined && vault.tickUpper !== undefined
+      ? (Math.sqrt(
+          tickToPrice(vault.tickUpper, decimals0!, decimals1!) / tickToPrice(vault.tickLower, decimals0!, decimals1!),
+        ) -
+          1) *
+        100
+      : undefined;
 
   return (
     <Card title="Position">
       <VaultFlow vault={vault} />
-      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-5 sm:grid-cols-5">
-        <Stat label="Spot" tip="The pool's price right now.">
-          {price(spotTick)}
+      <div className="mt-2 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-5 sm:grid-cols-4">
+        <Stat label="Range">
+          {price(vault.tickLower)} – {price(vault.tickUpper)}
         </Stat>
-        <Stat
-          label="TWAP"
-          tip={`The pool's average price over the last ${windowText}. The vault acts on this, not on spot.`}
-        >
-          {price(twapTick)}
-        </Stat>
-        <Stat
-          label="Ticks apart"
-          tip={`How far spot is from the TWAP. Above ${limit} ticks the vault pauses deposits, compounds and rebalances; withdrawals still work.`}
-        >
-          <span className={over ? "text-danger" : undefined}>
-            {apart ?? "–"} / {limit}
-          </span>
+        <Stat label="Width" tip="How far each edge sits from the middle of the range, in price.">
+          {halfWidthPct === undefined ? "–" : `±${halfWidthPct.toFixed(1)}%`}
         </Stat>
         <Stat label="LP NFT" tip="The SaucerSwap position NFT the vault owns. Opens on HashScan.">
           {vault.positionSerial !== undefined && vault.positionSerial > 0n && vault.positionNft ? (
