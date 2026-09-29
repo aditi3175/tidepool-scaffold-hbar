@@ -78,9 +78,9 @@ export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: numbe
 /** Button styles (for Link or button). */
 export const btn = {
   primary:
-    "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-neon px-6 text-[15px] font-semibold text-ink transition-[filter,transform] duration-150 hover:brightness-110 active:translate-y-px",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-neon px-6 text-[15px] font-semibold text-ink transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0",
   ghost:
-    "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.04] px-6 text-[15px] font-semibold text-fg transition-colors duration-150 hover:border-neon/45 hover:bg-neon/[0.08]",
+    "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.04] px-6 text-[15px] font-semibold text-fg transition-[color,background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-neon/45 hover:bg-neon/[0.08] active:translate-y-0",
   small:
     "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.05] px-4 text-sm font-medium text-fg transition-colors duration-150 hover:border-neon/45",
 };

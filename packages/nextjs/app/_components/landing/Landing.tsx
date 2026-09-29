@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { RangeGraph } from "./RangeGraph";
@@ -12,11 +12,15 @@ import {
   ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
 import { GradientText, btn } from "~~/components/pulse";
+import { Reveal } from "~~/components/pulse/Reveal";
 import { GITHUB_URL, SCAFFOLD_COMMAND } from "~~/utils/tidepool/constants";
 import { formatDuration } from "~~/utils/tidepool/math";
 
 /** One content width for the page: wide, with generous side padding. */
 const WRAP = "mx-auto w-full max-w-[1480px] px-5 sm:px-8 lg:px-12";
+
+/** Delay (ms) for the hero's entrance animations. */
+const delay = (ms: number) => ({ "--d": ms }) as CSSProperties;
 
 const useCopy = () => {
   const [copied, setCopied] = useState(false);
@@ -42,21 +46,66 @@ const Mono = ({ children, className = "" }: { children: ReactNode; className?: s
   <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${className}`}>{children}</span>
 );
 
-/** A section opens with its claim on the left and one paragraph on the right. */
-const SectionHead = ({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) => (
-  <div className="grid grid-cols-1 items-end gap-6 border-b border-white/[0.07] pb-10 lg:grid-cols-2 lg:gap-16">
-    <h2 id={id} className="m-0 text-[clamp(34px,4.4vw,58px)] font-extrabold leading-[1.02] tracking-[-0.04em] text-fg">
-      {title}
-    </h2>
-    <p className="m-0 max-w-[560px] text-[17px] leading-relaxed text-muted lg:pb-1.5">{children}</p>
-  </div>
+/** A text link with an arrow that nudges on hover. */
+const ArrowLink = ({ href, children }: { href: string; children: ReactNode }) => (
+  <Link href={href} className="group inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon">
+    {children}
+    <ArrowRightIcon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden />
+  </Link>
 );
 
-/** The scaffold command as a one-line terminal, with the two commands that follow it. */
-const Command = () => {
+/** A section opens with its claim on the left and one paragraph on the right; the rule under it draws in. */
+const SectionHead = ({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) => (
+  <Reveal>
+    <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-2 lg:gap-16">
+      <h2
+        id={id}
+        className="m-0 text-balance text-[clamp(34px,4.4vw,58px)] font-extrabold leading-[1.04] tracking-[-0.04em] text-fg"
+      >
+        {title}
+      </h2>
+      <p className="m-0 max-w-[560px] text-[17px] leading-relaxed text-muted lg:pb-1.5">{children}</p>
+    </div>
+    <div className="tp-rule mt-10 h-px bg-white/[0.07]" aria-hidden />
+  </Reveal>
+);
+
+/** The scaffold command as a terminal. In the hero it types itself out once, then the next two commands appear. */
+const Command = ({ typing = false }: { typing?: boolean }) => {
   const { copied, copy } = useCopy();
+  const ref = useRef<HTMLDivElement>(null);
+  const [typed, setTyped] = useState(typing ? 0 : SCAFFOLD_COMMAND.length);
+  const done = typed >= SCAFFOLD_COMMAND.length;
+
+  useEffect(() => {
+    if (!typing) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setTyped(SCAFFOLD_COMMAND.length);
+      return;
+    }
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const start = setTimeout(() => {
+      interval = setInterval(() => {
+        setTyped(n => {
+          if (n >= SCAFFOLD_COMMAND.length) {
+            clearInterval(interval);
+            return n;
+          }
+          return n + 1;
+        });
+      }, 24);
+    }, 1100);
+    return () => {
+      clearTimeout(start);
+      if (interval) clearInterval(interval);
+    };
+  }, [typing]);
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(5,11,13,0.78)] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md">
+    <div
+      ref={ref}
+      className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(5,11,13,0.8)] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md transition-colors duration-300 hover:border-white/20"
+    >
       <div className="flex items-center gap-2 border-b border-white/[0.07] px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]/80" aria-hidden />
         <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]/80" aria-hidden />
@@ -65,7 +114,7 @@ const Command = () => {
         <button
           type="button"
           onClick={() => copy(SCAFFOLD_COMMAND)}
-          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-neon/40 hover:text-neon"
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-neon/40 hover:text-neon active:scale-95"
         >
           {copied ? (
             <CheckCircleIcon className="h-3.5 w-3.5 text-neon" />
@@ -78,12 +127,23 @@ const Command = () => {
       <div className="overflow-x-auto px-4 py-4 font-mono text-[11.5px] leading-7 xl:text-[12.5px]">
         <div className="whitespace-nowrap text-fg">
           <span className="select-none text-neon">$ </span>
-          {SCAFFOLD_COMMAND}
+          <span className="sr-only">{SCAFFOLD_COMMAND}</span>
+          <span aria-hidden>{SCAFFOLD_COMMAND.slice(0, typed)}</span>
+          {!done && (
+            <span
+              className="tp-caret ml-px inline-block h-[1.1em] w-[0.55em] translate-y-[0.2em] bg-neon"
+              aria-hidden
+            />
+          )}
         </div>
-        <div className="whitespace-nowrap text-muted">
+        <div
+          className={`whitespace-nowrap text-muted transition-opacity duration-500 ${done ? "opacity-100" : "opacity-0"}`}
+        >
           <span className="select-none text-faint">$ </span>cd your-vault
         </div>
-        <div className="whitespace-nowrap text-muted">
+        <div
+          className={`whitespace-nowrap text-muted transition-opacity duration-500 ${done ? "opacity-100 delay-200" : "opacity-0"}`}
+        >
           <span className="select-none text-faint">$ </span>npm run next:dev
         </div>
       </div>
@@ -96,7 +156,14 @@ const Command = () => {
 const Hero = () => (
   <section className="relative isolate overflow-hidden">
     {/* Night sea, full width; darkened where the text sits and blended into the page at the bottom. */}
-    <Image src="/hero-sea.jpg" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-bottom" />
+    <Image
+      src="/hero-sea.jpg"
+      alt=""
+      fill
+      priority
+      sizes="100vw"
+      className="tp-settle -z-20 object-cover object-bottom"
+    />
     <div
       aria-hidden
       className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,11,13,0.82)_0%,rgba(5,11,13,0.45)_55%,rgba(5,11,13,0.2)_100%)]"
@@ -110,7 +177,7 @@ const Hero = () => (
       className={`${WRAP} grid min-h-[min(calc(100svh-4rem),860px)] grid-cols-1 items-center gap-12 py-16 lg:grid-cols-2 lg:py-24`}
     >
       <div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+        <div className="tp-in flex flex-wrap items-center gap-2 text-xs font-medium" style={delay(100)}>
           <span className="inline-flex items-center gap-2 rounded-full border border-neon/25 bg-neon/[0.08] px-3 py-1 text-fg backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
             Built on Hedera
@@ -120,19 +187,25 @@ const Hero = () => (
           </span>
         </div>
         <h1 className="m-0 mt-7 text-[clamp(56px,7.6vw,110px)] font-extrabold leading-[0.95] tracking-[-0.05em] text-fg">
-          Tidepool
+          <span className="tp-line">
+            <span style={delay(200)}>Tidepool</span>
+          </span>
         </h1>
-        <p className="m-0 mt-3 text-[clamp(28px,3.4vw,48px)] font-bold leading-tight tracking-[-0.035em] text-fg">
-          Liquidity on <GradientText>autopilot.</GradientText>
+        <p className="m-0 mt-2 text-[clamp(28px,3.4vw,48px)] font-bold leading-tight tracking-[-0.035em] text-fg">
+          <span className="tp-line">
+            <span style={delay(380)}>
+              Liquidity on <GradientText>autopilot.</GradientText>
+            </span>
+          </span>
         </p>
-        <p className="mt-6 max-w-[540px] text-[18px] leading-relaxed text-fg/75">
+        <p className="tp-in mt-5 max-w-[540px] text-[18px] leading-relaxed text-fg/75" style={delay(560)}>
           One SaucerSwap V2 position, owned by a contract with no owner. It compounds its own fees and re-centres its
           range on the pool&apos;s average price.{" "}
           <span className="text-fg">Anyone can press the button; nobody can steer it.</span>
         </p>
       </div>
-      <div className="min-w-0 lg:self-end lg:pb-4">
-        <Command />
+      <div className="tp-in min-w-0 lg:self-end lg:pb-4" style={delay(760)}>
+        <Command typing />
       </div>
     </div>
   </section>
@@ -142,7 +215,7 @@ const Hero = () => (
 
 type Row = { label: string; left: string; right: string };
 
-/** A plain three-column comparison: row label, the usual way, and Tidepool's way. Hairlines only. */
+/** A plain three-column comparison: row label, the usual way, and Tidepool's way. Rows light up on hover. */
 const CompareTable = ({
   left,
   leftSub,
@@ -156,7 +229,7 @@ const CompareTable = ({
   rightSub: string;
   rows: Row[];
 }) => (
-  <div className="mt-10 overflow-hidden rounded-2xl border border-white/[0.08]">
+  <Reveal step={1} className="mt-10 overflow-hidden rounded-2xl border border-white/[0.08]">
     <div className="grid grid-cols-2 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="hidden border-b border-white/[0.08] p-6 md:block" />
       <div className="border-b border-white/[0.08] p-6">
@@ -169,20 +242,21 @@ const CompareTable = ({
       </div>
       {rows.map((row, i) => {
         const last = i === rows.length - 1;
+        const cell = "transition-colors duration-200 group-hover/row:bg-white/[0.035]";
         return (
-          <div key={row.label} className="contents">
+          <div key={row.label} className="group/row contents">
             <div
-              className={`col-span-2 px-6 pt-5 md:col-span-1 md:py-5 ${last ? "" : "md:border-b md:border-white/[0.06]"}`}
+              className={`col-span-2 px-6 pt-5 md:col-span-1 md:py-5 ${cell} ${last ? "" : "md:border-b md:border-white/[0.06]"}`}
             >
-              <Mono className="text-faint">{row.label}</Mono>
+              <Mono className="text-faint transition-colors duration-200 group-hover/row:text-neon">{row.label}</Mono>
             </div>
             <div
-              className={`px-6 pb-5 pt-2 text-[15px] text-muted md:py-5 ${last ? "" : "border-b border-white/[0.06]"}`}
+              className={`px-6 pb-5 pt-2 text-[15px] text-muted md:py-5 ${cell} ${last ? "" : "border-b border-white/[0.06]"}`}
             >
               {row.left}
             </div>
             <div
-              className={`border-l border-white/[0.08] bg-white/[0.02] px-6 pb-5 pt-2 text-[15px] text-fg md:py-5 ${
+              className={`border-l border-white/[0.08] bg-white/[0.02] px-6 pb-5 pt-2 text-[15px] text-fg md:py-5 ${cell} ${
                 last ? "" : "border-b border-b-white/[0.06]"
               }`}
             >
@@ -192,7 +266,7 @@ const CompareTable = ({
         );
       })}
     </div>
-  </div>
+  </Reveal>
 );
 
 /* ------------------------------------------------------------------ The problem */
@@ -228,13 +302,13 @@ const Problem = () => (
 /* ------------------------------------------------------------------ Live */
 
 const Verdict = ({ action, ok, why }: { action: string; ok: boolean; why: string }) => (
-  <li className="flex items-start justify-between gap-4 py-4">
+  <li className="-mx-3 flex items-start justify-between gap-4 rounded-lg px-3 py-4 transition-colors duration-200 hover:bg-white/[0.03]">
     <div>
       <div className="font-semibold text-fg">{action}</div>
       <div className="mt-0.5 text-sm text-muted">{why}</div>
     </div>
     <span
-      className={`mt-0.5 shrink-0 rounded-md px-2 py-1 font-mono text-[11px] uppercase tracking-[0.1em] ${
+      className={`mt-0.5 shrink-0 rounded-md px-2 py-1 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors duration-500 ${
         ok ? "bg-neon/10 text-neon" : "bg-white/[0.05] text-muted"
       }`}
     >
@@ -268,7 +342,10 @@ const Live = ({ d }: { d: LandingData }) => {
       </SectionHead>
 
       <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="rounded-2xl border border-white/[0.08] bg-surface/60 p-6">
+        <Reveal
+          step={1}
+          className="rounded-2xl border border-white/[0.08] bg-surface/60 p-6 transition-colors duration-300 hover:border-white/[0.14]"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-base font-semibold text-fg">
               {d.pair} <span className="font-normal text-muted">· SaucerSwap V2, 0.30%</span>
@@ -284,9 +361,12 @@ const Live = ({ d }: { d: LandingData }) => {
           <div className="mt-6">
             <RangeGraph lower={d.lower} upper={d.upper} spot={d.spot} twap={d.twap} inRange={d.inRange} />
           </div>
-        </div>
+        </Reveal>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-surface/60 p-6">
+        <Reveal
+          step={2}
+          className="rounded-2xl border border-white/[0.08] bg-surface/60 p-6 transition-colors duration-300 hover:border-white/[0.14]"
+        >
           <Mono className="text-faint">What the vault would accept now</Mono>
           <ul className="m-0 mt-2 list-none divide-y divide-white/[0.06] p-0">
             <Verdict action="Deposit" ok={!paused} why={paused ? guard : "Only the TWAP guard applies"} />
@@ -316,19 +396,75 @@ const Live = ({ d }: { d: LandingData }) => {
             />
             <Verdict action="Withdraw" ok why="Never blocked" />
           </ul>
-          <Link
-            href="/dashboard"
-            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon"
-          >
-            Open the dashboard <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </div>
+          <div className="mt-3">
+            <ArrowLink href="/dashboard">Open the dashboard</ArrowLink>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
 };
 
-/* ------------------------------------------------------------------ Hedera */
+/* ------------------------------------------------------------------ Hedera services */
+
+const SERVICES: { name: string; tag: string; text: string }[] = [
+  {
+    name: "Smart Contract Service",
+    tag: "EVM",
+    text: "Runs the vault: plain Solidity on Hedera's EVM, with no owner and no upgrade path.",
+  },
+  {
+    name: "Token Service",
+    tag: "HTS · 0x167",
+    text: "The vault creates, mints and burns its share token, and associates its own tokens, through the HTS precompile.",
+  },
+  {
+    name: "Exchange Rate",
+    tag: "0x168",
+    text: "Converts SaucerSwap's position fee from US cents to tinybars inside every compound and rebalance.",
+  },
+  {
+    name: "Mirror Node",
+    tag: "REST API",
+    text: "The dashboard reads the vault's event history from the mirror node's public API.",
+  },
+  {
+    name: "JSON-RPC Relay",
+    tag: "Hashio",
+    text: "Wallets, this site and the deploy scripts reach the network through Hashio.",
+  },
+  {
+    name: "SaucerSwap V2",
+    tag: "On Hedera",
+    text: "The concentrated-liquidity pool, position manager and swap router the vault works with.",
+  },
+];
+
+const Services = () => (
+  <section aria-labelledby="services-title" className={`${WRAP} pt-28`}>
+    <SectionHead id="services-title" title="Built on Hedera's own services.">
+      No off-chain bot and no custom indexer. Tidepool is a contract and a website on top of services Hedera already
+      runs. <span className="text-fg">Here is what each one does.</span>
+    </SectionHead>
+    <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.07] sm:grid-cols-2 lg:grid-cols-3">
+      {SERVICES.map((s, i) => (
+        <Reveal key={s.name} step={i + 1} className="group bg-bg p-6 transition-colors duration-300 hover:bg-surface">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="m-0 text-lg font-bold text-fg transition-transform duration-300 group-hover:translate-x-1">
+              {s.name}
+            </h3>
+            <Mono className="mt-1.5 shrink-0 text-faint transition-colors duration-300 group-hover:text-neon">
+              {s.tag}
+            </Mono>
+          </div>
+          <p className="mt-3 text-[15px] leading-relaxed text-muted">{s.text}</p>
+        </Reveal>
+      ))}
+    </div>
+  </section>
+);
+
+/* ------------------------------------------------------------------ Hedera rules */
 
 const HEDERA: Row[] = [
   {
@@ -383,12 +519,9 @@ const Hedera = () => (
       rightSub="Handled in Tidepool"
       rows={HEDERA}
     />
-    <Link
-      href="/docs/hedera-gotchas"
-      className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon"
-    >
-      All the Hedera details <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
-    </Link>
+    <div className="mt-6">
+      <ArrowLink href="/docs/hedera-gotchas">All the Hedera details</ArrowLink>
+    </div>
   </section>
 );
 
@@ -410,33 +543,46 @@ const Template = () => (
       and deploy. <span className="text-fg">Everything on this site comes with it.</span>
     </SectionHead>
     <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-      <div className="min-w-0">
+      <Reveal step={1} className="min-w-0">
         <Command />
         <div className="mt-6 flex flex-wrap gap-3">
-          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className={btn.primary}>
-            View on GitHub <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className={`group ${btn.primary}`}>
+            View on GitHub
+            <ArrowTopRightOnSquareIcon
+              className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              aria-hidden
+            />
           </a>
-          <Link href="/docs/quickstart" className={btn.ghost}>
-            Quickstart <ArrowRightIcon className="h-4 w-4" aria-hidden />
+          <Link href="/docs/quickstart" className={`group ${btn.ghost}`}>
+            Quickstart
+            <ArrowRightIcon
+              className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+              aria-hidden
+            />
           </Link>
         </div>
-      </div>
-      <div>
+      </Reveal>
+      <Reveal step={2}>
         <Mono className="text-faint">What you get</Mono>
         <ul className="m-0 mt-3 list-none divide-y divide-white/[0.06] border-y border-white/[0.06] p-0">
           {INCLUDED.map(([path, text]) => (
-            <li key={path} className="grid grid-cols-1 gap-1 py-3.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
-              <span className="font-mono text-[13px] text-neon">{path}</span>
-              <span className="text-[15px] text-muted">{text}</span>
+            <li
+              key={path}
+              className="group -mx-3 grid grid-cols-1 gap-1 rounded-lg px-3 py-3.5 transition-colors duration-200 hover:bg-white/[0.03] sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6"
+            >
+              <span className="font-mono text-[13px] text-neon transition-transform duration-200 group-hover:translate-x-1">
+                {path}
+              </span>
+              <span className="text-[15px] text-muted transition-colors duration-200 group-hover:text-fg">{text}</span>
             </li>
           ))}
         </ul>
-      </div>
+      </Reveal>
     </div>
   </section>
 );
 
-/** The landing page: the claim, the problem, the vault live, the Hedera details, and the template. */
+/** The landing page: the claim, the problem, the vault live, Hedera's services and rules, and the template. */
 export const Landing = () => {
   const d = useLandingData();
   return (
@@ -444,6 +590,7 @@ export const Landing = () => {
       <Hero />
       <Problem />
       <Live d={d} />
+      <Services />
       <Hedera />
       <Template />
     </div>
