@@ -22,7 +22,8 @@ The CLI asks for a project name, the Hedera network (choose testnet), whether to
 > **If GitHub is slow or rate-limits you, pin the framework.** The CLI reads this template's `template.json` through the GitHub API. If that request fails, it quietly falls back to its own defaults, which offer Foundry first; choosing it deletes `packages/hardhat`, where the vault lives. Passing the choices yourself makes the request irrelevant (in PowerShell, write it on one line without the `\`):
 >
 > ```bash
-> npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar \n>   -s hardhat -f nextjs-app --package-manager npm
+> npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar \
+>   -s hardhat -f nextjs-app --package-manager npm
 > ```
 
 ## See the live vault
