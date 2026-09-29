@@ -24,7 +24,7 @@ const Dashboard: NextPage = () => {
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[380px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.09),transparent)]"
       />
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-8 pt-10 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-4 pb-8 pt-10 sm:px-6">
         {/* Keyed by vault so inputs and transaction status reset when switching. */}
         <VaultDashboard key={vault.id} config={vault} onSelect={select} />
       </div>

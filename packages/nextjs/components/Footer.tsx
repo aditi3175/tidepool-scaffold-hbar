@@ -15,7 +15,7 @@ const LINKS: { label: string; href: string; external?: boolean }[] = [
 /** Site footer: wordmark and tagline, links, the network, and the testnet disclaimer. */
 export const Footer = () => (
   <footer className="mt-24 border-t border-neon/[0.08]">
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-8 px-5 py-10 sm:px-8 lg:px-12 md:flex-row md:items-center md:justify-between">
       <div>
         <Logo />
         <p className="mt-2 text-sm text-muted">
@@ -41,7 +41,7 @@ export const Footer = () => (
       </span>
     </div>
     <div className="border-t border-neon/[0.06]">
-      <p className="mx-auto max-w-[1200px] px-4 py-4 text-xs text-faint sm:px-6">
+      <p className="mx-auto max-w-[1480px] px-5 py-4 text-xs text-faint sm:px-8 lg:px-12">
         Testnet reference code. Not audited. No yield implied. Built with Scaffold-HBAR.
       </p>
     </div>

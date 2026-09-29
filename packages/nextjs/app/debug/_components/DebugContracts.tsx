@@ -38,7 +38,7 @@ export function DebugContracts() {
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="w-full max-w-[1200px] px-4 sm:px-6">
+            <div className="w-full max-w-[1480px] px-5 sm:px-8 lg:px-12">
               <div
                 role="tablist"
                 aria-label="Contract"

@@ -60,7 +60,7 @@ const HowItWorks: NextPage = () => (
       can steer it.
     </PageHero>
 
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-20 px-4 pb-8 sm:px-6">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-20 px-4 pb-8 sm:px-6">
       {SECTIONS.map((section, i) => (
         <section
           key={section.id}
@@ -83,7 +83,7 @@ const HowItWorks: NextPage = () => (
       ))}
     </div>
 
-    <section aria-labelledby="try-it" className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+    <section aria-labelledby="try-it" className="mx-auto max-w-[1480px] px-4 py-24 sm:px-6">
       <Eyebrow>Try it</Eyebrow>
       <h2
         id="try-it"
@@ -99,7 +99,7 @@ const HowItWorks: NextPage = () => (
       </div>
     </section>
 
-    <section aria-labelledby="as-a-user" className="mx-auto max-w-[1200px] px-4 pb-8 sm:px-6">
+    <section aria-labelledby="as-a-user" className="mx-auto max-w-[1480px] px-4 pb-8 sm:px-6">
       <Eyebrow>As a user</Eyebrow>
       <h2
         id="as-a-user"

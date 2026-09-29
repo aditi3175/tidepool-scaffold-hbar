@@ -55,7 +55,7 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-neon/[0.08] bg-bg/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1480px] items-center gap-4 px-5 sm:px-8 lg:px-12">
         <details className="relative lg:hidden" ref={menuRef}>
           <summary
             className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg text-muted hover:text-fg [&::-webkit-details-marker]:hidden"

@@ -23,7 +23,7 @@ const Contracts: NextPage = () => (
       Read and call <span className="font-mono text-fg">TidepoolVault</span> and{" "}
       <span className="font-mono text-fg">TidepoolVaultNarrow</span> directly, without the dashboard&apos;s checks.
     </PageHero>
-    <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-4 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+    <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 gap-4 px-5 sm:px-8 lg:px-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
       <div
         role="note"
         className="flex gap-3 rounded-2xl border border-amber/30 bg-amber/[0.05] p-5 text-[15px] leading-relaxed"

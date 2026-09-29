@@ -21,7 +21,7 @@ export const DocsPage = ({ doc }: { doc: LoadedDoc }) => {
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[360px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.08),transparent)]"
       />
-      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[232px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)_220px]">
+      <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[232px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)_220px]">
         {/* Sidebar: a disclosure on small screens, a sticky column on large ones */}
         <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
           <details className="rounded-xl border border-white/10 bg-surface lg:hidden">

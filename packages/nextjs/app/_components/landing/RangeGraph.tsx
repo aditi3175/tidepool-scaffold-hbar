@@ -29,12 +29,14 @@ export const RangeGraph = ({
   spot,
   twap,
   inRange,
+  height = 210,
 }: {
   lower?: number;
   upper?: number;
   spot?: number;
   twap?: number;
   inRange?: boolean;
+  height?: number;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -47,9 +49,9 @@ export const RangeGraph = ({
     return () => ro.disconnect();
   }, []);
 
-  const H = 210;
+  const H = height;
   const top = 34;
-  const base = 164;
+  const base = height - 46;
   const ready = lower !== undefined && upper !== undefined && spot !== undefined && width > 0;
   const earning = inRange !== false;
 

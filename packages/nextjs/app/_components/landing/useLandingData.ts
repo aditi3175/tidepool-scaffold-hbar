@@ -131,6 +131,10 @@ export function useLandingData() {
     fee1,
     lastRebalance: lastRebalanceEvent?.timestamp ?? (vault.lastRebalance ? Number(vault.lastRebalance) : undefined),
     lastRebalanceTx: lastRebalanceEvent?.transactionHash,
+    /** Chain time in seconds (falls back to the local clock), for the rebalance cooldown. */
+    now: vault.chainTime !== undefined ? Number(vault.chainTime) : Math.floor(Date.now() / 1000),
+    lastRebalanceOnChain: vault.lastRebalance !== undefined ? Number(vault.lastRebalance) : undefined,
+    hasPosition: vault.hasPosition,
     events: events.map(
       (e): LandingEvent => ({
         key: `${e.transactionHash}-${e.logIndex}`,
