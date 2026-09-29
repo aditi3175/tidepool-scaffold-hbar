@@ -269,6 +269,14 @@
 .tp-settle {
   animation: tp-settle 2.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+@keyframes tp-flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+.tp-flow {
+  animation: tp-flow 1.2s linear infinite;
+}
 @keyframes tp-caret {
   50% {
     opacity: 0;
@@ -287,6 +295,7 @@
   .tp-line > span,
   .tp-in,
   .tp-settle,
+  .tp-flow,
   .tp-caret {
     animation: none;
   }

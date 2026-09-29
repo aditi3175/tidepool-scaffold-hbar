@@ -4,6 +4,7 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import Image from "next/image";
 import Link from "next/link";
 import { RangeGraph } from "./RangeGraph";
+import { ServicesMap } from "./ServicesMap";
 import { type LandingData, useLandingData } from "./useLandingData";
 import {
   ArrowRightIcon,
@@ -285,7 +286,7 @@ const COMPARE: Row[] = [
 
 const Problem = () => (
   <section aria-labelledby="problem-title" className={`${WRAP} pt-28`}>
-    <SectionHead id="problem-title" title="A range stops earning the moment price leaves it.">
+    <SectionHead id="problem-title" title="Out of range, out of earnings.">
       Concentrated liquidity earns more per token, but only between two prices. Someone has to watch the market, move
       the range and reinvest the fees. <span className="text-fg">Tidepool turns that job into rules on chain.</span>
     </SectionHead>
@@ -407,60 +408,15 @@ const Live = ({ d }: { d: LandingData }) => {
 
 /* ------------------------------------------------------------------ Hedera services */
 
-const SERVICES: { name: string; tag: string; text: string }[] = [
-  {
-    name: "Smart Contract Service",
-    tag: "EVM",
-    text: "Runs the vault: plain Solidity on Hedera's EVM, with no owner and no upgrade path.",
-  },
-  {
-    name: "Token Service",
-    tag: "HTS · 0x167",
-    text: "The vault creates, mints and burns its share token, and associates its own tokens, through the HTS precompile.",
-  },
-  {
-    name: "Exchange Rate",
-    tag: "0x168",
-    text: "Converts SaucerSwap's position fee from US cents to tinybars inside every compound and rebalance.",
-  },
-  {
-    name: "Mirror Node",
-    tag: "REST API",
-    text: "The dashboard reads the vault's event history from the mirror node's public API.",
-  },
-  {
-    name: "JSON-RPC Relay",
-    tag: "Hashio",
-    text: "Wallets, this site and the deploy scripts reach the network through Hashio.",
-  },
-  {
-    name: "SaucerSwap V2",
-    tag: "On Hedera",
-    text: "The concentrated-liquidity pool, position manager and swap router the vault works with.",
-  },
-];
-
 const Services = () => (
   <section aria-labelledby="services-title" className={`${WRAP} pt-28`}>
     <SectionHead id="services-title" title="Built on Hedera's own services.">
-      No off-chain bot and no custom indexer. Tidepool is a contract and a website on top of services Hedera already
-      runs. <span className="text-fg">Here is what each one does.</span>
+      No off-chain bot and no custom indexer: a contract and a website on services Hedera already runs.{" "}
+      <span className="text-fg">Pick one to see where it fits.</span>
     </SectionHead>
-    <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.07] sm:grid-cols-2 lg:grid-cols-3">
-      {SERVICES.map((s, i) => (
-        <Reveal key={s.name} step={i + 1} className="group bg-bg p-6 transition-colors duration-300 hover:bg-surface">
-          <div className="flex items-start justify-between gap-4">
-            <h3 className="m-0 text-lg font-bold text-fg transition-transform duration-300 group-hover:translate-x-1">
-              {s.name}
-            </h3>
-            <Mono className="mt-1.5 shrink-0 text-faint transition-colors duration-300 group-hover:text-neon">
-              {s.tag}
-            </Mono>
-          </div>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted">{s.text}</p>
-        </Reveal>
-      ))}
-    </div>
+    <Reveal step={1}>
+      <ServicesMap />
+    </Reveal>
   </section>
 );
 
