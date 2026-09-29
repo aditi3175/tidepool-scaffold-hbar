@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { Logo } from "~~/components/pulse/Logo";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
-import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-hbar";
+import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
 const NAV = [
   { label: "Home", href: "/" },
@@ -19,20 +19,7 @@ const NAV = [
 const isActive = (pathname: string, href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
-const NetworkBadge = () => {
-  const { targetNetwork } = useTargetNetwork();
-  return (
-    <span
-      className="hidden items-center gap-2 rounded-full border border-neon/20 bg-neon/[0.06] px-3 py-1.5 text-xs font-medium text-fg md:inline-flex"
-      title={`Target network: ${targetNetwork.name}`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
-      {targetNetwork.name}
-    </span>
-  );
-};
-
-/** Site header: wordmark, the five sections, then the network badge and the wallet. */
+/** Site header: wordmark, the five sections, then the wallet. */
 export const Header = () => {
   const pathname = usePathname();
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -82,7 +69,6 @@ export const Header = () => {
         </nav>
 
         <div className="ml-auto flex items-center gap-3 lg:ml-8">
-          <NetworkBadge />
           <RainbowKitCustomConnectButton />
         </div>
       </div>

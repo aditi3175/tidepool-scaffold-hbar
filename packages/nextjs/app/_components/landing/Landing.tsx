@@ -1,9 +1,9 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { RangeGraph } from "./RangeGraph";
-import { WaveField } from "./WaveField";
 import { type LandingData, useLandingData } from "./useLandingData";
 import {
   ArrowRightIcon,
@@ -54,113 +54,91 @@ const SectionHead = ({ id, title, children }: { id: string; title: ReactNode; ch
   </div>
 );
 
+/** The scaffold command as a one-line terminal, with the two commands that follow it. */
 const Command = () => {
   const { copied, copy } = useCopy();
   return (
-    <div>
-      <div className="rounded-xl border border-neon/25 bg-bg/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
-          <Mono className="text-neon">Scaffold it</Mono>
-          <button
-            type="button"
-            onClick={() => copy(SCAFFOLD_COMMAND)}
-            className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted hover:text-neon"
-          >
-            {copied ? <CheckCircleIcon className="h-4 w-4 text-neon" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-        <code className="block overflow-x-auto px-4 py-3.5 font-mono text-[11px] leading-6 text-fg sm:text-[13px]">
-          <span className="select-none text-faint">$ </span>
-          <span className="whitespace-nowrap">{SCAFFOLD_COMMAND.split(" --template")[0]}</span>{" "}
-          <span className="whitespace-nowrap">--template{SCAFFOLD_COMMAND.split(" --template")[1]}</span>
-        </code>
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[rgba(5,11,13,0.78)] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md">
+      <div className="flex items-center gap-2 border-b border-white/[0.07] px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]/80" aria-hidden />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]/80" aria-hidden />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]/80" aria-hidden />
+        <span className="ml-3 text-xs text-muted">Start your own vault</span>
+        <button
+          type="button"
+          onClick={() => copy(SCAFFOLD_COMMAND)}
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-neon/40 hover:text-neon"
+        >
+          {copied ? (
+            <CheckCircleIcon className="h-3.5 w-3.5 text-neon" />
+          ) : (
+            <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+          )}
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
-      <p className="mt-2 text-xs text-faint">
-        Keep the <code className="font-mono text-muted">--</code>: npm passes{" "}
-        <code className="font-mono">--template</code> to the CLI only after it.
-      </p>
+      <div className="overflow-x-auto px-4 py-4 font-mono text-[11.5px] leading-7 xl:text-[12.5px]">
+        <div className="whitespace-nowrap text-fg">
+          <span className="select-none text-neon">$ </span>
+          {SCAFFOLD_COMMAND}
+        </div>
+        <div className="whitespace-nowrap text-muted">
+          <span className="select-none text-faint">$ </span>cd your-vault
+        </div>
+        <div className="whitespace-nowrap text-muted">
+          <span className="select-none text-faint">$ </span>npm run next:dev
+        </div>
+      </div>
     </div>
   );
 };
 
 /* ------------------------------------------------------------------ Hero */
 
-const Hero = ({ d }: { d: LandingData }) => {
-  const inRange = d.inRange !== false;
-  return (
-    <section className="relative isolate overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-[-15%] top-[-25%] -z-10 h-[760px] w-[1100px] rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.13),transparent)]"
-      />
-      {/* The wave fills the right side to the edge of the screen on large screens. */}
-      <WaveField className="absolute inset-y-0 right-0 -z-10 hidden w-[64%] [mask-image:linear-gradient(90deg,transparent,black_28%)] lg:block" />
+const Hero = () => (
+  <section className="relative isolate overflow-hidden">
+    {/* Night sea, full width; darkened where the text sits and blended into the page at the bottom. */}
+    <Image src="/hero-sea.jpg" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-bottom" />
+    <div
+      aria-hidden
+      className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,11,13,0.82)_0%,rgba(5,11,13,0.45)_55%,rgba(5,11,13,0.2)_100%)]"
+    />
+    <div
+      aria-hidden
+      className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(5,11,13,0.55)_0%,rgba(5,11,13,0)_30%,rgba(5,11,13,0)_70%,#050b0d_100%)]"
+    />
 
-      <div
-        className={`${WRAP} relative grid min-h-[min(calc(100svh-4rem),820px)] grid-cols-1 items-center lg:grid-cols-12`}
-      >
-        <div className="py-14 lg:col-span-6 lg:py-20">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-            <span className="inline-flex items-center gap-2 rounded-full border border-neon/25 bg-neon/[0.07] px-3 py-1 text-fg">
-              <span className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
-              Built on Hedera
-            </span>
-            <span className="rounded-full border border-white/10 px-3 py-1 text-muted">Scaffold-HBAR template</span>
-          </div>
-          <h1 className="m-0 mt-7 text-[clamp(56px,7.6vw,104px)] font-extrabold leading-[0.95] tracking-[-0.05em] text-fg">
-            Tidepool
-          </h1>
-          <p className="m-0 mt-3 text-[clamp(28px,3.4vw,46px)] font-bold leading-tight tracking-[-0.035em] text-fg">
-            Liquidity on <GradientText>autopilot.</GradientText>
-          </p>
-          <p className="mt-6 max-w-[540px] text-[18px] leading-relaxed text-muted">
-            One SaucerSwap V2 position, owned by a contract with no owner. It compounds its own fees and re-centres its
-            range on the pool&apos;s average price.{" "}
-            <span className="text-fg">Anyone can press the button; nobody can steer it.</span>
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/dashboard" className={btn.primary}>
-              Launch vault <ArrowRightIcon className="h-4 w-4" aria-hidden />
-            </Link>
-            <a href="#template" className={btn.ghost}>
-              Use this template <ArrowRightIcon className="h-4 w-4" aria-hidden />
-            </a>
-          </div>
-          <div className="mt-10 max-w-[580px]">
-            <Command />
-          </div>
+    <div
+      className={`${WRAP} grid min-h-[min(calc(100svh-4rem),860px)] grid-cols-1 items-center gap-12 py-16 lg:grid-cols-2 lg:py-24`}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+          <span className="inline-flex items-center gap-2 rounded-full border border-neon/25 bg-neon/[0.08] px-3 py-1 text-fg backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
+            Built on Hedera
+          </span>
+          <span className="rounded-full border border-white/15 bg-black/20 px-3 py-1 text-muted backdrop-blur-sm">
+            Scaffold-HBAR template
+          </span>
         </div>
-
-        {/* On large screens the live card floats over the wave; on phones the wave sits above it. */}
-        <div className="relative pb-12 lg:col-span-5 lg:col-start-8 lg:self-end lg:pb-20">
-          <WaveField className="relative -mx-5 h-[220px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_45%,black_50%,transparent)] lg:hidden" />
-          <div className="relative -mt-8 rounded-2xl border border-neon/20 bg-[rgba(10,20,23,0.75)] p-5 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop-blur-md lg:ml-auto lg:mt-0 lg:max-w-[380px]">
-            <div className="flex items-center justify-between">
-              <Mono className="text-muted">Main vault · live</Mono>
-              <span className="inline-flex items-center gap-2 text-xs text-neon">
-                <span className="h-2 w-2 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
-                Hedera Testnet
-              </span>
-            </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-[34px] font-bold leading-none tabular-nums tracking-[-0.03em] text-fg">
-                {formatPriceSig(d.spot)}
-              </span>
-              <span className="text-sm text-muted">{d.unit}</span>
-            </div>
-            <div className="mt-3 text-sm text-muted">
-              Range {formatPriceSig(d.lower)} – {formatPriceSig(d.upper)} ·{" "}
-              <span className={inRange ? "text-neon" : "text-amber"}>
-                {d.inRange === undefined ? "reading" : inRange ? "in range, earning fees" : "out of range"}
-              </span>
-            </div>
-          </div>
-        </div>
+        <h1 className="m-0 mt-7 text-[clamp(56px,7.6vw,110px)] font-extrabold leading-[0.95] tracking-[-0.05em] text-fg">
+          Tidepool
+        </h1>
+        <p className="m-0 mt-3 text-[clamp(28px,3.4vw,48px)] font-bold leading-tight tracking-[-0.035em] text-fg">
+          Liquidity on <GradientText>autopilot.</GradientText>
+        </p>
+        <p className="mt-6 max-w-[540px] text-[18px] leading-relaxed text-fg/75">
+          One SaucerSwap V2 position, owned by a contract with no owner. It compounds its own fees and re-centres its
+          range on the pool&apos;s average price.{" "}
+          <span className="text-fg">Anyone can press the button; nobody can steer it.</span>
+        </p>
       </div>
-    </section>
-  );
-};
+      <div className="min-w-0 lg:self-end lg:pb-4">
+        <Command />
+      </div>
+    </div>
+  </section>
+);
 
 /* ------------------------------------------------------------------ The problem */
 
@@ -293,7 +271,7 @@ const Live = ({ d }: { d: LandingData }) => {
             </span>
           </div>
           <div className="mt-6">
-            <RangeGraph lower={d.lower} upper={d.upper} spot={d.spot} twap={d.twap} inRange={d.inRange} height={300} />
+            <RangeGraph lower={d.lower} upper={d.upper} spot={d.spot} twap={d.twap} inRange={d.inRange} />
           </div>
         </div>
 
@@ -355,84 +333,79 @@ const Live = ({ d }: { d: LandingData }) => {
 
 const EVIDENCE = [
   {
+    metric: "8.6×",
+    unit: "less gas",
+    title: "Compounding got cheap.",
+    text: "Standing approvals cut a compound from 4.80M to 0.56M gas. This one collected 0.0047 WHBAR + 0.213 SAUCE of fees and put them back to work.",
     tag: "Main vault · compound",
-    title: "Fees, back to work.",
-    text: "Collected 0.0047 WHBAR + 0.213 SAUCE of swap fees and added them to position #392.",
-    stats: "563,157 gas · 0.61 HBAR",
     tx: "0x76c3114520d0693e07ae4f3b53128d89d9a0ef672e9aec153b8291fbc7e1a9ca",
   },
   {
-    tag: "Narrow vault · rebalance",
+    metric: "1",
+    unit: "call",
     title: "It moved when the average did.",
-    text: "A 106-tick price drop pushed the TWAP out of [−7860, −7740). One call re-centred the range to [−7980, −7860).",
-    stats: "982,492 gas · 1.07 HBAR",
+    text: "A 106-tick price drop pushed the narrow vault's TWAP out of its range. One call from anyone re-centred it, at 0.98M gas.",
+    tag: "Narrow vault · rebalance",
     tx: "0xf55864c1fc7bdd54ae9597ecae2f8f70e534c0af4c0c7fb14da31065ceda0654",
   },
   {
-    tag: "Main vault · this site",
-    title: "A second wallet, in and out.",
-    text: "Another account deposited 0.9999 WHBAR + 38.2454 SAUCE for 1.0097 shares, then withdrew, all from the dashboard.",
-    stats: "deposit, then withdraw",
+    metric: "2",
+    unit: "wallets",
+    title: "Real users, through this site.",
+    text: "A second account deposited 0.9999 WHBAR + 38.2454 SAUCE for 1.0097 shares, then withdrew, using the dashboard you can open now.",
+    tag: "Main vault · deposit",
     tx: "0xbcfc48e9cee0edcb1610f430ce150e85152c9677f5a77811375cbc4bf18fd82f",
   },
-];
-
-const GAS = [
-  { action: "Initialize", gas: "5.24M", note: "associations, share token, standing approvals" },
-  { action: "First compound", gas: "0.89M", note: "opens the position" },
-  { action: "Compound", gas: "0.56M", note: "was 4.80M before standing approvals" },
-  { action: "Rebalance", gas: "0.98M", note: "was 5.26M before standing approvals" },
-  { action: "Withdraw", gas: "0.34M", note: "never blocked by the guard" },
 ];
 
 const Proof = () => (
   <section aria-labelledby="proof-title" className={`${WRAP} pt-28`}>
     <SectionHead id="proof-title" title="Every rule, tested on testnet.">
-      Two vaults, the same code. One earned and compounded; one was pushed out of range and re-centred itself.{" "}
-      <span className="text-fg">Every result below is a transaction you can open.</span>
+      A template is only worth forking if it works. Two vaults ran the same code on Hedera testnet.{" "}
+      <span className="text-fg">Each result below links to the transaction.</span>
     </SectionHead>
-    <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-      {EVIDENCE.map(e => (
-        <article key={e.tx} className="flex flex-col rounded-2xl border border-white/[0.08] bg-surface/60">
-          <div className="flex-1 p-6">
-            <Mono className="text-neon">{e.tag}</Mono>
-            <h3 className="m-0 mt-4 text-[22px] font-bold leading-snug tracking-[-0.02em] text-fg">{e.title}</h3>
-            <p className="mt-3 text-[15px] leading-relaxed text-muted">{e.text}</p>
-          </div>
-          <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-6 py-4">
-            <Mono className="text-faint">{e.stats}</Mono>
-            <a
-              href={hashscan.tx(e.tx)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted hover:text-neon"
-            >
-              Transaction <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" aria-hidden />
-            </a>
-          </div>
-        </article>
-      ))}
-    </div>
-    <div className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-3">
-        <Mono className="text-faint">Gas used on testnet</Mono>
-        <Link
-          href="/docs/testnet-evidence"
-          className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted hover:text-neon"
+    <ol className="m-0 mt-10 grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
+      {EVIDENCE.map((e, i) => (
+        <li
+          key={e.tx}
+          className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface/60 transition-colors hover:border-neon/30"
         >
-          All transactions <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        {GAS.map(g => (
-          <div key={g.action} className="border-r border-t border-white/[0.06] p-5 first:border-l-0 lg:border-t-0">
-            <div className="text-sm text-muted">{g.action}</div>
-            <div className="mt-1 text-2xl font-bold tabular-nums tracking-[-0.02em] text-fg">{g.gas}</div>
-            <div className="mt-0.5 text-xs text-faint">{g.note}</div>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.16),transparent)] opacity-60 transition-opacity group-hover:opacity-100"
+          />
+          <div className="relative flex-1 p-7">
+            <div className="flex items-center justify-between">
+              <Mono className="text-faint">0{i + 1}</Mono>
+              <Mono className="text-neon">{e.tag}</Mono>
+            </div>
+            <div className="mt-8 flex items-baseline gap-2">
+              <span className="bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)] bg-clip-text text-[64px] font-extrabold leading-none tracking-[-0.04em] text-transparent">
+                {e.metric}
+              </span>
+              <span className="text-lg font-semibold text-muted">{e.unit}</span>
+            </div>
+            <h3 className="m-0 mt-6 text-[21px] font-bold tracking-[-0.02em] text-fg">{e.title}</h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-muted">{e.text}</p>
           </div>
-        ))}
-      </div>
-    </div>
+          <a
+            href={hashscan.tx(e.tx)}
+            target="_blank"
+            rel="noreferrer"
+            className="relative flex items-center justify-between border-t border-white/[0.06] px-7 py-4 text-sm font-medium text-muted transition-colors hover:text-neon"
+          >
+            View the transaction on HashScan
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
+          </a>
+        </li>
+      ))}
+    </ol>
+    <Link
+      href="/docs/testnet-evidence"
+      className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon"
+    >
+      Every transaction and gas figure <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
+    </Link>
   </section>
 );
 
@@ -440,50 +413,63 @@ const Proof = () => (
 
 const HEDERA = [
   {
-    tag: "HTS",
+    glyph: "HTS",
     title: "Shares are a native token",
-    text: "Created, minted and burned by the vault. Amounts are int64; accounts associate through HIP-719.",
+    text: "The vault creates, mints and burns its own HTS share token. Holders associate it through HIP-719.",
+    wide: true,
   },
   {
-    tag: "Exchange rate · 0x168",
-    title: "The mint fee, priced on chain",
-    text: "SaucerSwap charges its position fee in US cents. The precompile converts it to tinybars in the same call.",
+    glyph: "0x168",
+    title: "The fee, priced on chain",
+    text: "SaucerSwap's position fee is quoted in US cents; the exchange-rate precompile turns it into tinybars.",
   },
   {
-    tag: "Allowances",
-    title: "Capped at max supply",
-    text: "HTS rejects an allowance above a token's max supply. The vault caps its standing approvals and can restore them.",
+    glyph: "int64",
+    title: "Amounts that fit HTS",
+    text: "HTS amounts are int64, and allowances above a token's max supply are rejected. The vault caps both.",
   },
   {
-    tag: "Simulation",
-    title: "Mints that can't be simulated",
-    text: "eth_call returns INVALID_NFT_ID for SaucerSwap mints, so the site checks every precondition, then sends with fixed gas.",
-  },
-  {
-    tag: "Units",
+    glyph: "18 → 8",
     title: "Weibar in, tinybar inside",
-    text: "JSON-RPC values use 18 decimals and contracts see 8. The dashboard converts both ways.",
+    text: "JSON-RPC values carry 18 decimals and contracts see 8. The dashboard converts both ways.",
   },
   {
-    tag: "WHBAR",
+    glyph: "WHBAR",
     title: "Wrapped through the helper",
     text: "Never approve the WHBAR contract itself. Wrapping goes through SaucerSwap's WhbarHelper, as SaucerSwap requires.",
+  },
+  {
+    glyph: "INVALID_NFT_ID",
+    title: "Mints that can't be simulated",
+    text: "eth_call rejects SaucerSwap mints that succeed on chain, so the site checks every precondition, then sends with fixed gas.",
+    full: true,
   },
 ];
 
 const Hedera = () => (
   <section aria-labelledby="hedera-title" className={`${WRAP} pt-28`}>
     <SectionHead id="hedera-title" title="Hedera's rules, already handled.">
-      The details that break a first DeFi contract on Hedera are solved in the template, tested, and written down in the
-      docs. <span className="text-fg">You start from working code, not from the error messages.</span>
+      These are the details that break a first DeFi contract on Hedera. The template solves each one and the docs
+      explain it. <span className="text-fg">You start from working code, not from error messages.</span>
     </SectionHead>
-    <div className="mt-10 grid grid-cols-1 overflow-hidden rounded-2xl border border-white/[0.08] sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
       {HEDERA.map(item => (
-        <div key={item.title} className="border-b border-r border-white/[0.06] p-6">
-          <Mono className="text-neon">{item.tag}</Mono>
-          <h3 className="m-0 mt-3 text-lg font-bold text-fg">{item.title}</h3>
-          <p className="mt-2 text-[15px] leading-relaxed text-muted">{item.text}</p>
-        </div>
+        <article
+          key={item.title}
+          className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[linear-gradient(160deg,rgba(15,28,32,0.9),rgba(8,15,17,0.9))] p-7 transition-colors hover:border-neon/30 ${
+            item.full ? "md:col-span-3" : item.wide ? "md:col-span-2" : ""
+          }`}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(46,230,200,0.6),transparent)] opacity-0 transition-opacity group-hover:opacity-100"
+          />
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)] bg-clip-text font-mono text-[clamp(30px,3.4vw,46px)] font-bold leading-none tracking-[-0.02em] text-transparent">
+            {item.glyph}
+          </div>
+          <h3 className="m-0 mt-8 text-lg font-bold text-fg">{item.title}</h3>
+          <p className="mt-2 max-w-[560px] text-[15px] leading-relaxed text-muted">{item.text}</p>
+        </article>
       ))}
     </div>
   </section>
@@ -552,7 +538,7 @@ export const Landing = () => {
   const d = useLandingData();
   return (
     <div>
-      <Hero d={d} />
+      <Hero />
       <Problem />
       <Live d={d} />
       <Proof />

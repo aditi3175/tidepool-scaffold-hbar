@@ -1,45 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { priceDomain } from "~~/components/pulse/FlowChart";
 import { formatPriceSig } from "~~/utils/tidepool/format";
 
-/** Round axis steps: 1, 2 or 5 times a power of ten. */
-const niceStep = (span: number, target = 6) => {
-  const raw = span / target;
-  const pow = 10 ** Math.floor(Math.log10(raw));
-  const m = raw / pow;
-  return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * pow;
-};
-
-// Fixed pseudo-random texture for the band (the same on server and client).
-const DOTS = Array.from({ length: 46 }, (_, i) => {
-  const a = Math.sin(i * 12.9898) * 43758.5453;
-  const b = Math.sin(i * 78.233) * 12345.6789;
-  return { fx: a - Math.floor(a), fy: b - Math.floor(b), r: 1 + ((i * 7) % 5) * 0.35, d: (i % 9) * 0.35 };
-});
+const TEAL = "#2EE6C8";
+const RED = "#FF5470";
+const FG = "#EEF6F5";
+const MUTED = "#94A9A7";
 
 /**
- * The range as a price axis: the band between lower and upper, spot as a glowing line, zone labels and a legend.
- * The dots are texture, not trades.
+ * The position as a price bar: out-of-range zones on both sides, the range between two handles, the vault's liquidity
+ * as a glow over it (a vault position spreads its liquidity evenly across the range), and the current price marked.
  */
 export const RangeGraph = ({
   lower,
   upper,
   spot,
-  twap,
   inRange,
-  height = 210,
 }: {
   lower?: number;
   upper?: number;
   spot?: number;
   twap?: number;
   inRange?: boolean;
-  height?: number;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -49,158 +37,156 @@ export const RangeGraph = ({
     return () => ro.disconnect();
   }, []);
 
-  const H = height;
-  const top = 34;
-  const base = height - 46;
+  const H = 290;
+  const barY = 175;
+  const barH = 14;
   const ready = lower !== undefined && upper !== undefined && spot !== undefined && width > 0;
   const earning = inRange !== false;
 
   let body = null;
   if (ready) {
-    const { min, max } = priceDomain(lower, upper, [spot, twap ?? spot]);
+    const { min, max } = priceDomain(lower, upper, [spot]);
     const x = (p: number) => ((p - min) / (max - min)) * width;
     const x0 = x(lower);
     const x1 = x(upper);
-    const xs = x(spot);
-    const step = niceStep(max - min);
-    const ticks: number[] = [];
-    for (let t = Math.ceil(min / step) * step; t <= max; t += step) ticks.push(t);
-    const tone = earning ? "#2EE6C8" : "#FFB020";
-    const labelY = top - 14;
+    const xs = Math.max(4, Math.min(width - 4, x(spot)));
+    const flagW = 118;
+    const flagX = Math.max(0, Math.min(width - flagW, xs - flagW / 2));
+    const plateauTop = 82;
+    const soft = Math.max(24, (x1 - x0) * 0.12);
+    const plateau = `M ${x0 - soft * 2} ${barY - 10} C ${x0 - soft} ${barY - 10}, ${x0 - soft * 0.4} ${plateauTop}, ${x0 + soft} ${plateauTop} L ${x1 - soft} ${plateauTop} C ${x1 + soft * 0.4} ${plateauTop}, ${x1 + soft} ${barY - 10}, ${x1 + soft * 2} ${barY - 10} Z`;
 
     body = (
       <>
         <defs>
-          <linearGradient id="rg-band" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor={tone} stopOpacity="0.28" />
-            <stop offset="1" stopColor={tone} stopOpacity="0.03" />
+          <linearGradient id={`lz${uid}`} x1="0" x2="1">
+            <stop offset="0" stopColor={RED} stopOpacity="0" />
+            <stop offset="1" stopColor={RED} stopOpacity="0.55" />
           </linearGradient>
-          <filter id="rg-glow" x="-200%" y="-50%" width="500%" height="200%">
-            <feGaussianBlur stdDeviation="3" />
+          <linearGradient id={`rz${uid}`} x1="0" x2="1">
+            <stop offset="0" stopColor={RED} stopOpacity="0.55" />
+            <stop offset="1" stopColor={RED} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={`in${uid}`} x1="0" x2="1">
+            <stop offset="0" stopColor={TEAL} stopOpacity={earning ? 0.75 : 0.35} />
+            <stop offset="0.5" stopColor="#8FFFEA" stopOpacity={earning ? 1 : 0.45} />
+            <stop offset="1" stopColor={TEAL} stopOpacity={earning ? 0.75 : 0.35} />
+          </linearGradient>
+          <linearGradient id={`pl${uid}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor={TEAL} stopOpacity={earning ? 0.22 : 0.1} />
+            <stop offset="1" stopColor={TEAL} stopOpacity="0" />
+          </linearGradient>
+          <filter id={`gl${uid}`} x="-20%" y="-200%" width="140%" height="500%">
+            <feGaussianBlur stdDeviation="7" />
           </filter>
         </defs>
 
-        {/* Zone labels */}
-        {x0 > 90 && (
-          <text x={x0 / 2} y={labelY} textAnchor="middle" fontSize={11} fill="rgba(148,169,167,0.8)">
+        {/* The vault's liquidity over the range */}
+        <path d={plateau} fill={`url(#pl${uid})`} />
+        <path
+          d={plateau.replace(/ Z$/, "")}
+          fill="none"
+          stroke={TEAL}
+          strokeOpacity={earning ? 0.45 : 0.2}
+          strokeWidth={1.2}
+        />
+
+        {/* Out-of-range zones */}
+        <rect x={0} y={barY - barH / 2} width={x0} height={barH} rx={barH / 2} fill={`url(#lz${uid})`} />
+        <rect x={x1} y={barY - barH / 2} width={width - x1} height={barH} rx={barH / 2} fill={`url(#rz${uid})`} />
+        {x0 > 110 && (
+          <text x={x0 / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
             Out of range
           </text>
         )}
-        <text x={(x0 + x1) / 2} y={labelY} textAnchor="middle" fontSize={11} fill={tone}>
-          {earning ? "In range (earning fees)" : "Range (not earning)"}
+        {width - x1 > 110 && (
+          <text x={(x1 + width) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
+            Out of range
+          </text>
+        )}
+
+        {/* The range */}
+        <rect
+          x={x0}
+          y={barY - barH / 2}
+          width={x1 - x0}
+          height={barH}
+          fill={TEAL}
+          opacity={earning ? 0.6 : 0.25}
+          filter={`url(#gl${uid})`}
+        />
+        <rect x={x0} y={barY - barH / 2} width={x1 - x0} height={barH} rx={3} fill={`url(#in${uid})`} />
+        <text x={(x0 + x1) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={earning ? TEAL : MUTED}>
+          {earning ? "In range (earning fees)" : "The range (earns while price is inside)"}
         </text>
-        {width - x1 > 90 && (
-          <text x={(x1 + width) / 2} y={labelY} textAnchor="middle" fontSize={11} fill="rgba(148,169,167,0.8)">
-            Out of range
-          </text>
-        )}
 
-        {/* Band */}
-        <rect x={x0} y={top} width={x1 - x0} height={base - top} fill="url(#rg-band)" />
-        <line x1={x0} x2={x0} y1={top} y2={base} stroke={tone} strokeOpacity={0.8} />
-        <line x1={x1} x2={x1} y1={top} y2={base} stroke={tone} strokeOpacity={0.8} />
-        {DOTS.map((dot, i) => {
-          const inside = i < 34;
-          const dx = inside
-            ? x0 + dot.fx * (x1 - x0)
-            : dot.fx < 0.5
-              ? dot.fx * 2 * x0
-              : x1 + (dot.fx - 0.5) * 2 * (width - x1);
-          return (
-            <circle
-              key={i}
-              cx={dx}
-              cy={top + 12 + dot.fy * (base - top - 24)}
-              r={dot.r}
-              fill={inside ? tone : "#5F7674"}
-              opacity={inside ? 0.85 : 0.5}
-              className="motion-safe:animate-pulse"
-              style={{ animationDelay: `${dot.d}s`, animationDuration: "3s" }}
-            />
-          );
-        })}
-
-        {/* Spot */}
-        <line
-          x1={xs}
-          x2={xs}
-          y1={top - 4}
-          y2={base}
-          stroke={tone}
-          strokeWidth={4}
-          opacity={0.35}
-          filter="url(#rg-glow)"
-        />
-        <line x1={xs} x2={xs} y1={top - 4} y2={base} stroke="#EEF6F5" strokeWidth={1.5} />
-        <circle cx={xs} cy={(top + base) / 2} r={5} fill={tone} />
-        <circle
-          cx={xs}
-          cy={(top + base) / 2}
-          r={10}
-          fill={tone}
-          opacity={0.25}
-          className="motion-safe:animate-ping"
-          style={{ transformBox: "fill-box", transformOrigin: "center" }}
-        />
-
-        {/* Axis */}
-        <line x1={0} x2={width} y1={base + 0.5} y2={base + 0.5} stroke="rgba(148,169,167,0.25)" />
-        {ticks.map(t => (
-          <g key={t}>
-            <line x1={x(t)} x2={x(t)} y1={base} y2={base + 5} stroke="rgba(148,169,167,0.4)" />
+        {/* Handles and their prices */}
+        {[
+          { at: x0, label: "Lower", value: lower },
+          { at: x1, label: "Upper", value: upper },
+        ].map(h => (
+          <g key={h.label}>
+            <rect x={h.at - 5} y={barY - 17} width={10} height={34} rx={5} fill={FG} />
+            <text x={h.at} y={barY + 58} textAnchor="middle" fontSize={12} fill={MUTED}>
+              {h.label}
+            </text>
             <text
-              x={x(t)}
-              y={base + 20}
+              x={h.at}
+              y={barY + 80}
               textAnchor="middle"
-              fontSize={11}
-              fill="rgba(148,169,167,0.8)"
+              fontSize={19}
+              fontWeight={700}
+              fill={FG}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {t.toFixed(Math.max(0, -Math.floor(Math.log10(step))))}
+              {formatPriceSig(h.value)}
             </text>
           </g>
         ))}
+
+        {/* Current price */}
+        <line x1={xs} x2={xs} y1={62} y2={barY} stroke={FG} strokeOpacity={0.8} strokeDasharray="3 4" />
+        <circle cx={xs} cy={barY} r={6} fill={earning ? FG : RED} stroke="#050B0D" strokeWidth={2} />
+        <rect x={flagX} y={8} width={flagW} height={54} rx={10} fill="#0F1C20" stroke="rgba(46,230,200,0.3)" />
+        <text x={flagX + flagW / 2} y={29} textAnchor="middle" fontSize={11} fill={MUTED}>
+          Current price
+        </text>
+        <text
+          x={flagX + flagW / 2}
+          y={51}
+          textAnchor="middle"
+          fontSize={18}
+          fontWeight={700}
+          fill={earning ? FG : RED}
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {formatPriceSig(spot)}
+        </text>
       </>
     );
   } else if (width > 0) {
     body = (
-      <text x={width / 2} y={H / 2} textAnchor="middle" fontSize={13} fill="rgba(148,169,167,0.9)">
+      <text x={width / 2} y={H / 2} textAnchor="middle" fontSize={13} fill={MUTED}>
         Reading the vault…
       </text>
     );
   }
 
   return (
-    <div>
-      <div ref={ref} className="w-full" style={{ height: H }}>
-        <svg
-          width={width}
-          height={H}
-          className="block overflow-visible"
-          role="img"
-          aria-label={
-            ready
-              ? `Range ${formatPriceSig(lower)} to ${formatPriceSig(upper)}, current ${formatPriceSig(spot)}, ${earning ? "in range" : "out of range"}`
-              : "Range, loading"
-          }
-        >
-          {body}
-        </svg>
-      </div>
-      <div className="mt-2 flex flex-wrap justify-center gap-x-8 gap-y-1 text-xs text-muted">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-faint" aria-hidden /> Lower:{" "}
-          <span className="tabular-nums text-fg">{formatPriceSig(lower)}</span>
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-neon" aria-hidden /> Current:{" "}
-          <span className="tabular-nums text-fg">{formatPriceSig(spot)}</span>
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-faint" aria-hidden /> Upper:{" "}
-          <span className="tabular-nums text-fg">{formatPriceSig(upper)}</span>
-        </span>
-      </div>
+    <div ref={ref} className="w-full" style={{ height: H }}>
+      <svg
+        width={width}
+        height={H}
+        className="block overflow-visible"
+        role="img"
+        aria-label={
+          ready
+            ? `Range ${formatPriceSig(lower)} to ${formatPriceSig(upper)}, current price ${formatPriceSig(spot)}, ${earning ? "in range" : "out of range"}`
+            : "Range, loading"
+        }
+      >
+        {body}
+      </svg>
     </div>
   );
 };
