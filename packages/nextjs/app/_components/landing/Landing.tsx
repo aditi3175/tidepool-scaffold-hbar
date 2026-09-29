@@ -13,8 +13,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { GradientText, btn } from "~~/components/pulse";
 import { GITHUB_URL, SCAFFOLD_COMMAND } from "~~/utils/tidepool/constants";
-import { formatPriceSig, formatToken } from "~~/utils/tidepool/format";
-import { hashscan } from "~~/utils/tidepool/hashscan";
 import { formatDuration } from "~~/utils/tidepool/math";
 
 /** One content width for the page: wide, with generous side padding. */
@@ -140,18 +138,75 @@ const Hero = () => (
   </section>
 );
 
+/* ------------------------------------------------------------------ Comparison table */
+
+type Row = { label: string; left: string; right: string };
+
+/** A plain three-column comparison: row label, the usual way, and Tidepool's way. Hairlines only. */
+const CompareTable = ({
+  left,
+  leftSub,
+  right,
+  rightSub,
+  rows,
+}: {
+  left: string;
+  leftSub: string;
+  right: string;
+  rightSub: string;
+  rows: Row[];
+}) => (
+  <div className="mt-10 overflow-hidden rounded-2xl border border-white/[0.08]">
+    <div className="grid grid-cols-2 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="hidden border-b border-white/[0.08] p-6 md:block" />
+      <div className="border-b border-white/[0.08] p-6">
+        <div className="text-lg font-bold text-muted">{left}</div>
+        <Mono className="mt-1 block text-faint">{leftSub}</Mono>
+      </div>
+      <div className="border-b border-l border-white/[0.08] bg-white/[0.02] p-6">
+        <div className="text-lg font-bold text-fg">{right}</div>
+        <Mono className="mt-1 block text-neon">{rightSub}</Mono>
+      </div>
+      {rows.map((row, i) => {
+        const last = i === rows.length - 1;
+        return (
+          <div key={row.label} className="contents">
+            <div
+              className={`col-span-2 px-6 pt-5 md:col-span-1 md:py-5 ${last ? "" : "md:border-b md:border-white/[0.06]"}`}
+            >
+              <Mono className="text-faint">{row.label}</Mono>
+            </div>
+            <div
+              className={`px-6 pb-5 pt-2 text-[15px] text-muted md:py-5 ${last ? "" : "border-b border-white/[0.06]"}`}
+            >
+              {row.left}
+            </div>
+            <div
+              className={`border-l border-white/[0.08] bg-white/[0.02] px-6 pb-5 pt-2 text-[15px] text-fg md:py-5 ${
+                last ? "" : "border-b border-b-white/[0.06]"
+              }`}
+            >
+              {row.right}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
 /* ------------------------------------------------------------------ The problem */
 
-const COMPARE: { label: string; manual: string; tidepool: string }[] = [
-  { label: "Who moves the range", manual: "You, whenever you notice", tidepool: "Anyone, once the TWAP has left it" },
+const COMPARE: Row[] = [
+  { label: "Who moves the range", left: "You, whenever you notice", right: "Anyone, once the TWAP has left it" },
   {
     label: "Who can steer it",
-    manual: "Whoever holds the keys or runs the bot",
-    tidepool: "Nobody: spot must sit within 50 ticks of the 10-minute TWAP",
+    left: "Whoever holds the keys or runs the bot",
+    right: "Nobody: spot must sit within 50 ticks of the 10-minute TWAP",
   },
-  { label: "Swap fees", manual: "Wait until you claim them", tidepool: "Compounded back into the position" },
-  { label: "Admin keys", manual: "Yours, or an operator's", tidepool: "None: no owner, no upgrades" },
-  { label: "Your stake", manual: "A position NFT you manage", tidepool: "A native HTS share token" },
+  { label: "Swap fees", left: "Wait until you claim them", right: "Compounded back into the position" },
+  { label: "Admin keys", left: "Yours, or an operator's", right: "None: no owner, no upgrades" },
+  { label: "Your stake", left: "A position NFT you manage", right: "A native HTS share token" },
 ];
 
 const Problem = () => (
@@ -160,40 +215,13 @@ const Problem = () => (
       Concentrated liquidity earns more per token, but only between two prices. Someone has to watch the market, move
       the range and reinvest the fees. <span className="text-fg">Tidepool turns that job into rules on chain.</span>
     </SectionHead>
-    <div className="mt-10 overflow-hidden rounded-2xl border border-white/[0.08]">
-      <div className="grid grid-cols-2 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="hidden border-b border-white/[0.08] p-6 md:block" />
-        <div className="border-b border-white/[0.08] p-6">
-          <div className="text-xl font-bold text-muted">Doing it yourself</div>
-          <Mono className="mt-1 block text-faint">Any concentrated position</Mono>
-        </div>
-        <div className="border-b border-l border-neon/20 border-b-white/[0.08] bg-neon/[0.05] p-6">
-          <div className="text-xl font-bold text-neon">Tidepool</div>
-          <Mono className="mt-1 block text-faint">On Hedera</Mono>
-        </div>
-        {COMPARE.map((row, i) => (
-          <div key={row.label} className="contents">
-            <div
-              className={`col-span-2 px-6 pt-5 md:col-span-1 md:py-5 ${i < COMPARE.length - 1 ? "md:border-b md:border-white/[0.06]" : ""}`}
-            >
-              <Mono className="text-faint">{row.label}</Mono>
-            </div>
-            <div
-              className={`px-6 pb-5 pt-2 text-[15px] text-muted md:py-5 ${i < COMPARE.length - 1 ? "border-b border-white/[0.06]" : ""}`}
-            >
-              {row.manual}
-            </div>
-            <div
-              className={`border-l border-neon/20 bg-neon/[0.05] px-6 pb-5 pt-2 text-[15px] font-medium text-fg md:py-5 ${
-                i < COMPARE.length - 1 ? "border-b border-b-white/[0.06]" : ""
-              }`}
-            >
-              {row.tidepool}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <CompareTable
+      left="Doing it yourself"
+      leftSub="Any concentrated position"
+      right="Tidepool"
+      rightSub="On Hedera"
+      rows={COMPARE}
+    />
   </section>
 );
 
@@ -224,23 +252,6 @@ const Live = ({ d }: { d: LandingData }) => {
     d.lastRebalanceOnChain !== undefined && d.cooldown !== undefined ? d.lastRebalanceOnChain + d.cooldown : undefined;
   const cooldownLeft = readyAt !== undefined ? readyAt - d.now : undefined;
   const guard = `Spot is ${apart ?? "–"} ticks from the TWAP (limit ${limit ?? "–"})`;
-  const minutes = d.twapWindow ? Math.round(d.twapWindow / 60) : 10;
-
-  const metrics: { label: string; value: string; sub: string }[] = [
-    { label: "Vault value", value: formatToken(d.value1), sub: `${d.symbol1}, at spot` },
-    {
-      label: "Share price",
-      value: d.sharePrice !== undefined ? d.sharePrice.toFixed(2) : "–",
-      sub: `${d.symbol1} per share`,
-    },
-    { label: `TWAP (${minutes} min)`, value: formatPriceSig(d.twap), sub: d.unit },
-    {
-      label: "Range width",
-      value: d.rangeHalfWidth !== undefined ? `±${d.rangeHalfWidth.toFixed(1)}%` : "–",
-      sub: "±600 ticks",
-    },
-    { label: "Last rebalance", value: d.ago(d.lastRebalance), sub: "re-centred on the TWAP" },
-  ];
 
   return (
     <section aria-labelledby="live-title" className={`${WRAP} pt-28`}>
@@ -313,227 +324,119 @@ const Live = ({ d }: { d: LandingData }) => {
           </Link>
         </div>
       </div>
-
-      <dl className="m-0 mt-4 grid grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.08] sm:grid-cols-3 lg:grid-cols-5">
-        {metrics.map(m => (
-          <div key={m.label} className="border-b border-r border-white/[0.06] p-5 last:border-r-0">
-            <dt>
-              <Mono className="text-faint">{m.label}</Mono>
-            </dt>
-            <dd className="m-0 mt-2 text-2xl font-bold tabular-nums tracking-[-0.02em] text-fg">{m.value}</dd>
-            <dd className="m-0 mt-0.5 text-xs text-faint">{m.sub}</dd>
-          </div>
-        ))}
-      </dl>
     </section>
   );
 };
 
-/* ------------------------------------------------------------------ Proof */
-
-const EVIDENCE = [
-  {
-    metric: "8.6×",
-    unit: "less gas",
-    title: "Compounding got cheap.",
-    text: "Standing approvals cut a compound from 4.80M to 0.56M gas. This one collected 0.0047 WHBAR + 0.213 SAUCE of fees and put them back to work.",
-    tag: "Main vault · compound",
-    tx: "0x76c3114520d0693e07ae4f3b53128d89d9a0ef672e9aec153b8291fbc7e1a9ca",
-  },
-  {
-    metric: "1",
-    unit: "call",
-    title: "It moved when the average did.",
-    text: "A 106-tick price drop pushed the narrow vault's TWAP out of its range. One call from anyone re-centred it, at 0.98M gas.",
-    tag: "Narrow vault · rebalance",
-    tx: "0xf55864c1fc7bdd54ae9597ecae2f8f70e534c0af4c0c7fb14da31065ceda0654",
-  },
-  {
-    metric: "2",
-    unit: "wallets",
-    title: "Real users, through this site.",
-    text: "A second account deposited 0.9999 WHBAR + 38.2454 SAUCE for 1.0097 shares, then withdrew, using the dashboard you can open now.",
-    tag: "Main vault · deposit",
-    tx: "0xbcfc48e9cee0edcb1610f430ce150e85152c9677f5a77811375cbc4bf18fd82f",
-  },
-];
-
-const Proof = () => (
-  <section aria-labelledby="proof-title" className={`${WRAP} pt-28`}>
-    <SectionHead id="proof-title" title="Every rule, tested on testnet.">
-      A template is only worth forking if it works. Two vaults ran the same code on Hedera testnet.{" "}
-      <span className="text-fg">Each result below links to the transaction.</span>
-    </SectionHead>
-    <ol className="m-0 mt-10 grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
-      {EVIDENCE.map((e, i) => (
-        <li
-          key={e.tx}
-          className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface/60 transition-colors hover:border-neon/30"
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.16),transparent)] opacity-60 transition-opacity group-hover:opacity-100"
-          />
-          <div className="relative flex-1 p-7">
-            <div className="flex items-center justify-between">
-              <Mono className="text-faint">0{i + 1}</Mono>
-              <Mono className="text-neon">{e.tag}</Mono>
-            </div>
-            <div className="mt-8 flex items-baseline gap-2">
-              <span className="bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)] bg-clip-text text-[64px] font-extrabold leading-none tracking-[-0.04em] text-transparent">
-                {e.metric}
-              </span>
-              <span className="text-lg font-semibold text-muted">{e.unit}</span>
-            </div>
-            <h3 className="m-0 mt-6 text-[21px] font-bold tracking-[-0.02em] text-fg">{e.title}</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-muted">{e.text}</p>
-          </div>
-          <a
-            href={hashscan.tx(e.tx)}
-            target="_blank"
-            rel="noreferrer"
-            className="relative flex items-center justify-between border-t border-white/[0.06] px-7 py-4 text-sm font-medium text-muted transition-colors hover:text-neon"
-          >
-            View the transaction on HashScan
-            <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
-          </a>
-        </li>
-      ))}
-    </ol>
-    <Link
-      href="/docs/testnet-evidence"
-      className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon"
-    >
-      Every transaction and gas figure <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
-    </Link>
-  </section>
-);
-
 /* ------------------------------------------------------------------ Hedera */
 
-const HEDERA = [
+const HEDERA: Row[] = [
   {
-    glyph: "HTS",
-    title: "Shares are a native token",
-    text: "The vault creates, mints and burns its own HTS share token. Holders associate it through HIP-719.",
-    wide: true,
+    label: "Share token",
+    left: "An ERC-20 contract you deploy",
+    right: "An HTS token the vault creates, mints and burns. Holders associate it once (HIP-719).",
   },
   {
-    glyph: "0x168",
-    title: "The fee, priced on chain",
-    text: "SaucerSwap's position fee is quoted in US cents; the exchange-rate precompile turns it into tinybars.",
+    label: "Token amounts",
+    left: "uint256",
+    right: "int64 inside HTS. The vault converts every amount with SafeCast.",
   },
   {
-    glyph: "int64",
-    title: "Amounts that fit HTS",
-    text: "HTS amounts are int64, and allowances above a token's max supply are rejected. The vault caps both.",
+    label: "Allowances",
+    left: "Approve the maximum and forget it",
+    right:
+      "HTS rejects anything above a token's max supply. The vault caps each one; refreshApprovals() restores them.",
   },
   {
-    glyph: "18 → 8",
-    title: "Weibar in, tinybar inside",
-    text: "JSON-RPC values carry 18 decimals and contracts see 8. The dashboard converts both ways.",
+    label: "Protocol fees",
+    left: "Paid in the native token",
+    right: "SaucerSwap quotes its position fee in US cents. The exchange-rate precompile (0x168) converts it on chain.",
   },
   {
-    glyph: "WHBAR",
-    title: "Wrapped through the helper",
-    text: "Never approve the WHBAR contract itself. Wrapping goes through SaucerSwap's WhbarHelper, as SaucerSwap requires.",
+    label: "Units",
+    left: "Wei everywhere",
+    right: "JSON-RPC uses weibar (18 decimals), contracts see tinybar (8). The dashboard converts both ways.",
   },
   {
-    glyph: "INVALID_NFT_ID",
-    title: "Mints that can't be simulated",
-    text: "eth_call rejects SaucerSwap mints that succeed on chain, so the site checks every precondition, then sends with fixed gas.",
-    full: true,
+    label: "Gas estimation",
+    left: "eth_estimateGas",
+    right:
+      "Fails with INVALID_NFT_ID for SaucerSwap mints. The site checks every precondition, then sends with fixed gas.",
+  },
+  {
+    label: "Wrapped native",
+    left: "Call the wrapper contract",
+    right: "Never approve the WHBAR contract. Wrapping goes through SaucerSwap's WhbarHelper.",
   },
 ];
 
 const Hedera = () => (
   <section aria-labelledby="hedera-title" className={`${WRAP} pt-28`}>
     <SectionHead id="hedera-title" title="Hedera's rules, already handled.">
-      These are the details that break a first DeFi contract on Hedera. The template solves each one and the docs
-      explain it. <span className="text-fg">You start from working code, not from error messages.</span>
+      Code that works on other EVM chains breaks on Hedera in a few specific places. The template handles each one and
+      the docs explain why. <span className="text-fg">You start from working code, not from error messages.</span>
     </SectionHead>
-    <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-      {HEDERA.map(item => (
-        <article
-          key={item.title}
-          className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[linear-gradient(160deg,rgba(15,28,32,0.9),rgba(8,15,17,0.9))] p-7 transition-colors hover:border-neon/30 ${
-            item.full ? "md:col-span-3" : item.wide ? "md:col-span-2" : ""
-          }`}
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(46,230,200,0.6),transparent)] opacity-0 transition-opacity group-hover:opacity-100"
-          />
-          <div className="overflow-hidden text-ellipsis whitespace-nowrap bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)] bg-clip-text font-mono text-[clamp(30px,3.4vw,46px)] font-bold leading-none tracking-[-0.02em] text-transparent">
-            {item.glyph}
-          </div>
-          <h3 className="m-0 mt-8 text-lg font-bold text-fg">{item.title}</h3>
-          <p className="mt-2 max-w-[560px] text-[15px] leading-relaxed text-muted">{item.text}</p>
-        </article>
-      ))}
-    </div>
+    <CompareTable
+      left="On other EVM chains"
+      leftSub="What you'd expect"
+      right="On Hedera"
+      rightSub="Handled in Tidepool"
+      rows={HEDERA}
+    />
+    <Link
+      href="/docs/hedera-gotchas"
+      className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-fg hover:text-neon"
+    >
+      All the Hedera details <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
+    </Link>
   </section>
 );
 
 /* ------------------------------------------------------------------ Template */
 
-const INCLUDED = [
-  "Vault contract with no owner and no upgrades",
-  "Deploy scripts that preflight initialize()",
-  "Operator scripts: compound, rebalance, withdraw",
-  "Unit tests on mocks, no network needed",
-  "This site: dashboard, docs, contract debugger",
-  "AGENTS.md, so a coding agent can extend it",
+const INCLUDED: [string, string][] = [
+  ["contracts/tidepool/", "The vault. No owner, no upgrades."],
+  ["deploy/", "Deploy scripts that run initialize() as a dry run first"],
+  ["scripts/", "Operator scripts: compound, rebalance, withdraw"],
+  ["test/", "Unit tests on mocks, no network needed"],
+  ["packages/nextjs/", "This site: dashboard, docs, contract debugger"],
+  ["AGENTS.md", "A briefing so a coding agent can extend it"],
 ];
 
 const Template = () => (
   <section id="template" aria-labelledby="template-title" className={`${WRAP} scroll-mt-24 pt-28`}>
-    <div className="relative overflow-hidden rounded-3xl border border-neon/30 bg-[linear-gradient(135deg,rgba(46,230,200,0.14),rgba(10,20,23,0.96)_45%,rgba(34,211,238,0.08))] p-6 sm:p-10 lg:p-14">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.25),transparent)]"
-      />
-      <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center">
-        <div className="min-w-0">
-          <h2
-            id="template-title"
-            className="m-0 text-[clamp(32px,4vw,52px)] font-extrabold leading-[1.02] tracking-[-0.04em] text-fg"
-          >
-            Build your own Hedera vault.
-          </h2>
-          <p className="mt-3 max-w-[520px] text-[17px] text-muted">
-            Fork the template, point it at your pool, and deploy. The contracts, scripts, tests and this site come with
-            it.
-          </p>
-          <div className="mt-7">
-            <Command />
-          </div>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className={btn.primary}>
-              View on GitHub <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
-            </a>
-            <Link href="/docs/quickstart" className={btn.ghost}>
-              Quickstart <ArrowRightIcon className="h-4 w-4" aria-hidden />
-            </Link>
-          </div>
+    <SectionHead id="template-title" title="Build your own Hedera vault.">
+      Fork the template, point <code className="font-mono text-[15px] text-fg">tidepool.config.ts</code> at your pool,
+      and deploy. <span className="text-fg">Everything on this site comes with it.</span>
+    </SectionHead>
+    <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
+      <div className="min-w-0">
+        <Command />
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className={btn.primary}>
+            View on GitHub <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden />
+          </a>
+          <Link href="/docs/quickstart" className={btn.ghost}>
+            Quickstart <ArrowRightIcon className="h-4 w-4" aria-hidden />
+          </Link>
         </div>
-        <div>
-          <Mono className="text-faint">What you get</Mono>
-          <ul className="m-0 mt-4 flex list-none flex-col gap-3.5 p-0">
-            {INCLUDED.map(item => (
-              <li key={item} className="flex items-start gap-3 text-[15px] text-fg">
-                <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-neon" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
+      </div>
+      <div>
+        <Mono className="text-faint">What you get</Mono>
+        <ul className="m-0 mt-3 list-none divide-y divide-white/[0.06] border-y border-white/[0.06] p-0">
+          {INCLUDED.map(([path, text]) => (
+            <li key={path} className="grid grid-cols-1 gap-1 py-3.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
+              <span className="font-mono text-[13px] text-neon">{path}</span>
+              <span className="text-[15px] text-muted">{text}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   </section>
 );
 
-/** The landing page: the claim, the problem, the vault live, the proof, the Hedera details, and the template. */
+/** The landing page: the claim, the problem, the vault live, the Hedera details, and the template. */
 export const Landing = () => {
   const d = useLandingData();
   return (
@@ -541,7 +444,6 @@ export const Landing = () => {
       <Hero />
       <Problem />
       <Live d={d} />
-      <Proof />
       <Hedera />
       <Template />
     </div>
