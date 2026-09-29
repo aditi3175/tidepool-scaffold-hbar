@@ -45,7 +45,7 @@ export const Card = ({
   stretch?: boolean;
 }) => (
   <section
-    className={`flex flex-col rounded-2xl border border-neon/[0.13] bg-[linear-gradient(180deg,rgba(15,28,32,0.9),rgba(10,20,23,0.9))] ${
+    className={`flex flex-col rounded-2xl border border-white/[0.08] bg-surface/40 ${
       stretch ? "flex-1" : ""
     } ${className}`}
   >

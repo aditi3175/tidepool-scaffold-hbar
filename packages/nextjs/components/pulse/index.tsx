@@ -16,9 +16,7 @@ export const Tile = ({
   innerClassName?: string;
   as?: "div" | "section" | "article" | "li";
 }) => (
-  <Tag
-    className={`rounded-2xl border border-neon/[0.13] bg-[linear-gradient(180deg,rgba(15,28,32,0.9),rgba(10,20,23,0.9))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${className}`}
-  >
+  <Tag className={`rounded-2xl border border-white/[0.08] bg-surface/40 ${className}`}>
     <div className={`h-full p-5 ${innerClassName}`}>{children}</div>
   </Tag>
 );
@@ -69,7 +67,6 @@ export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: numbe
         strokeWidth="6"
         strokeLinecap="round"
         strokeDasharray={`${Math.max(0.001, f) * c} ${c}`}
-        style={{ filter: `drop-shadow(0 0 6px ${colour})` }}
       />
     </svg>
   );
