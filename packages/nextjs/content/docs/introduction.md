@@ -23,7 +23,7 @@ The spot-vs-TWAP check is what makes permissionless keeper calls safe. Someone c
 
 ## How the pieces connect
 
-```text
+```tidepool-diagram
 Next.js dashboard ──JSON-RPC──► TidepoolVault ──► SaucerSwap V2 pool          slot0, observe → spot + TWAP
                                      │         ──► NonfungiblePositionManager  mint / increase / decrease / collect
         │ REST                       │         ──► SwapRouter                  exactInputSingle

@@ -45,7 +45,7 @@ export const DocsPage = ({ doc }: { doc: LoadedDoc }) => {
         </div>
       </aside>
 
-      <article className="min-w-0 max-w-[800px] lg:pl-14">
+      <article className="min-w-0 max-w-[960px] lg:pl-14">
         <div className="tp-in font-mono text-[11px] uppercase tracking-[0.14em] text-faint" style={delay(0)}>
           Tidepool docs <span className="text-white/20">/</span>{" "}
           <span className="text-neon">{entry?.section ?? "Docs"}</span>

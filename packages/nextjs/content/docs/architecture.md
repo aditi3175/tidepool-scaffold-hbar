@@ -4,7 +4,7 @@ This page summarises how the vault is built: its contracts, parameters, function
 
 ## Components
 
-```text
+```tidepool-diagram
                            ┌──────────────────────────────────────────────┐
   Browser (Next.js)        │  Hedera testnet                              │
  ┌──────────────────┐      │                                              │

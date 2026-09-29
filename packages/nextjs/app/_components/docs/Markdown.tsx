@@ -2,6 +2,7 @@ import { type ReactNode, isValidElement } from "react";
 import Link from "next/link";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ArchitectureDiagram } from "~~/app/_components/docs/ArchitectureDiagram";
 import { docByFile, docHref, slugify } from "~~/app/_components/docs/manifest";
 import { CopyButton } from "~~/app/_components/tidepool/CopyButton";
 
@@ -48,6 +49,8 @@ const DIAGRAM_FONTS = '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", "Co
 const CodeBlock = ({ children }: { children: ReactNode }) => {
   const code = isValidElement<{ className?: string; children?: ReactNode }>(children) ? children : undefined;
   const language = /language-(\w+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
+  // ```tidepool-diagram: the site draws the component; GitHub shows the text inside the fence.
+  if (language === "tidepool") return <ArchitectureDiagram />;
   const label =
     { bash: "Shell", sh: "Shell", ts: "TypeScript", solidity: "Solidity", text: "Text" }[language] ?? language;
   const text = textOf(code?.props.children ?? children).replace(/\n$/, "");
@@ -88,8 +91,12 @@ const components: Components = {
       <Link href={target.href}>{children}</Link>
     );
   },
+  // Inline code (fenced blocks go through `pre`): kept on one line from sm up.
+  code: ({ children, className }) => (
+    <code className={`${className ?? ""} sm:whitespace-nowrap sm:[overflow-wrap:normal]`}>{children}</code>
+  ),
   table: ({ children }) => (
-    <div className="my-6 overflow-x-auto rounded-xl border border-white/10">
+    <div className="my-6 overflow-x-auto rounded-xl border border-white/10 sm:[&_td:first-child]:whitespace-nowrap">
       <table>{children}</table>
     </div>
   ),
