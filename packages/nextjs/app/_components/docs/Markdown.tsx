@@ -3,6 +3,7 @@ import Link from "next/link";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArchitectureDiagram } from "~~/app/_components/docs/ArchitectureDiagram";
+import { OverviewDiagram } from "~~/app/_components/docs/OverviewDiagram";
 import { docByFile, docHref, slugify } from "~~/app/_components/docs/manifest";
 import { CopyButton } from "~~/app/_components/tidepool/CopyButton";
 
@@ -48,9 +49,10 @@ const DIAGRAM_FONTS = '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", "Co
 
 const CodeBlock = ({ children }: { children: ReactNode }) => {
   const code = isValidElement<{ className?: string; children?: ReactNode }>(children) ? children : undefined;
-  const language = /language-(\w+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
+  const language = /language-([\w-]+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
   // ```tidepool-diagram: the site draws the component; GitHub shows the text inside the fence.
-  if (language === "tidepool") return <ArchitectureDiagram />;
+  if (language === "tidepool-diagram") return <ArchitectureDiagram />;
+  if (language === "tidepool-overview") return <OverviewDiagram />;
   const label =
     { bash: "Shell", sh: "Shell", ts: "TypeScript", solidity: "Solidity", text: "Text" }[language] ?? language;
   const text = textOf(code?.props.children ?? children).replace(/\n$/, "");

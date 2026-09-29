@@ -69,7 +69,7 @@ export const ArchitectureDiagram = () => (
         <Mono className="hidden text-faint md:block">Hedera testnet</Mono>
 
         {/* Row 1: dashboard → vault */}
-        <Box title="Dashboard" tag="Next.js" className="md:self-start">
+        <Box title="Dashboard" tag="Next.js" className="md:row-span-2">
           <ul className="m-0 list-none space-y-1 p-0 text-[13.5px] text-muted">
             <li>Range chart</li>
             <li>Deposit / Withdraw</li>
@@ -96,8 +96,7 @@ export const ArchitectureDiagram = () => (
           </ul>
         </Box>
 
-        {/* Row 2: mirror node → dashboard */}
-        <div className="hidden md:block" />
+        {/* Row 2: the mirror node feeds the dashboard's Activity list (the Dashboard box spans rows 1 and 2) */}
         <Link label="REST · activity" reverse />
         <Box title="Mirror node" tag="REST API">
           <span className="whitespace-nowrap font-mono text-[12.5px] text-muted">

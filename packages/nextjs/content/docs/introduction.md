@@ -23,14 +23,14 @@ The spot-vs-TWAP check is what makes permissionless keeper calls safe. Someone c
 
 ## How the pieces connect
 
-```tidepool-diagram
-Next.js dashboard ──JSON-RPC──► TidepoolVault ──► SaucerSwap V2 pool          slot0, observe → spot + TWAP
-                                     │         ──► NonfungiblePositionManager  mint / increase / decrease / collect
-        │ REST                       │         ──► SwapRouter                  exactInputSingle
-        ▼                            ├─ HTS 0x167: associate, create / mint / burn the share token
-Hedera mirror node                   └─ exchange rate 0x168: position fee tinycents → tinybars
-(activity feed)
+```tidepool-overview
+Depositors ── tokens ⇄ shares ──►┐
+                                 ├─► TidepoolVault ── add / remove / collect ──► SaucerSwap V2 position
+Anyone ── compound / rebalance ──►┘   (shares, TWAP guard,                         (WHBAR/SAUCE 0.30%,
+                                       no owner)                                    ±600 ticks)
 ```
+
+The call-by-call version, with every Hedera system contract, is in [Architecture](architecture.md).
 
 ## Where to go next
 
