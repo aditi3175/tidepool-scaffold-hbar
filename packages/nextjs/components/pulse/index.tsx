@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
  * "Pulse" building blocks: gradient-bordered tiles, mono labels, the TWAP dial and button styles. Presentation only.
  */
 
-/** A tile with a hairline gradient border (neon at the top-left, cyan at the bottom-right). */
+/** A card: a thin teal-tinted border on a slightly raised surface. */
 export const Tile = ({
   children,
   className = "",
@@ -17,9 +17,9 @@ export const Tile = ({
   as?: "div" | "section" | "article" | "li";
 }) => (
   <Tag
-    className={`rounded-2xl bg-[linear-gradient(160deg,rgba(0,245,160,0.34),rgba(255,255,255,0.06)_30%,rgba(255,255,255,0.04)_70%,rgba(0,209,255,0.28))] p-px ${className}`}
+    className={`rounded-2xl border border-neon/[0.13] bg-[linear-gradient(180deg,rgba(15,28,32,0.9),rgba(10,20,23,0.9))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${className}`}
   >
-    <div className={`h-full rounded-[15px] bg-surface p-5 ${innerClassName}`}>{children}</div>
+    <div className={`h-full p-5 ${innerClassName}`}>{children}</div>
   </Tag>
 );
 
@@ -31,7 +31,7 @@ export const Label = ({ children, className = "" }: { children: ReactNode; class
 /** Section eyebrow: a gradient tick and a mono label. */
 export const Eyebrow = ({ children }: { children: ReactNode }) => (
   <div className="flex items-center gap-2.5 font-mono text-xs uppercase tracking-[0.14em] text-muted">
-    <span className="h-px w-6 bg-[linear-gradient(90deg,#00F5A0,#00D1FF)]" aria-hidden />
+    <span className="h-px w-6 bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)]" aria-hidden />
     {children}
   </div>
 );
@@ -43,7 +43,7 @@ export const LiveDot = ({ ok = true }: { ok?: boolean }) => (
       <span className="absolute inline-flex h-full w-full rounded-full bg-neon opacity-60 motion-safe:animate-ping" />
     )}
     <span
-      className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-neon shadow-[0_0_8px_#00F5A0]" : "bg-amber"}`}
+      className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-neon shadow-[0_0_8px_#2EE6C8]" : "bg-amber"}`}
     />
   </span>
 );
@@ -52,7 +52,7 @@ export const LiveDot = ({ ok = true }: { ok?: boolean }) => (
 export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: number; size?: number }) => {
   const f = value === undefined || !limit ? 0 : Math.min(1, value / limit);
   const c = Math.PI * 34;
-  const colour = f >= 1 ? "#FFB020" : "#00F5A0";
+  const colour = f >= 1 ? "#FFB020" : "#2EE6C8";
   return (
     <svg width={size} height={(size * 48) / 84} viewBox="0 0 84 48" aria-hidden>
       <path
@@ -78,22 +78,22 @@ export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: numbe
 /** Button styles (for Link or button). */
 export const btn = {
   primary:
-    "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(90deg,#00F5A0,#00D1FF)] px-6 text-[15px] font-bold text-ink shadow-[0_0_32px_-4px_rgba(0,245,160,0.55)] transition-[filter,transform] duration-150 hover:brightness-110 active:translate-y-px",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-neon px-6 text-[15px] font-semibold text-ink shadow-[0_0_28px_-6px_rgba(46,230,200,0.55)] transition-[filter,transform] duration-150 hover:brightness-110 active:translate-y-px",
   ghost:
-    "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/15 px-6 text-[15px] font-semibold text-fg transition-colors duration-150 hover:border-white/30 hover:bg-white/[0.03]",
+    "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.04] px-6 text-[15px] font-semibold text-fg transition-colors duration-150 hover:border-neon/45 hover:bg-neon/[0.08]",
   small:
-    "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/40 bg-neon/10 px-4 text-sm font-semibold text-neon transition-colors duration-150 hover:bg-neon/20",
+    "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.05] px-4 text-sm font-medium text-fg transition-colors duration-150 hover:border-neon/45",
 };
 
 /** The mark: a small rotated square in the gradient, with a glow. */
 export const PulseMark = ({ className = "h-3 w-3" }: { className?: string }) => (
   <span
-    className={`inline-block rotate-45 bg-[linear-gradient(135deg,#00F5A0,#00D1FF)] shadow-[0_0_16px_#00F5A0] ${className}`}
+    className={`inline-block rotate-45 bg-[linear-gradient(135deg,#2EE6C8,#22D3EE)] shadow-[0_0_16px_#2EE6C8] ${className}`}
     aria-hidden
   />
 );
 
 /** Gradient text for the one emphasised phrase in a headline. */
 export const GradientText = ({ children }: { children: ReactNode }) => (
-  <span className="bg-[linear-gradient(90deg,#00F5A0,#00D1FF)] bg-clip-text text-transparent">{children}</span>
+  <span className="bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)] bg-clip-text text-transparent">{children}</span>
 );

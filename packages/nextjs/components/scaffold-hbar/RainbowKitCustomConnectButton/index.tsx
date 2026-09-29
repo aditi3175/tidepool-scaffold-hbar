@@ -31,7 +31,7 @@ export const RainbowKitCustomConnectButton = () => {
               if (!connected) {
                 return (
                   <button
-                    className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-neon/40 bg-neon/10 px-4 text-sm font-semibold text-neon transition-colors duration-150 hover:bg-neon/20"
+                    className="inline-flex h-9 cursor-pointer items-center rounded-lg bg-neon px-4 text-sm font-semibold text-ink shadow-[0_0_20px_-6px_rgba(46,230,200,0.6)] transition-[filter] duration-150 hover:brightness-110"
                     onClick={openConnectModal}
                     type="button"
                   >

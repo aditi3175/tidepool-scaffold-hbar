@@ -6,25 +6,26 @@
 @theme {
   --shadow-center: 0 0 12px -2px rgb(0 0 0 / 0.05);
   --animate-pulse-fast: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --font-sans: var(--font-space), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Tidepool palette */
-  /* "Pulse": near-black, neon green to cyan, one warning amber. The older names (teal, twap...) map onto it. */
-  --color-bg: #04060a;
-  --color-surface: #080c12;
-  --color-raised: #0e141c;
-  --color-line: #16202b;
-  --color-line-strong: #223040;
-  --color-fg: #f2f5f8;
-  --color-muted: #9aa7b6;
-  --color-faint: #5e6b7a;
-  --color-neon: #00f5a0;
-  --color-cyan: #00d1ff;
-  --color-ink: #021510;
-  --color-teal: #00f5a0;
+  /* Deep teal-black with one mint accent and a cyan partner; amber for warnings. The older names (neon, teal, twap)
+     map onto it. */
+  --color-bg: #050b0d;
+  --color-surface: #0a1417;
+  --color-raised: #0f1c20;
+  --color-line: #14262a;
+  --color-line-strong: #1e373c;
+  --color-fg: #eef6f5;
+  --color-muted: #94a9a7;
+  --color-faint: #5f7674;
+  --color-neon: #2ee6c8;
+  --color-cyan: #22d3ee;
+  --color-ink: #032420;
+  --color-teal: #2ee6c8;
   --color-amber: #ffb020;
-  --color-twap: #00d1ff;
+  --color-twap: #22d3ee;
   --color-danger: #ff5470;
 
   /* Type scale: 12 / 14 / 16 / 20 / 28 / 40 */
@@ -84,20 +85,20 @@
   name: "dark";
 
   /* Mapped onto the Tidepool palette above. */
-  --color-primary: #00f5a0;
-  --color-primary-content: #021510;
-  --color-secondary: #00d1ff;
-  --color-secondary-content: #021510;
-  --color-accent: #00f5a0;
-  --color-accent-content: #021510;
-  --color-neutral: #0e141c;
-  --color-neutral-content: #f2f5f8;
-  --color-base-100: #080c12;
-  --color-base-200: #04060a;
-  --color-base-300: #16202b;
-  --color-base-content: #f2f5f8;
-  --color-info: #00d1ff;
-  --color-success: #00f5a0;
+  --color-primary: #2ee6c8;
+  --color-primary-content: #032420;
+  --color-secondary: #22d3ee;
+  --color-secondary-content: #032420;
+  --color-accent: #2ee6c8;
+  --color-accent-content: #032420;
+  --color-neutral: #0f1c20;
+  --color-neutral-content: #eef6f5;
+  --color-base-100: #0a1417;
+  --color-base-200: #050b0d;
+  --color-base-300: #14262a;
+  --color-base-content: #eef6f5;
+  --color-info: #22d3ee;
+  --color-success: #2ee6c8;
   --color-warning: #ffb020;
   --color-error: #ff5470;
 
@@ -158,10 +159,10 @@
 /* Primary buttons everywhere (dashboard, 404): the neon-to-cyan gradient with a soft glow. */
 .btn.btn-primary {
   border: 0;
-  background: linear-gradient(90deg, #00f5a0, #00d1ff);
+  background: var(--color-neon);
   color: var(--color-ink);
   font-weight: 700;
-  box-shadow: 0 0 28px -8px rgb(0 245 160 / 0.6);
+  box-shadow: 0 0 28px -8px rgb(46 230 200 / 0.6);
 }
 .btn.btn-primary:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -266,7 +267,7 @@
 .tp-prose a {
   color: var(--color-neon);
   text-decoration: underline;
-  text-decoration-color: rgb(0 245 160 / 0.35);
+  text-decoration-color: rgb(46 230 200 / 0.35);
   text-underline-offset: 3px;
 }
 .tp-prose a:hover {
@@ -297,8 +298,8 @@
   padding: 0.15em 0.4em;
   border-radius: 6px;
   color: #9ff5d5;
-  background: rgb(0 245 160 / 0.06);
-  border: 1px solid rgb(0 245 160 / 0.14);
+  background: rgb(46 230 200 / 0.06);
+  border: 1px solid rgb(46 230 200 / 0.14);
 }
 .tp-prose blockquote {
   position: relative;
@@ -376,11 +377,11 @@
 .tp-debug {
   /* The package's hidden hover tooltips are wider than a phone screen; don't let them widen the page. */
   overflow-x: clip;
-  --color-sui-primary: #00f5a0;
+  --color-sui-primary: #2ee6c8;
   --color-sui-primary-content: #f2f5f8;
   --color-sui-primary-subtle: #16202b;
   --color-sui-primary-neutral: #080c12;
-  --color-sui-accent: #00f5a0;
+  --color-sui-accent: #2ee6c8;
   --color-sui-base-content: #f2f5f8;
   --color-sui-base-100: #080c12;
   --color-sui-neutral: #f2f5f8;
@@ -412,7 +413,7 @@
   border-width: 1px;
 }
 .tp-debug [class*="bg-sui-input-background"]:focus-within {
-  border-color: rgb(0 245 160 / 0.5);
+  border-color: rgb(46 230 200 / 0.5);
 }
 /* Function and variable names in the mono face. */
 .tp-debug .font-medium.break-words,
@@ -431,7 +432,7 @@
   background-color: var(--color-bg);
 }
 .tp-debug .btn-dc-secondary {
-  background: linear-gradient(90deg, #00f5a0, #00d1ff);
+  background: linear-gradient(90deg, #2ee6c8, #22d3ee);
   color: var(--color-ink);
   font-weight: 700;
   border-radius: 8px;

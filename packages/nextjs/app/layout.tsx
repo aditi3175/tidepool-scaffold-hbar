@@ -1,4 +1,4 @@
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "@rainbow-me/rainbowkit/styles.css";
 import "@scaffold-hbar-ui/components/styles.css";
 // Loaded here, before globals.css, rather than only by /debug: it is a full precompiled Tailwind build, and when it
@@ -17,12 +17,12 @@ export const metadata = getMetadata({
 });
 
 // Self-hosted by next/font at build time (no runtime request to Google, no new dependency).
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space", display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
 
 const ScaffoldHbarApp = ({ children }: { children: React.ReactNode }) => {
   return (
-    <html suppressHydrationWarning className={`${space.variable} ${jetbrains.variable}`}>
+    <html suppressHydrationWarning className={`${inter.variable} ${jetbrains.variable}`}>
       <body className="bg-bg font-sans text-fg antialiased">
         {/* Tidepool ships a single dark theme. */}
         <ThemeProvider forcedTheme="dark" enableSystem={false}>

@@ -21,9 +21,9 @@ export const PageHero = ({
   <section className="relative isolate overflow-x-clip">
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[420px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(0,245,160,0.1),transparent)]"
+      className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[420px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(46,230,200,0.1),transparent)]"
     />
-    <div className={`mx-auto max-w-[1280px] px-4 sm:px-6 ${compact ? "pb-8 pt-12" : "pb-12 pt-16 sm:pt-20"}`}>
+    <div className={`mx-auto max-w-[1200px] px-4 sm:px-6 ${compact ? "pb-8 pt-12" : "pb-12 pt-16 sm:pt-20"}`}>
       <Eyebrow>{eyebrow}</Eyebrow>
       <h1
         className={`m-0 mt-4 max-w-4xl font-bold leading-[1.02] tracking-[-0.04em] text-fg ${

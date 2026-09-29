@@ -103,7 +103,7 @@ export const FlowChart = ({
       const x0 = X(s.lower);
       const x1 = X(s.upper);
       const xs = X(s.spot);
-      const edge = s.inRange ? "#00F5A0" : "#FFB020";
+      const edge = s.inRange ? "#2EE6C8" : "#FFB020";
 
       if (s.previous) {
         ctx!.strokeStyle = "rgba(154,167,182,0.55)";
@@ -113,8 +113,8 @@ export const FlowChart = ({
         ctx!.setLineDash([]);
       }
       const band = ctx!.createLinearGradient(0, 0, 0, h);
-      band.addColorStop(0, s.inRange ? "rgba(0,245,160,0.22)" : "rgba(255,176,32,0.18)");
-      band.addColorStop(1, s.inRange ? "rgba(0,209,255,0.04)" : "rgba(255,176,32,0.03)");
+      band.addColorStop(0, s.inRange ? "rgba(46,230,200,0.22)" : "rgba(255,176,32,0.18)");
+      band.addColorStop(1, s.inRange ? "rgba(34,211,238,0.04)" : "rgba(255,176,32,0.03)");
       ctx!.fillStyle = band;
       ctx!.fillRect(x0, 0, x1 - x0, h);
       ctx!.fillStyle = edge;
@@ -131,7 +131,7 @@ export const FlowChart = ({
         const px = dot.x * w;
         const lit = s.inRange && px >= x0 && px <= x1;
         if (lit && Math.random() < dt * 0.25) sparks.push({ x: px, y: dot.y * h, age: 0 });
-        ctx!.fillStyle = lit ? "rgba(0,245,160,0.95)" : "rgba(255,255,255,0.22)";
+        ctx!.fillStyle = lit ? "rgba(46,230,200,0.95)" : "rgba(255,255,255,0.22)";
         ctx!.beginPath();
         ctx!.arc(px, dot.y * h, dot.r, 0, Math.PI * 2);
         ctx!.fill();
@@ -143,14 +143,14 @@ export const FlowChart = ({
           sparks.splice(i, 1);
           continue;
         }
-        ctx!.strokeStyle = `rgba(0,245,160,${0.7 * (1 - sp.age / 0.9)})`;
+        ctx!.strokeStyle = `rgba(46,230,200,${0.7 * (1 - sp.age / 0.9)})`;
         ctx!.beginPath();
         ctx!.arc(sp.x, sp.y, 2 + sp.age * 14, 0, Math.PI * 2);
         ctx!.stroke();
       }
 
       if (s.twap !== undefined && Math.abs(X(s.twap) - xs) > 2) {
-        ctx!.strokeStyle = "#00D1FF";
+        ctx!.strokeStyle = "#22D3EE";
         ctx!.setLineDash([4, 4]);
         ctx!.lineWidth = 1.5;
         ctx!.beginPath();

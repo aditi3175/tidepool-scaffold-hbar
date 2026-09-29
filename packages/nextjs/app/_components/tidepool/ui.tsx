@@ -45,11 +45,11 @@ export const Card = ({
   stretch?: boolean;
 }) => (
   <section
-    className={`rounded-2xl bg-[linear-gradient(160deg,rgba(0,245,160,0.3),rgba(255,255,255,0.06)_28%,rgba(255,255,255,0.04)_72%,rgba(0,209,255,0.26))] flex flex-col p-px ${
+    className={`flex flex-col rounded-2xl border border-neon/[0.13] bg-[linear-gradient(180deg,rgba(15,28,32,0.9),rgba(10,20,23,0.9))] ${
       stretch ? "flex-1" : ""
     } ${className}`}
   >
-    <div className={`flex-1 rounded-[15px] bg-surface p-5 sm:p-6 ${stretch ? "flex flex-col" : ""}`}>
+    <div className={`flex-1 p-5 sm:p-6 ${stretch ? "flex flex-col" : ""}`}>
       {(title || actions) && (
         <header className="mb-5 flex flex-wrap items-center justify-between gap-2">
           {title && (
@@ -122,7 +122,7 @@ export const StatePill = ({
     className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md border px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.08em] ${TONES[tone].ring} ${TONES[tone].text} ${className}`}
   >
     <span
-      className={`h-1.5 w-1.5 rounded-full ${TONES[tone].dot} ${tone === "success" ? "shadow-[0_0_8px_#00F5A0]" : ""}`}
+      className={`h-1.5 w-1.5 rounded-full ${TONES[tone].dot} ${tone === "success" ? "shadow-[0_0_8px_#2EE6C8]" : ""}`}
       aria-hidden
     />
     {children}

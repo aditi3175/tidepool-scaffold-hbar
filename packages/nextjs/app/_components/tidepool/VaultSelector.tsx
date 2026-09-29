@@ -18,7 +18,7 @@ export const VaultSelector = ({
           type="button"
           aria-selected={active}
           className={`flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-            active ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]" : "text-muted hover:text-fg"
+            active ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(46,230,200,0.35)]" : "text-muted hover:text-fg"
           }`}
           onClick={() => onSelect(vault.id)}
         >

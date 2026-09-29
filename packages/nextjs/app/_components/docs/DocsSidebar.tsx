@@ -80,7 +80,7 @@ export const DocsSidebar = ({ index }: { index: IndexEntry[] }) => {
                     aria-current={active ? "page" : undefined}
                     className={`relative block rounded-lg px-3 py-1.5 transition-colors ${
                       active
-                        ? "bg-neon/[0.07] text-fg before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-neon before:shadow-[0_0_8px_#00F5A0]"
+                        ? "bg-neon/[0.07] text-fg before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-neon before:shadow-[0_0_8px_#2EE6C8]"
                         : "text-muted hover:bg-white/[0.03] hover:text-fg"
                     }`}
                   >

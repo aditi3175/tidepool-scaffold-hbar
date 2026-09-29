@@ -38,7 +38,7 @@ export function DebugContracts() {
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="w-full max-w-[1280px] px-4 sm:px-6">
+            <div className="w-full max-w-[1200px] px-4 sm:px-6">
               <div
                 role="tablist"
                 aria-label="Contract"
@@ -51,7 +51,7 @@ export function DebugContracts() {
                     aria-selected={contractName === selectedContract}
                     className={`flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 font-mono text-sm transition-colors sm:flex-none ${
                       contractName === selectedContract
-                        ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]"
+                        ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(46,230,200,0.35)]"
                         : "text-muted hover:text-fg"
                     }`}
                     key={String(contractName)}

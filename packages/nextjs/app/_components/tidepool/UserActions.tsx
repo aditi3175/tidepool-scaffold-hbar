@@ -84,7 +84,7 @@ export const UserActions = ({
               aria-selected={tab === id}
               className={`cursor-pointer rounded-lg py-2 text-sm font-semibold capitalize transition-colors ${
                 tab === id
-                  ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(0,245,160,0.35)]"
+                  ? "bg-neon/10 text-neon shadow-[inset_0_0_0_1px_rgba(46,230,200,0.35)]"
                   : "text-muted hover:text-fg"
               }`}
               onClick={() => setTab(id)}

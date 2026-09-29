@@ -112,7 +112,7 @@ export const InteractiveGauge = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
-            className={`h-2.5 w-2.5 rounded-full ${paused || !inRange ? "bg-amber" : "bg-neon shadow-[0_0_10px_#00F5A0]"}`}
+            className={`h-2.5 w-2.5 rounded-full ${paused || !inRange ? "bg-amber" : "bg-neon shadow-[0_0_10px_#2EE6C8]"}`}
             aria-hidden
           />
           <span className="text-lg font-bold text-fg" role="status" aria-live="polite">

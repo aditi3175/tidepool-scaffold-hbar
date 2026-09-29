@@ -1,65 +1,49 @@
 import React from "react";
 import Link from "next/link";
-import { GradientText, PulseMark } from "~~/components/pulse";
-import { FAUCET_URL, GITHUB_URL, HASHSCAN_URL } from "~~/utils/tidepool/constants";
+import { GradientText } from "~~/components/pulse";
+import { Logo } from "~~/components/pulse/Logo";
+import { GITHUB_URL, HASHSCAN_URL } from "~~/utils/tidepool/constants";
 
-const SITE = [
-  { label: "How it works", href: "/how-it-works" },
+const LINKS: { label: string; href: string; external?: boolean }[] = [
+  { label: "Home", href: "/" },
   { label: "Docs", href: "/docs" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Contracts", href: "/debug" },
+  { label: "GitHub", href: GITHUB_URL, external: true },
+  { label: "HashScan", href: HASHSCAN_URL, external: true },
+  { label: "SaucerSwap", href: "https://docs.saucerswap.finance", external: true },
 ];
 
-const EXTERNAL = [
-  { label: "GitHub", href: GITHUB_URL },
-  { label: "HashScan", href: HASHSCAN_URL },
-  { label: "SaucerSwap docs", href: "https://docs.saucerswap.finance" },
-  { label: "Hedera faucet", href: FAUCET_URL },
-];
-
-/** Site footer: identity, site and external links, and the testnet disclaimer. */
+/** Site footer: wordmark and tagline, links, the network, and the testnet disclaimer. */
 export const Footer = () => (
-  <footer className="mt-24 border-t border-white/[0.06]">
-    <div className="mx-auto grid max-w-[1280px] grid-cols-1 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-20">
+  <footer className="mt-24 border-t border-neon/[0.08]">
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
       <div>
-        <Link href="/" className="inline-flex items-center gap-2.5" aria-label="Tidepool home">
-          <PulseMark />
-          <span className="text-lg font-bold tracking-tight text-fg">tidepool</span>
-        </Link>
-        <p className="mt-4 max-w-xs text-2xl font-bold leading-tight tracking-[-0.02em] text-fg">
+        <Logo />
+        <p className="mt-2 text-sm text-muted">
           Liquidity on <GradientText>autopilot.</GradientText>
         </p>
       </div>
-      <nav aria-label="Site">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Site</div>
-        <ul className="m-0 mt-4 flex list-none flex-col gap-2.5 p-0 text-sm">
-          {SITE.map(item => (
-            <li key={item.href}>
-              <Link href={item.href} className="text-muted hover:text-fg">
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <nav aria-label="Footer" className="flex flex-wrap gap-x-7 gap-y-2 text-sm">
+        {LINKS.map(link =>
+          link.external ? (
+            <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="text-muted hover:text-fg">
+              {link.label}
+            </a>
+          ) : (
+            <Link key={link.href} href={link.href} className="text-muted hover:text-fg">
+              {link.label}
+            </Link>
+          ),
+        )}
       </nav>
-      <nav aria-label="External links">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Elsewhere</div>
-        <ul className="m-0 mt-4 flex list-none flex-col gap-2.5 p-0 text-sm">
-          {EXTERNAL.map(item => (
-            <li key={item.href}>
-              <a href={item.href} target="_blank" rel="noreferrer" className="text-muted hover:text-fg">
-                {item.label} <span aria-hidden>↗</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <span className="inline-flex items-center gap-2 text-sm text-muted">
+        <span className="h-2 w-2 rounded-full bg-neon shadow-[0_0_8px_#2EE6C8]" aria-hidden />
+        Hedera Testnet
+      </span>
     </div>
-    <div className="border-t border-white/[0.06]">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-2 px-4 py-5 font-mono text-[11px] uppercase tracking-[0.12em] text-faint sm:px-6">
-        <span>Testnet reference code · Not audited · No yield implied</span>
-        <span>Built with Scaffold-HBAR</span>
-      </div>
+    <div className="border-t border-neon/[0.06]">
+      <p className="mx-auto max-w-[1200px] px-4 py-4 text-xs text-faint sm:px-6">
+        Testnet reference code. Not audited. No yield implied. Built with Scaffold-HBAR.
+      </p>
     </div>
   </footer>
 );
