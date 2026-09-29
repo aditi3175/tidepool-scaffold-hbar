@@ -1,52 +1,69 @@
 # Quickstart
 
-This page gets a Tidepool project running on your machine against the live testnet vault in a few minutes.
+This page takes you from nothing to the live testnet vault running on your machine, then to a vault of your own.
 
-## Prerequisites
+## Before you start
 
-- Node.js 20.18.3 or later.
-- Git with `user.name` and `user.email` set.
+- Node.js 20.18.3 or later. The template requires it.
+- Git, with `user.name` and `user.email` set. The CLI checks both and stops if either is missing.
 - A wallet that can connect to Hedera Testnet (chain 296), such as MetaMask.
 
-## Create the project
+## Scaffold it
 
 ```bash
 npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar
-cd <your-project>
-npm run next:dev
 ```
 
 > Keep the `--` before `--template`. npm 7+ swallows `--template` without it and the CLI falls back to its
 > built-in templates. Alternative: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`.
 
-The CLI will ask for the Hedera network (choose testnet) and whether to install Hedera Skills (optional).
+The CLI asks for a project name, the Hedera network (choose testnet), whether to install Hedera Skills (optional), and a package manager (npm is the default).
 
-Open http://localhost:3000/dashboard, connect a wallet on Hedera Testnet (chain 296), and you're looking at the live reference vault.
+> **If GitHub is slow or rate-limits you, pin the framework.** The CLI reads this template's `template.json` through the GitHub API. If that request fails, it quietly falls back to its own defaults, which offer Foundry first; choosing it deletes `packages/hardhat`, where the vault lives. Passing the choices yourself makes the request irrelevant (in PowerShell, write it on one line without the `\`):
+>
+> ```bash
+> npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar \n>   -s hardhat -f nextjs-app --package-manager npm
+> ```
 
-The commands in these docs use npm, the template's default. If you scaffolded with Yarn, drop the `run` (`yarn hardhat:test`). Pass extra flags to npm scripts after `--`, because npm swallows flags like `--network` otherwise.
+## See the live vault
 
-## What a fresh scaffold gives you
+```bash
+cd <your-project>
+npm run next:dev
+```
 
-- **A dashboard wired to the reference vaults.** `packages/nextjs/contracts/deployedContracts.ts` is committed, so the frontend reads the main vault (and the narrow demo vault) deployed by the template author. You can deposit, withdraw, and compound against them straight away.
-- **Unit tests that run offline.** `npm run hardhat:test` uses mocks for SaucerSwap, HTS (`0x167`), and the exchange-rate system contract (`0x168`). No network or keys needed.
-- **Operator scripts that target your own deployment.** `hardhat-deploy` records (`packages/hardhat/deployments/`) are gitignored, so `hardhat:smoke`, `hardhat:compound`, `hardhat:withdraw` and friends only work after you deploy your own vault. See [Adapt it to your pool](adapt-it.md).
+Open http://localhost:3000. `packages/nextjs/contracts/deployedContracts.ts` is committed, so the dashboard already reads the reference vaults on Hedera testnet (the main vault and the narrow demo vault). Connect a wallet on Hedera Testnet and you can deposit, withdraw and compound against them straight away.
 
-There is no local-chain flow. The vault calls live SaucerSwap V2 contracts, so it only makes sense on testnet (or mainnet).
+The commands in these docs use npm, the template's default. If you scaffolded with Yarn, drop the `run` (`yarn next:dev`). With npm, pass extra flags after `--`, because npm swallows flags like `--network` otherwise.
 
 ## Run the checks
 
 ```bash
-npm run hardhat:test               # unit tests, offline
+npm run hardhat:test               # 27 unit tests, offline
 npm run lint
 npm run next:check-types
 npm run next:build
 ```
 
-Stop the dev server before `npm run next:build`: both use `packages/nextjs/.next/`.
+The unit tests use mocks for SaucerSwap, HTS (`0x167`) and the exchange-rate system contract (`0x168`), so they need no network and no keys. Stop the dev server before `npm run next:build`: both use `packages/nextjs/.next/`.
 
 ## Get testnet funds
 
 Testnet HBAR comes from the Hedera faucet at https://portal.hedera.com/faucet. To deposit you also need WHBAR (the dashboard wraps HBAR for you) and SAUCE (swap for it on https://testnet.saucerswap.finance). [Using the vault](using-the-vault.md) walks through each step.
+
+## Deploy your own vault
+
+The operator scripts target your own deployment: `hardhat-deploy` records (`packages/hardhat/deployments/`) are gitignored, so `hardhat:smoke`, `hardhat:compound` and the rest only work once you have deployed. Fund the deployer with about 100 testnet HBAR, then:
+
+```bash
+npm run hardhat:account:generate   # encrypted deployer key in packages/hardhat/.env
+npm run hardhat:deploy:testnet     # deploy and initialize
+npm run hardhat:smoke              # wrap HBAR, buy SAUCE, deposit, open the first position
+```
+
+Deploying regenerates `deployedContracts.ts`, so the dashboard switches to your vault. [Adapt it to your pool](adapt-it.md) covers each step, every parameter and every script.
+
+There is no local-chain flow. The vault calls live SaucerSwap V2 contracts, so it only makes sense on testnet (or mainnet).
 
 ## Project map
 

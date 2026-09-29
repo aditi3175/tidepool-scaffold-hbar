@@ -35,7 +35,7 @@ It only succeeds when:
 
 The keeper card shows Compound and Rebalance side by side. Each shows **Ready** or **Blocked** with the first failing condition, the fee and gas limit, and a **Conditions** list with every check the contract makes, read from the chain before you pay.
 
-The Narrow demo vault (±60 ticks, 600-second cooldown) is often out of range. When its Rebalance shows Ready, anyone can press it and watch a live re-centre on the gauge.
+The Narrow demo vault (±60 ticks, 600-second cooldown) is often out of range. When its Rebalance shows Ready, anyone can press it and watch a live re-centre on the chart.
 
 ## What it costs
 

@@ -51,7 +51,7 @@ The chart at the top is the position. The glowing band is the range, the solid l
 
 ## The Narrow demo vault
 
-The Narrow vault is a separate test vault with a ±60-tick range and a 600-second cooldown, deployed to demonstrate rebalancing. Its range is narrow, so it is often **out of range**. When it is, and the keeper card shows **Rebalance: Ready** (TWAP outside the range, spot within 50 ticks of the TWAP, cooldown over), anyone can press **Rebalance** on the dashboard and watch a live re-centre: the gauge's band moves to the TWAP and the activity table shows the new position NFT. The caller pays SaucerSwap's position fee (about 0.64 HBAR) and gas (a rebalance used 982,492 gas, 1.07 HBAR, on testnet).
+The Narrow vault is a separate test vault with a ±60-tick range and a 600-second cooldown, deployed to demonstrate rebalancing. Its range is narrow, so it is often **out of range**. When it is, and the keeper card shows **Rebalance: Ready** (TWAP outside the range, spot within 50 ticks of the TWAP, cooldown over), anyone can press **Rebalance** on the dashboard and watch a live re-centre: the range on the chart moves to the TWAP and the Activity table shows the new position NFT. The caller pays SaucerSwap's position fee (about 0.64 HBAR) and gas (a rebalance used 982,492 gas, 1.07 HBAR, on testnet).
 
 Use the Main vault for anything else. See [Keepers & rebalancing](keepers-and-rebalancing.md).
 

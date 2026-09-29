@@ -451,6 +451,40 @@
   border-color: rgb(255 255 255 / 0.06);
 }
 
+/* Docs: numbered sections (numbers in the margin on wide screens), a larger opening line, callouts with a bold lead. */
+.tp-prose {
+  counter-reset: tp-h2;
+}
+.tp-prose h2 {
+  counter-increment: tp-h2;
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .tp-prose h2::before {
+    content: counter(tp-h2, decimal-leading-zero);
+    position: absolute;
+    left: -3.5rem;
+    top: calc(1.5rem + 0.45em);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--color-neon);
+  }
+}
+.tp-prose > p:first-child {
+  font-size: 19px;
+  line-height: 1.65;
+  color: rgb(238 246 245 / 0.85);
+}
+.tp-prose blockquote p > strong:first-child {
+  color: var(--color-amber);
+}
+.tp-prose blockquote figure {
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+}
+
 /* Route progress bar: a flat 2px teal line; no glow. */
 #nprogress .peg {
   display: none;

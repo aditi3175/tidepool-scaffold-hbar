@@ -48,13 +48,15 @@ const DIAGRAM_FONTS = '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", "Co
 const CodeBlock = ({ children }: { children: ReactNode }) => {
   const code = isValidElement<{ className?: string; children?: ReactNode }>(children) ? children : undefined;
   const language = /language-(\w+)/.exec(code?.props.className ?? "")?.[1] ?? "text";
+  const label =
+    { bash: "Shell", sh: "Shell", ts: "TypeScript", solidity: "Solidity", text: "Text" }[language] ?? language;
   const text = textOf(code?.props.children ?? children).replace(/\n$/, "");
   return (
     <figure className="my-6 overflow-hidden rounded-xl border border-white/10 bg-surface">
       <figcaption className="flex items-center justify-between border-b border-white/[0.06] px-4 py-1.5">
         <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
           <span className="h-1.5 w-1.5 rounded-full bg-neon" aria-hidden />
-          {language}
+          {label}
         </span>
         <CopyButton text={text} />
       </figcaption>
