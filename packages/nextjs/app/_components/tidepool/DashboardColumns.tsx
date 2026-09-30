@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { GetStarted } from "~~/app/_components/tidepool/GetStarted";
 import {
   ConnectCard,
@@ -20,8 +21,10 @@ export const DashboardColumns = ({ vault, user }: { vault: VaultState; user: Use
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="flex min-w-0 flex-col gap-6" data-column="left">
-        <PositionCard vault={vault} />
-        <div className="flex flex-1 flex-col">
+        <div className="tp-in" style={{ "--d": 320 } as CSSProperties}>
+          <PositionCard vault={vault} />
+        </div>
+        <div className="tp-in flex flex-1 flex-col" style={{ "--d": 480 } as CSSProperties}>
           {!user.connected ? (
             <ConnectCard />
           ) : user.shares === undefined ? (
@@ -34,8 +37,12 @@ export const DashboardColumns = ({ vault, user }: { vault: VaultState; user: Use
         </div>
       </div>
       <div className="flex min-w-0 flex-col gap-6" data-column="right">
-        <VaultHoldingsCard vault={vault} />
-        <UserActions vault={vault} user={user} className="flex flex-1 flex-col" />
+        <div className="tp-in" style={{ "--d": 400 } as CSSProperties}>
+          <VaultHoldingsCard vault={vault} />
+        </div>
+        <div className="tp-in flex flex-1 flex-col" style={{ "--d": 540 } as CSSProperties}>
+          <UserActions vault={vault} user={user} className="flex flex-1 flex-col" />
+        </div>
       </div>
     </div>
   );

@@ -284,6 +284,90 @@
 .tp-caret {
   animation: tp-caret 1s steps(1) infinite;
 }
+/* Loading placeholders: a soft light passes across instead of blinking. */
+.tp-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(255 255 255 / 0.05);
+}
+.tp-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+  animation: tp-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes tp-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+/* Cards answer the pointer: the hairline brightens; stat tiles also lift a little. */
+.tp-card {
+  transition:
+    border-color 0.3s ease,
+    transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.tp-card:hover {
+  border-color: rgb(255 255 255 / 0.15);
+}
+.tp-lift:hover {
+  transform: translateY(-2px);
+}
+/* The TWAP dial sweeps out to its value (the path uses pathLength=1). */
+@keyframes tp-sweep {
+  from {
+    stroke-dasharray: 0 1;
+  }
+}
+.tp-sweep {
+  animation: tp-sweep 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both;
+}
+/* Range chart entrance (dashboard): the range opens from its middle, the liquidity rises, the price marker drops in. */
+@keyframes tp-rg-grow {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+}
+@keyframes tp-rg-rise {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+@keyframes tp-rg-drop {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+}
+@keyframes tp-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.tp-rg-grow,
+.tp-rg-rise {
+  transform-box: fill-box;
+}
+.tp-rg-grow {
+  transform-origin: center;
+  animation: tp-rg-grow 0.9s cubic-bezier(0.2, 0.75, 0.15, 1) both;
+}
+.tp-rg-rise {
+  transform-origin: bottom;
+  animation: tp-rg-rise 1.1s cubic-bezier(0.2, 0.75, 0.15, 1) 0.25s both;
+}
+.tp-rg-fade {
+  animation: tp-fade-in 0.7s ease both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.tp-rg-drop {
+  animation: tp-rg-drop 0.8s cubic-bezier(0.2, 0.75, 0.15, 1) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
 @media (prefers-reduced-motion: reduce) {
   .tp-reveal,
   .tp-rule {
@@ -295,8 +379,17 @@
   .tp-in,
   .tp-settle,
   .tp-flow,
-  .tp-caret {
+  .tp-caret,
+  .tp-shimmer::after,
+  .tp-sweep,
+  .tp-rg-grow,
+  .tp-rg-rise,
+  .tp-rg-fade,
+  .tp-rg-drop {
     animation: none;
+  }
+  .tp-lift:hover {
+    transform: none;
   }
 }
 
@@ -563,6 +656,14 @@
 .tp-debug .bg-sui-primary-subtle {
   background-color: rgb(10 20 23 / 0.4);
   border: 1px solid rgb(255 255 255 / 0.08);
+}
+.tp-debug .bg-sui-base-100,
+.tp-debug .bg-sui-primary-subtle {
+  transition: border-color 0.3s ease;
+}
+.tp-debug .bg-sui-base-100:hover,
+.tp-debug .bg-sui-primary-subtle:hover {
+  border-color: rgb(255 255 255 / 0.15);
 }
 .tp-debug .border-sui-primary-subtle {
   border-color: rgb(255 255 255 / 0.08);

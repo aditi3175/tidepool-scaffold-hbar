@@ -46,7 +46,7 @@ export const VaultFlow = ({ vault, height = "h-[250px]" }: { vault: VaultState; 
       role="img"
       aria-label={`Range ${formatPriceSig(lower)} to ${formatPriceSig(upper)} ${unit}; spot ${formatPriceSig(spot)}; TWAP ${formatPriceSig(twap)}`}
     >
-      <RangeGraph lower={lower} upper={upper} spot={spot} twap={twap} inRange={vault.inRange} />
+      <RangeGraph lower={lower} upper={upper} spot={spot} twap={twap} inRange={vault.inRange} intro />
       {unit && <p className="m-0 -mt-4 text-center text-xs text-faint">Prices in {unit}</p>}
     </div>
   );

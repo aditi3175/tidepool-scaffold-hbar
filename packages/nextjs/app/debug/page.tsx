@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { DebugContracts } from "./_components/DebugContracts";
 import type { NextPage } from "next";
 import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
@@ -26,7 +27,8 @@ const Contracts: NextPage = () => (
     <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 gap-4 px-5 sm:px-8 lg:px-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
       <div
         role="note"
-        className="flex gap-3 rounded-2xl border border-amber/30 bg-amber/[0.05] p-5 text-[15px] leading-relaxed"
+        className="tp-in flex gap-3 rounded-2xl border border-amber/30 bg-amber/[0.05] p-5 text-[15px] leading-relaxed"
+        style={{ "--d": 480 } as CSSProperties}
       >
         <ExclamationTriangleIcon className="mt-1 h-5 w-5 shrink-0 text-amber" aria-hidden />
         <p className="text-fg">
@@ -34,7 +36,7 @@ const Contracts: NextPage = () => (
           deposit, withdraw, compound and rebalance: it runs the same checks the contract does first.
         </p>
       </div>
-      <Tile innerClassName="p-5">
+      <Tile innerClassName="p-5" className="tp-in" style={{ "--d": 560 } as CSSProperties}>
         <Label>Worth reading</Label>
         <ul className="m-0 mt-3 grid list-none grid-cols-1 gap-x-6 gap-y-2.5 p-0 text-sm sm:grid-cols-2">
           {WORTH_READING.map(item => (

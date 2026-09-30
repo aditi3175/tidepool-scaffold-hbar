@@ -45,7 +45,7 @@ export const Card = ({
   stretch?: boolean;
 }) => (
   <section
-    className={`flex flex-col rounded-2xl border border-white/[0.08] bg-surface/40 ${
+    className={`tp-card flex flex-col rounded-2xl border border-white/[0.08] bg-surface/40 ${
       stretch ? "flex-1" : ""
     } ${className}`}
   >
@@ -95,7 +95,7 @@ export const TokenAmount = ({
 );
 
 export const Skeleton = ({ className = "h-4 w-24" }: { className?: string }) => (
-  <span className={`inline-block animate-pulse rounded bg-white/[0.06] ${className}`} aria-hidden />
+  <span className={`tp-shimmer inline-block rounded ${className}`} aria-hidden />
 );
 
 type Tone = "success" | "warning" | "error" | "neutral" | "accent";

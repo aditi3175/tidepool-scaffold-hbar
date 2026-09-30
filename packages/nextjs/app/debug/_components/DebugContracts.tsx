@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { ContractUI } from "./ContractUI";
 import { useSessionStorage } from "usehooks-ts";
 import { BarsArrowUpIcon } from "@heroicons/react/20/solid";
@@ -43,6 +43,13 @@ export function DebugContracts() {
     return () => observer.disconnect();
   }, []);
 
+  // The first contract waits for the page header to settle; later tab switches fade in at once.
+  const [firstLoad, setFirstLoad] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setFirstLoad(false), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     if (!contractNames.includes(selectedContract)) {
       setSelectedContract(contractNames[0]);
@@ -56,7 +63,7 @@ export function DebugContracts() {
       ) : (
         <>
           {contractNames.length > 1 && (
-            <div className="w-full max-w-[1480px] px-5 sm:px-8 lg:px-12">
+            <div className="tp-in w-full max-w-[1480px] px-5 sm:px-8 lg:px-12" style={{ "--d": 640 } as CSSProperties}>
               <div
                 role="tablist"
                 aria-label="Contract"
@@ -89,7 +96,14 @@ export function DebugContracts() {
           {contractNames.map(
             contractName =>
               contractName === selectedContract && (
-                <ContractUI key={String(contractName)} contractName={contractName} />
+                // Keyed by contract, so switching tabs fades the new contract in.
+                <div
+                  key={String(contractName)}
+                  className="tp-in w-full"
+                  style={{ "--d": firstLoad ? 720 : 0 } as CSSProperties}
+                >
+                  <ContractUI contractName={contractName} />
+                </div>
               ),
           )}
         </>

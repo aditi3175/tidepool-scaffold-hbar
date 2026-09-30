@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /**
  * "Pulse" building blocks: gradient-bordered tiles, mono labels, the TWAP dial and button styles. Presentation only.
@@ -10,13 +10,15 @@ export const Tile = ({
   className = "",
   innerClassName = "",
   as: Tag = "div",
+  style,
 }: {
   children: ReactNode;
   className?: string;
   innerClassName?: string;
   as?: "div" | "section" | "article" | "li";
+  style?: CSSProperties;
 }) => (
-  <Tag className={`rounded-2xl border border-white/[0.08] bg-surface/40 ${className}`}>
+  <Tag className={`tp-card rounded-2xl border border-white/[0.08] bg-surface/40 ${className}`} style={style}>
     <div className={`h-full p-5 ${innerClassName}`}>{children}</div>
   </Tag>
 );
@@ -49,7 +51,6 @@ export const LiveDot = ({ ok = true }: { ok?: boolean }) => (
 /** The TWAP guard as a half dial: ticks apart over the limit. Amber at the limit. */
 export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: number; size?: number }) => {
   const f = value === undefined || !limit ? 0 : Math.min(1, value / limit);
-  const c = Math.PI * 34;
   const colour = f >= 1 ? "#FFB020" : "#2EE6C8";
   return (
     <svg width={size} height={(size * 48) / 84} viewBox="0 0 84 48" aria-hidden>
@@ -66,7 +67,9 @@ export const Arc = ({ value, limit, size = 84 }: { value?: number; limit?: numbe
         stroke={colour}
         strokeWidth="6"
         strokeLinecap="round"
-        strokeDasharray={`${Math.max(0.001, f) * c} ${c}`}
+        pathLength={1}
+        strokeDasharray={`${Math.max(0.001, f)} 1`}
+        className="tp-sweep"
       />
     </svg>
   );

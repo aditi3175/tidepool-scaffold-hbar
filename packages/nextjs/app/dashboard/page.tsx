@@ -1,5 +1,6 @@
 "use client";
 
+import { type CSSProperties, useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { ActivityFeed } from "~~/app/_components/tidepool/ActivityFeed";
 import { DashboardColumns } from "~~/app/_components/tidepool/DashboardColumns";
@@ -7,8 +8,9 @@ import { DashboardStats } from "~~/app/_components/tidepool/DashboardStats";
 import { KeeperCard } from "~~/app/_components/tidepool/KeeperPanel";
 import { VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
 import { VaultSelector } from "~~/app/_components/tidepool/VaultSelector";
-import { Skeleton } from "~~/app/_components/tidepool/ui";
-import { Eyebrow } from "~~/components/pulse";
+import { Card, Skeleton } from "~~/app/_components/tidepool/ui";
+import { Eyebrow, Tile } from "~~/components/pulse";
+import { Reveal } from "~~/components/pulse/Reveal";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 import { useSelectedVault } from "~~/hooks/tidepool/useSelectedVault";
 import { useUserPosition } from "~~/hooks/tidepool/useUserPosition";
@@ -40,41 +42,79 @@ const VaultDashboard = ({
   const user = useUserPosition(vault);
   const ready = !vault.isLoading && !vault.notFound;
 
-  const pair = vault.symbol0 && vault.symbol1 ? `${vault.symbol0} / ${vault.symbol1}` : config.label;
+  // Keep the placeholder until the first values are in (tokens, holdings and a price, or an error to show), so the
+  // page appears once, complete, instead of filling in tile by tile. After 8 s it shows whatever has arrived.
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWaited(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
+  const firstValues =
+    vault.decimals0 !== undefined &&
+    vault.decimals1 !== undefined &&
+    vault.total0 !== undefined &&
+    (vault.spotTick !== undefined || vault.twapUnavailable || vault.priceError !== undefined);
+  const settling = vault.isLoading || (!vault.notFound && !vault.readError && !firstValues && !waited);
+
+  // Until the token symbols arrive the title is a placeholder of the same height, so nothing jumps; the pair then
+  // rises into place.
+  const pair = vault.symbol0 && vault.symbol1 ? `${vault.symbol0} / ${vault.symbol1}` : undefined;
   const topBar = (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
       <div>
-        <Eyebrow>Dashboard · {config.label}</Eyebrow>
+        <div className="tp-in">
+          <Eyebrow>Dashboard · {config.label}</Eyebrow>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="m-0 text-[clamp(36px,4.6vw,60px)] font-extrabold leading-none tracking-[-0.04em] text-fg">
-            {pair}
+            {pair && !settling ? (
+              <span className="tp-line">
+                <span style={{ "--d": 60 } as CSSProperties}>{pair}</span>
+              </span>
+            ) : vault.notFound ? (
+              config.label
+            ) : (
+              <span className="tp-shimmer block h-[1.08em] w-[6.5em] max-w-[70vw] rounded-xl" aria-label="Loading" />
+            )}
           </h1>
-          {ready && <VaultStatusPill vault={vault} />}
+          {ready && !settling && (
+            <span className="tp-in" style={{ "--d": 300 } as CSSProperties}>
+              <VaultStatusPill vault={vault} />
+            </span>
+          )}
         </div>
-        <p className="mt-3 font-mono text-xs uppercase tracking-[0.12em] text-faint">
-          SaucerSwap V2 · {vault.fee !== undefined ? `${(vault.fee / 10_000).toFixed(2)}%` : "–"} pool · Hedera testnet
+        <p
+          className="tp-in mt-3 font-mono text-xs uppercase tracking-[0.12em] text-faint"
+          style={{ "--d": 120 } as CSSProperties}
+        >
+          SaucerSwap V2 ·{" "}
+          {vault.fee !== undefined ? (
+            `${(vault.fee / 10_000).toFixed(2)}%`
+          ) : (
+            <Skeleton className="h-2.5 w-10 align-middle" />
+          )}{" "}
+          pool · Hedera testnet
         </p>
         {config.demo && (
-          <p className="mt-2 font-mono text-xs uppercase tracking-[0.1em] text-amber">Demo vault for rebalance tests</p>
+          <p
+            className="tp-in mt-2 font-mono text-xs uppercase tracking-[0.1em] text-amber"
+            style={{ "--d": 180 } as CSSProperties}
+          >
+            Demo vault for rebalance tests
+          </p>
         )}
       </div>
-      <VaultSelector selected={config} onSelect={onSelect} />
+      <div className="tp-in" style={{ "--d": 160 } as CSSProperties}>
+        <VaultSelector selected={config} onSelect={onSelect} />
+      </div>
     </div>
   );
 
-  if (vault.isLoading) {
+  if (settling) {
     return (
       <>
         {topBar}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]" aria-busy>
-          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-surface p-6">
-            <p className="font-mono text-xs uppercase tracking-[0.12em] text-muted">
-              Loading the vault from Hedera testnet…
-            </p>
-            <Skeleton className="h-[240px] w-full rounded-xl" />
-          </div>
-          <Skeleton className="h-80 w-full rounded-2xl" />
-        </div>
+        <DashboardSkeleton />
       </>
     );
   }
@@ -115,10 +155,58 @@ const VaultDashboard = ({
 
       <DashboardColumns vault={vault} user={user} />
 
-      <KeeperCard vault={vault} />
-      <ActivityFeed vault={vault} />
+      <Reveal>
+        <KeeperCard vault={vault} />
+      </Reveal>
+      <Reveal>
+        <ActivityFeed vault={vault} />
+      </Reveal>
     </>
   );
 };
+
+/** A block-level loading bar (Skeleton is inline). */
+const Bar = ({ className }: { className: string }) => <div className={`tp-shimmer rounded ${className}`} aria-hidden />;
+
+/** The page's own shape while the first reads are in flight: five stat tiles, the position and holdings cards. */
+const DashboardSkeleton = () => (
+  <div className="flex flex-col gap-5" aria-busy aria-label="Loading the vault from Hedera testnet">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      {[0, 1, 2, 3, 4].map(i => (
+        <Tile key={i} className={i === 4 ? "col-span-2 md:col-span-1" : ""}>
+          <Bar className="h-2.5 w-20" />
+          <Bar className="mt-5 h-7 w-24" />
+          <Bar className="mt-3 h-2.5 w-32 max-w-full" />
+        </Tile>
+      ))}
+    </div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <Card title="Position">
+        <div className="relative h-[250px]">
+          <div className="absolute inset-x-0 top-[62%]">
+            <Bar className="h-3.5 rounded-full" />
+          </div>
+          <p className="absolute inset-x-0 top-[74%] m-0 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-faint">
+            Reading the vault from Hedera testnet
+          </p>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-5 sm:grid-cols-4">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i}>
+              <Bar className="h-2.5 w-14" />
+              <Bar className="mt-2.5 h-5 w-24" />
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card title="Vault holdings">
+        <Bar className="h-6 w-40" />
+        <Bar className="mt-3 h-6 w-36" />
+        <Bar className="mt-6 h-3 w-full" />
+        <Bar className="mt-2 h-3 w-4/5" />
+      </Card>
+    </div>
+  </div>
+);
 
 export default Dashboard;

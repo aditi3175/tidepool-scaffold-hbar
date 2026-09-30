@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
 import { priceDomain } from "~~/components/pulse/FlowChart";
 import { formatPriceSig } from "~~/utils/tidepool/format";
 
@@ -12,18 +12,21 @@ const MUTED = "#94A9A7";
 /**
  * The position as a price bar: out-of-range zones on both sides, the range between two handles, the vault's liquidity
  * as a glow over it (a vault position spreads its liquidity evenly across the range), and the current price marked.
+ * With `intro`, the chart draws itself in once when it first has data (motion lives in globals.css, .tp-rg-*).
  */
 export const RangeGraph = ({
   lower,
   upper,
   spot,
   inRange,
+  intro = false,
 }: {
   lower?: number;
   upper?: number;
   spot?: number;
   twap?: number;
   inRange?: boolean;
+  intro?: boolean;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -42,6 +45,10 @@ export const RangeGraph = ({
   const barH = 14;
   const ready = lower !== undefined && upper !== undefined && spot !== undefined && width > 0;
   const earning = inRange !== false;
+
+  // Entrance classes, only when asked for; `delay` is in ms.
+  const motion = (name: string, delay = 0) =>
+    intro ? { className: name, style: { "--d": delay } as CSSProperties } : {};
 
   let body = null;
   if (ready) {
@@ -99,114 +106,124 @@ export const RangeGraph = ({
         </defs>
 
         {/* The vault's liquidity over the range */}
-        <path d={plateau} fill={`url(#pl${uid})`} />
-        <path
-          d={plateau.replace(/ Z$/, "")}
-          fill="none"
-          stroke={TEAL}
-          strokeOpacity={earning ? 0.45 : 0.2}
-          strokeWidth={1.2}
-        />
+        <g {...motion("tp-rg-rise")}>
+          <path d={plateau} fill={`url(#pl${uid})`} />
+          <path
+            d={plateau.replace(/ Z$/, "")}
+            fill="none"
+            stroke={TEAL}
+            strokeOpacity={earning ? 0.45 : 0.2}
+            strokeWidth={1.2}
+          />
+        </g>
 
         {/* Out-of-range zones */}
-        <rect x={0} y={barY - barH / 2} width={x0} height={barH} rx={barH / 2} fill={`url(#lz${uid})`} />
-        <rect x={x1} y={barY - barH / 2} width={width - x1} height={barH} rx={barH / 2} fill={`url(#rz${uid})`} />
-        {oorFits(x0 / 2, x0) && (
-          <text x={x0 / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
-            Out of range
-          </text>
-        )}
-        {oorFits((x1 + width) / 2, width - x1) && (
-          <text x={(x1 + width) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
-            Out of range
-          </text>
-        )}
+        <g {...motion("tp-rg-fade", 0)}>
+          <rect x={0} y={barY - barH / 2} width={x0} height={barH} rx={barH / 2} fill={`url(#lz${uid})`} />
+          <rect x={x1} y={barY - barH / 2} width={width - x1} height={barH} rx={barH / 2} fill={`url(#rz${uid})`} />
+          {oorFits(x0 / 2, x0) && (
+            <text x={x0 / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
+              Out of range
+            </text>
+          )}
+          {oorFits((x1 + width) / 2, width - x1) && (
+            <text x={(x1 + width) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
+              Out of range
+            </text>
+          )}
+        </g>
 
         {/* The range */}
-        <rect
-          x={x0}
-          y={barY - barH / 2}
-          width={x1 - x0}
-          height={barH}
-          fill={TEAL}
-          opacity={earning ? 0.6 : 0.25}
-          filter={`url(#gl${uid})`}
-        />
-        <rect x={x0} y={barY - barH / 2} width={x1 - x0} height={barH} rx={3} fill={`url(#in${uid})`} />
-        <text x={rangeMid} y={barY + 32} textAnchor="middle" fontSize={12} fill={earning ? TEAL : MUTED}>
-          {rangeText}
-        </text>
+        <g {...motion("tp-rg-grow")}>
+          <rect
+            x={x0}
+            y={barY - barH / 2}
+            width={x1 - x0}
+            height={barH}
+            fill={TEAL}
+            opacity={earning ? 0.6 : 0.25}
+            filter={`url(#gl${uid})`}
+          />
+          <rect x={x0} y={barY - barH / 2} width={x1 - x0} height={barH} rx={3} fill={`url(#in${uid})`} />
+        </g>
+        <g {...motion("tp-rg-fade", 650)}>
+          <text x={rangeMid} y={barY + 32} textAnchor="middle" fontSize={12} fill={earning ? TEAL : MUTED}>
+            {rangeText}
+          </text>
 
-        {/* Handles and their prices */}
-        {[
-          { at: x0, label: "Lower", value: lower },
-          { at: x1, label: "Upper", value: upper },
-        ].map(h => (
-          <g key={h.label}>
-            <rect x={h.at - 5} y={barY - 17} width={10} height={34} rx={5} fill={FG} />
-            {handleLabelsFit && (
-              <>
-                <text x={h.at} y={barY + 58} textAnchor="middle" fontSize={12} fill={MUTED}>
-                  {h.label}
-                </text>
-                <text
-                  x={h.at}
-                  y={barY + 80}
-                  textAnchor="middle"
-                  fontSize={19}
-                  fontWeight={700}
-                  fill={FG}
-                  style={{ fontVariantNumeric: "tabular-nums" }}
-                >
-                  {formatPriceSig(h.value)}
-                </text>
-              </>
-            )}
-          </g>
-        ))}
-        {!handleLabelsFit && (
-          <g>
-            <text
-              x={Math.max(80, Math.min(width - 80, rangeMid))}
-              y={barY + 58}
-              textAnchor="middle"
-              fontSize={12}
-              fill={MUTED}
-            >
-              Lower – Upper
-            </text>
-            <text
-              x={Math.max(80, Math.min(width - 80, rangeMid))}
-              y={barY + 80}
-              textAnchor="middle"
-              fontSize={19}
-              fontWeight={700}
-              fill={FG}
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {formatPriceSig(lower)} – {formatPriceSig(upper)}
-            </text>
-          </g>
-        )}
+          {/* Handles and their prices */}
+          {[
+            { at: x0, label: "Lower", value: lower },
+            { at: x1, label: "Upper", value: upper },
+          ].map(h => (
+            <g key={h.label}>
+              <rect x={h.at - 5} y={barY - 17} width={10} height={34} rx={5} fill={FG} />
+              {handleLabelsFit && (
+                <>
+                  <text x={h.at} y={barY + 58} textAnchor="middle" fontSize={12} fill={MUTED}>
+                    {h.label}
+                  </text>
+                  <text
+                    x={h.at}
+                    y={barY + 80}
+                    textAnchor="middle"
+                    fontSize={19}
+                    fontWeight={700}
+                    fill={FG}
+                    style={{ fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {formatPriceSig(h.value)}
+                  </text>
+                </>
+              )}
+            </g>
+          ))}
+          {!handleLabelsFit && (
+            <g>
+              <text
+                x={Math.max(80, Math.min(width - 80, rangeMid))}
+                y={barY + 58}
+                textAnchor="middle"
+                fontSize={12}
+                fill={MUTED}
+              >
+                Lower – Upper
+              </text>
+              <text
+                x={Math.max(80, Math.min(width - 80, rangeMid))}
+                y={barY + 80}
+                textAnchor="middle"
+                fontSize={19}
+                fontWeight={700}
+                fill={FG}
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {formatPriceSig(lower)} – {formatPriceSig(upper)}
+              </text>
+            </g>
+          )}
+        </g>
 
         {/* Current price */}
-        <line x1={xs} x2={xs} y1={62} y2={barY} stroke={FG} strokeOpacity={0.8} strokeDasharray="3 4" />
-        <circle cx={xs} cy={barY} r={6} fill={earning ? FG : RED} stroke="#050B0D" strokeWidth={2} />
-        <rect x={flagX} y={8} width={flagW} height={54} rx={10} fill="#0F1C20" stroke="rgba(46,230,200,0.3)" />
-        <text x={flagX + flagW / 2} y={29} textAnchor="middle" fontSize={11} fill={MUTED}>
-          Current price
-        </text>
-        <text
-          x={flagX + flagW / 2}
-          y={51}
-          textAnchor="middle"
-          fontSize={18}
-          fontWeight={700}
-          fill={earning ? FG : RED}
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {formatPriceSig(spot)}
-        </text>
+        <g {...motion("tp-rg-drop", 450)}>
+          <line x1={xs} x2={xs} y1={62} y2={barY} stroke={FG} strokeOpacity={0.8} strokeDasharray="3 4" />
+          <circle cx={xs} cy={barY} r={6} fill={earning ? FG : RED} stroke="#050B0D" strokeWidth={2} />
+          <rect x={flagX} y={8} width={flagW} height={54} rx={10} fill="#0F1C20" stroke="rgba(46,230,200,0.3)" />
+          <text x={flagX + flagW / 2} y={29} textAnchor="middle" fontSize={11} fill={MUTED}>
+            Current price
+          </text>
+          <text
+            x={flagX + flagW / 2}
+            y={51}
+            textAnchor="middle"
+            fontSize={18}
+            fontWeight={700}
+            fill={earning ? FG : RED}
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {formatPriceSig(spot)}
+          </text>
+        </g>
       </>
     );
   } else if (width > 0) {
