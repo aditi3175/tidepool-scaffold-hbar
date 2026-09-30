@@ -12,11 +12,7 @@ export const HASHSCAN_URL = "https://hashscan.io/testnet";
 export const SAUCERSWAP_TESTNET_URL = "https://testnet.saucerswap.finance";
 /** The template's GitHub repository and the command that scaffolds a new project from it. */
 export const GITHUB_URL = "https://github.com/aditi3175/tidepool-scaffold-hbar";
-export const README_URL = `${GITHUB_URL}#readme`;
 export const SCAFFOLD_COMMAND = "npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar";
-/** Hedera portal faucet (testnet HBAR). */
-export const FAUCET_URL = "https://portal.hedera.com/faucet";
-("https://github.com/aditi3175/tidepool-scaffold-hbar/blob/main/docs/ARCHITECTURE.md");
 
 /** Vault share token decimals (TidepoolVault.SHARE_DECIMALS). */
 export const SHARE_DECIMALS = 8;
@@ -32,7 +28,7 @@ export const POLL_INTERVAL_MS = 20_000;
  * Fixed gas limits. Every HTS association or allowance change costs ~700-780k gas on Hedera.
  * compound() and rebalance() may mint a SaucerSwap position, which eth_call/eth_estimateGas cannot simulate
  * (INVALID_NFT_ID), so they are sent with a fixed limit after read-only precondition checks.
- * Observed on testnet: compound 4.8-5.13M, rebalance 5.26M, withdraw 0.36M, deposit 0.16-0.2M.
+ * Observed on testnet: first compound 0.89M, compound 0.56M, rebalance 0.98M, withdraw 0.34M, deposit 0.20-0.28M.
  */
 export const GAS = {
   associate: 1_000_000n,

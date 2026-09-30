@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
 
 /**
- * "Pulse" building blocks: gradient-bordered tiles, mono labels, the TWAP dial and button styles. Presentation only.
+ * "Pulse" building blocks: flat tiles, mono labels, the TWAP dial, button styles and gradient text. Presentation only.
  */
 
-/** A card: a thin teal-tinted border on a slightly raised surface. */
+/** A card: a flat surface with a faint hairline that brightens on hover. */
 export const Tile = ({
   children,
   className = "",
@@ -26,26 +26,6 @@ export const Tile = ({
 /** Small uppercase mono label. */
 export const Label = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
   <div className={`font-mono text-[11px] uppercase tracking-[0.14em] text-faint ${className}`}>{children}</div>
-);
-
-/** Section eyebrow: a gradient tick and a mono label. */
-export const Eyebrow = ({ children }: { children: ReactNode }) => (
-  <div className="flex items-center gap-2.5 font-mono text-xs uppercase tracking-[0.14em] text-muted">
-    <span className="h-px w-6 bg-[linear-gradient(90deg,#2EE6C8,#22D3EE)]" aria-hidden />
-    {children}
-  </div>
-);
-
-/** A dot that pulses when live (neon) or sits still in amber. */
-export const LiveDot = ({ ok = true }: { ok?: boolean }) => (
-  <span className="relative inline-flex h-2 w-2" aria-hidden>
-    {ok && (
-      <span className="absolute inline-flex h-full w-full rounded-full bg-neon opacity-60 motion-safe:animate-ping" />
-    )}
-    <span
-      className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-neon shadow-[0_0_8px_#2EE6C8]" : "bg-amber"}`}
-    />
-  </span>
 );
 
 /** The TWAP guard as a half dial: ticks apart over the limit. Amber at the limit. */
@@ -87,14 +67,6 @@ export const btn = {
   small:
     "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.05] px-4 text-sm font-medium text-fg transition-colors duration-150 hover:border-neon/45",
 };
-
-/** The mark: a small rotated square in the gradient, with a glow. */
-export const PulseMark = ({ className = "h-3 w-3" }: { className?: string }) => (
-  <span
-    className={`inline-block rotate-45 bg-[linear-gradient(135deg,#2EE6C8,#22D3EE)] shadow-[0_0_16px_#2EE6C8] ${className}`}
-    aria-hidden
-  />
-);
 
 /** Gradient text for the one emphasised phrase in a headline. */
 export const GradientText = ({ children }: { children: ReactNode }) => (

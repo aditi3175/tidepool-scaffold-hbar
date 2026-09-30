@@ -18,6 +18,8 @@ A vault that owns **one** SaucerSwap V2 concentrated-liquidity position. Deposit
 **Anyone** can compound the position's fees, and **anyone** can re-centre its range once the pool's TWAP has left it.
 Hardhat contracts, a Next.js dashboard, and everything running on Hedera testnet.
 
+**Live demo:** https://tidepool-scaffold.vercel.app
+
 > [!WARNING]
 > Testnet reference code. Not audited, not production-ready, no yield implied. Testnet pool prices are set by testnet
 > traders and do not track real markets.

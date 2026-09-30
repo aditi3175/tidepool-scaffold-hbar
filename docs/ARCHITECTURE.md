@@ -617,8 +617,8 @@ as the password is accepted. Never run them from an agent without the user's go-
 - `packages/hardhat/scripts/tidepool*.ts` — testnet operator scripts; shared helpers in `tidepoolScriptUtils.ts`
 - `packages/nextjs/app/` — `page.tsx` (landing), `how-it-works/`, `dashboard/`, `docs/` (renders
   `content/docs/*.md`, listed in `app/_components/docs/manifest.ts`), `debug/` (Contracts)
-- `packages/nextjs/components/pulse/*` — shared UI: `Tile`, `Label`, `Arc` (TWAP-guard dial), button styles, and
-  `FlowChart.tsx` (the range chart: band, spot, dashed TWAP; the flowing dots are illustrative); `PageHero.tsx`
+- `packages/nextjs/components/pulse/*` — shared UI: `Tile`, `Label`, `Arc` (TWAP-guard dial), button styles,
+  `Reveal.tsx` (scroll entrances) and `PageHero.tsx`; the range chart is `app/_components/landing/RangeGraph.tsx`
 - `packages/nextjs/app/_components/tidepool/*` — `VaultFlow.tsx` (the range chart from vault state) and
   `DashboardStats.tsx` (live stat strip); dashboard cards: `PositionCard` (chart + stats), `HoldingsCard` (vault
   holdings, your position), `GetStarted` (first-deposit checklist), `UserActions` with `DepositCard`/`WithdrawCard`/`AssociateButton`,

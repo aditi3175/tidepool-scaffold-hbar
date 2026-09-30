@@ -53,12 +53,6 @@ export function formatFull(value: bigint | undefined, decimals: number | undefin
   return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
 }
 
-/** A percentage with sensible precision: 0.3 -> "0.30%", 12.345 -> "12.3%". */
-export function formatPercent(value: number | undefined): string {
-  if (value === undefined || !Number.isFinite(value)) return "–";
-  return `${Math.abs(value) < 10 ? value.toFixed(2) : value.toFixed(1)}%`;
-}
-
 /** "3h ago", "2d ago", "just now" from a unix timestamp in seconds. */
 export function formatAgo(timestamp: number | undefined, now = Date.now() / 1000): string {
   if (timestamp === undefined) return "–";

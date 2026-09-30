@@ -1,13 +1,20 @@
 "use client";
 
 import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
-import { priceDomain } from "~~/components/pulse/FlowChart";
 import { formatPriceSig } from "~~/utils/tidepool/format";
 
 const TEAL = "#2EE6C8";
 const RED = "#FF5470";
 const FG = "#EEF6F5";
 const MUTED = "#94A9A7";
+
+/** A price domain around the range, with room for spot and the TWAP. */
+function priceDomain(lower: number, upper: number, extra: number[]) {
+  const lo = Math.min(lower, ...extra);
+  const hi = Math.max(upper, ...extra);
+  const pad = Math.max((hi - lo) * 0.18, (upper - lower) * 0.45);
+  return { min: lo - pad, max: hi + pad };
+}
 
 /**
  * The position as a price bar: out-of-range zones on both sides, the range between two handles, the vault's liquidity

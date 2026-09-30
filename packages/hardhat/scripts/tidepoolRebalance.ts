@@ -10,7 +10,7 @@
  *
  * Gas: fixed 8,000,000. rebalance() mints a new SaucerSwap LP NFT, and Hedera's eth_call/eth_estimateGas
  * simulation returns INVALID_NFT_ID for that mint even when it succeeds on-chain, so it cannot be estimated.
- * Observed first-position compound (the same mint path) used 5,128,563 gas.
+ * Observed on testnet: rebalance() used 982,492 gas.
  *
  * Run (PowerShell): $env:TIDEPOOL_VAULT="TidepoolVaultNarrow"; node .yarn/releases/yarn-3.2.3.cjs hardhat:rebalance
  */

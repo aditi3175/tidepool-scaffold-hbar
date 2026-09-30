@@ -53,7 +53,7 @@ const deployTidepoolVaultNarrow: DeployFunction = async function (hre: HardhatRu
   }
 
   // Same initialize() as the main vault: three HTS associations, share-token creation and four standing
-  // approvals (~5.14M gas estimated; see 00_deploy_tidepool_vault.ts).
+  // approvals (5,235,952 gas on testnet; see 00_deploy_tidepool_vault.ts).
   const initOverrides = {
     value: hre.ethers.parseEther(params.initializeHbar).toString(),
     gasLimit: 8_000_000,

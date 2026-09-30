@@ -1,4 +1,4 @@
-/* Tidepool "tide gauge" design system. Fonts: Geist (UI) and Geist Mono (numbers, ticks, code), via next/font. */
+/* Tidepool design system. Fonts: Inter (UI) and JetBrains Mono (numbers, ticks, code), via next/font. */
 @import "tailwindcss";
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
@@ -156,7 +156,7 @@
 .btn {
   @apply shadow-none;
 }
-/* Primary buttons everywhere (dashboard, 404): the neon-to-cyan gradient with a soft glow. */
+/* daisyUI primary buttons (404 page, block explorer): the site's flat teal button. */
 .btn.btn-primary {
   border: 0;
   background: var(--color-neon);
@@ -390,16 +390,6 @@
   }
   .tp-lift:hover {
     transform: none;
-  }
-}
-
-/* The landing page's event ticker. */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
   }
 }
 

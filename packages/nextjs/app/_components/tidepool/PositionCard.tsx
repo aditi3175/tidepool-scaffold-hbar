@@ -3,7 +3,7 @@ import { Card, ExternalLink, Skeleton, Stat, StatePill } from "~~/app/_component
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 import { formatPriceSig, formatToken } from "~~/utils/tidepool/format";
 import { hashscan } from "~~/utils/tidepool/hashscan";
-import { formatAmount, formatPrice, tickToPrice } from "~~/utils/tidepool/math";
+import { formatAmount, tickToPrice } from "~~/utils/tidepool/math";
 
 /** The vault's live state, from getPriceState() and positionSerial. */
 export const VaultStatusPill = ({ vault }: { vault: VaultState }) => {
@@ -15,24 +15,6 @@ export const VaultStatusPill = ({ vault }: { vault: VaultState }) => {
     <StatePill tone="success">In range</StatePill>
   ) : (
     <StatePill tone="warning">Out of range</StatePill>
-  );
-};
-
-/** The spot price as "45.8699 SAUCE per WHBAR". */
-export const SpotPrice = ({ vault }: { vault: VaultState }) => {
-  const { spotTick, decimals0, decimals1, symbol0, symbol1 } = vault;
-  if (spotTick === undefined || decimals0 === undefined || decimals1 === undefined) {
-    return <Skeleton className="h-5 w-32" />;
-  }
-  return (
-    <span className="text-sm">
-      <span className="text-muted">Spot </span>
-      <span className="tp-num font-medium text-fg">{formatPrice(tickToPrice(spotTick, decimals0, decimals1))}</span>
-      <span className="text-muted">
-        {" "}
-        {symbol1} per {symbol0}
-      </span>
-    </span>
   );
 };
 
