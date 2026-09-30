@@ -3,17 +3,33 @@
  * hardhat-verify 2.1.x still calls Sourcify's retired v1 routes, which now return 404.
  *
  * Usage: npx hardhat run scripts/verifySourcify.ts --network hederaTestnet
- *        (CONTRACT=TidepoolVault by default; reads the address from hardhat-deploy)
+ *        CONTRACT is the hardhat-deploy deployment name (default TidepoolVault). The artifact comes from the
+ *        deployment's own metadata, because one artifact can back several deployments: TidepoolVaultNarrow is a
+ *        deployment of the TidepoolVault artifact. ARTIFACT overrides it.
  */
 import hre from "hardhat";
 
 const SOURCIFY = "https://sourcify.dev/server";
 
+/** The contract a deployment was compiled from, e.g. "TidepoolVault" for the TidepoolVaultNarrow deployment. */
+function artifactName(metadata: string | undefined, deploymentName: string): string {
+  if (process.env.ARTIFACT) return process.env.ARTIFACT;
+  try {
+    const target = JSON.parse(metadata ?? "{}")?.settings?.compilationTarget as Record<string, string> | undefined;
+    const name = target && Object.values(target)[0];
+    if (name) return name;
+  } catch {
+    // No readable metadata: fall back to the deployment name.
+  }
+  return deploymentName;
+}
+
 async function main() {
-  const contractName = process.env.CONTRACT ?? "TidepoolVault";
-  const deployment = await hre.deployments.get(contractName);
+  const deploymentName = process.env.CONTRACT ?? "TidepoolVault";
+  const deployment = await hre.deployments.get(deploymentName);
   const chainId = (await hre.ethers.provider.getNetwork()).chainId.toString();
 
+  const contractName = artifactName(deployment.metadata, deploymentName);
   const artifact = await hre.artifacts.readArtifact(contractName);
   const fqn = `${artifact.sourceName}:${artifact.contractName}`;
   const buildInfo = await hre.artifacts.getBuildInfo(fqn);
