@@ -259,8 +259,8 @@ The rebalance above is [`0xf55864c1…0654`](https://hashscan.io/testnet/transac
 
 | Item | Reference |
 |---|---|
-| Main vault | [`0x3BfC02f414956E66fB3B722fC935500B946ac181`](https://hashscan.io/testnet/contract/0x3BfC02f414956E66fB3B722fC935500B946ac181) (0.0.10743961) · share token 0.0.10743964 · LP NFT 0.0.1310436 #392 |
-| Narrow demo vault | [`0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244`](https://hashscan.io/testnet/contract/0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244) (0.0.10744069) · share token 0.0.10744072 · LP NFT 0.0.1310436 #394 (#393 emptied by the rebalance) |
+| Main vault | [`0x3BfC02f414956E66fB3B722fC935500B946ac181`](https://hashscan.io/testnet/contract/0x3BfC02f414956E66fB3B722fC935500B946ac181) (0.0.10743961) · share token 0.0.10743964 · LP NFT 0.0.1310436 #392 · source verified on Sourcify (exact match) |
+| Narrow demo vault | [`0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244`](https://hashscan.io/testnet/contract/0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244) (0.0.10744069) · share token 0.0.10744072 · LP NFT 0.0.1310436 #394 (#393 emptied by the rebalance) · source verified on Sourcify (exact match) |
 | Pool, WHBAR/SAUCE 0.30% | [`0x37814eDc1ae88cf27c0C346648721FB04e7E0AE7`](https://hashscan.io/testnet/contract/0x37814eDc1ae88cf27c0C346648721FB04e7E0AE7) (0.0.2661057) |
 
 | Step | Transaction | Result |

@@ -746,6 +746,9 @@ SAUCE `approvalCap1` = 1,000,000,000,000,000 (its max supply).
 | **`rebalance`** | **`0xf55864c1fc7bdd54ae9597ecae2f8f70e534c0af4c0c7fb14da31065ceda0654`** | SUCCESS | **982,492** / 8,000,000 | **1.07091628** | TWAP tick −7899 → range [−7980, −7860); NFT #393 → #394; #393 liquidity 0, #394 liquidity 42,713,465,962 (read after); both NFTs held by the vault; `FeesCollected(571340, 0)` |
 | Restore price (swap back) | `0xac066a24749c6d70f9f278d2de2cf80a3c31d38cbf530f22aa551ef1a9d35a06` | SUCCESS | 203,646 | 0.22197414 | 5,459 SAUCE → 119.29406227 WHBAR; spot −7902 → −7794 |
 
+**Source verification:** both vaults are verified on Sourcify with an exact match (creation and runtime
+bytecode), so their source is viewable on HashScan's Contract tab for each vault address above.
+
 **Gas and cost findings:**
 - Standing approvals removed the dominant cost. Compound into an existing position: 563,157 gas / 0.61 HBAR, against
   4,802,810 gas with six per-call approvals in the previous version. First compound: 894,762 gas (previously
