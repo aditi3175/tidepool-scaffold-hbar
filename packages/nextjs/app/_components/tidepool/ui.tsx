@@ -53,7 +53,7 @@ export const Card = ({
       {(title || actions) && (
         <header className="mb-5 flex flex-wrap items-center justify-between gap-2">
           {title && (
-            <h2 className="m-0 font-mono text-[11px] font-medium uppercase leading-5 tracking-[0.14em] text-muted">
+            <h2 className="m-0 font-mono text-[11px] font-normal uppercase leading-5 tracking-[0.14em] text-faint">
               {title}
             </h2>
           )}

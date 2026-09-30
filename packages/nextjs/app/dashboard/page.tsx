@@ -9,7 +9,7 @@ import { KeeperCard } from "~~/app/_components/tidepool/KeeperPanel";
 import { VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
 import { VaultSelector } from "~~/app/_components/tidepool/VaultSelector";
 import { Card, Skeleton } from "~~/app/_components/tidepool/ui";
-import { Eyebrow, Tile, btn } from "~~/components/pulse";
+import { GradientText, Tile, btn } from "~~/components/pulse";
 import { Reveal } from "~~/components/pulse/Reveal";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 import { useSelectedVault } from "~~/hooks/tidepool/useSelectedVault";
@@ -61,23 +61,26 @@ const VaultDashboard = ({
 
   // Until the token symbols arrive the title is a placeholder of the same height, so nothing jumps; the pair then
   // rises into place.
-  const pair = vault.symbol0 && vault.symbol1 ? `${vault.symbol0} / ${vault.symbol1}` : undefined;
+  const pair = vault.symbol0 && vault.symbol1 ? `${vault.symbol0} / ${vault.symbol1}` : undefined;
   const topBar = (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
       <div>
-        <div className="tp-in">
-          <Eyebrow>Dashboard · {config.label}</Eyebrow>
+        {/* Breadcrumb, headline and subline in the same type as the Docs and How it works pages. */}
+        <div className="tp-in font-mono text-[11px] uppercase tracking-[0.14em] text-faint">
+          Dashboard <span className="text-white/20">/</span> <span className="text-neon">{config.label}</span>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="m-0 text-[clamp(36px,4.6vw,60px)] font-extrabold leading-none tracking-[-0.04em] text-fg">
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="m-0 text-balance text-[clamp(38px,5vw,64px)] font-extrabold leading-[1.02] tracking-[-0.045em] text-fg">
             {pair && !settling ? (
               <span className="tp-line">
-                <span style={{ "--d": 60 } as CSSProperties}>{pair}</span>
+                <span style={{ "--d": 60 } as CSSProperties}>
+                  {pair}, <GradientText>live.</GradientText>
+                </span>
               </span>
             ) : vault.notFound ? (
               config.label
             ) : (
-              <span className="tp-shimmer block h-[1.08em] w-[6.5em] max-w-[70vw] rounded-xl" aria-label="Loading" />
+              <span className="tp-shimmer block h-[1.02em] w-[7.5em] max-w-[70vw] rounded-xl" aria-label="Loading" />
             )}
           </h1>
           {ready && !settling && (
@@ -93,25 +96,23 @@ const VaultDashboard = ({
           )}
         </div>
         <p
-          className="tp-in mt-3 font-mono text-xs uppercase tracking-[0.12em] text-faint"
+          className="tp-in m-0 mt-4 max-w-2xl text-[17px] leading-relaxed text-muted"
           style={{ "--d": 120 } as CSSProperties}
         >
-          SaucerSwap V2 ·{" "}
+          One SaucerSwap V2 position in the{" "}
           {vault.fee !== undefined ? (
             `${(vault.fee / 10_000).toFixed(2)}%`
           ) : (
-            <Skeleton className="h-2.5 w-10 align-middle" />
+            <Skeleton className="h-3 w-10 align-middle" />
           )}{" "}
-          pool · Hedera testnet
+          pool, on Hedera testnet.
+          {config.demo && (
+            <>
+              {" "}
+              <span className="text-amber">Demo vault:</span> a deliberately narrow range, for rebalance tests.
+            </>
+          )}
         </p>
-        {config.demo && (
-          <p
-            className="tp-in mt-2 font-mono text-xs uppercase tracking-[0.1em] text-amber"
-            style={{ "--d": 180 } as CSSProperties}
-          >
-            Demo vault for rebalance tests
-          </p>
-        )}
       </div>
       <div className="tp-in" style={{ "--d": 160 } as CSSProperties}>
         <VaultSelector selected={config} onSelect={onSelect} />
