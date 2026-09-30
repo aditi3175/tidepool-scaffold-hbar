@@ -81,6 +81,9 @@ export const btn = {
     "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-neon px-6 text-[15px] font-semibold text-ink transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0",
   ghost:
     "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.04] px-6 text-[15px] font-semibold text-fg transition-[color,background-color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-neon/45 hover:bg-neon/[0.08] active:translate-y-0",
+  /** A full-width call to action inside a card (deposit, withdraw, keeper calls); greys out when disabled. */
+  action:
+    "inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-neon px-5 text-[15px] font-semibold text-ink transition-[filter,transform,background-color,color] duration-200 enabled:hover:-translate-y-0.5 enabled:hover:brightness-110 enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:border disabled:border-line disabled:bg-raised disabled:text-faint",
   small:
     "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/[0.05] px-4 text-sm font-medium text-fg transition-colors duration-150 hover:border-neon/45",
 };

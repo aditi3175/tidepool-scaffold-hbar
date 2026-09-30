@@ -5,6 +5,7 @@ import { usePublicClient, useWriteContract } from "wagmi";
 import { AssociateButton } from "~~/app/_components/tidepool/AssociateButton";
 import { TxRail } from "~~/app/_components/tidepool/TxRail";
 import { ExternalLink, TxFeedback } from "~~/app/_components/tidepool/ui";
+import { btn } from "~~/components/pulse";
 import { useScaffoldWriteContract, useTargetNetwork, useTransactor } from "~~/hooks/scaffold-hbar";
 import { useHtsAccount } from "~~/hooks/tidepool/useHtsAccount";
 import { useTxFeedback } from "~~/hooks/tidepool/useTxFeedback";
@@ -221,7 +222,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
     <div className="flex flex-col gap-4">
       {missing.length > 0 && gate.canTransact && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-          <p className="mb-2 text-base-content/80">Associate tokens first</p>
+          <p className="mb-2 text-fg/90">Associate tokens first</p>
           <div className="flex flex-wrap gap-2">
             {missing.map(entry => (
               <AssociateButton
@@ -240,11 +241,11 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
         {fields.map((field, i) => (
           <label
             key={field.symbol}
-            className={`flex flex-col gap-2 rounded-lg border bg-base-200 px-3 py-2 focus-within:border-primary/60 ${
-              field.over ? "border-error/60" : "border-base-300"
+            className={`flex flex-col gap-2 rounded-lg border bg-bg px-3 py-2 focus-within:border-primary/60 ${
+              field.over ? "border-error/60" : "border-line"
             }`}
           >
-            <span className="flex items-center justify-between text-xs text-base-content/55">
+            <span className="flex items-center justify-between text-xs text-muted">
               <span>You deposit</span>
               <span className="tp-num">
                 Wallet {field.account.balance === undefined ? "–" : formatAmount(field.account.balance, field.decimals)}
@@ -253,7 +254,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
             <span className="flex items-center gap-3">
               <input
                 id={`deposit-input-${i}`}
-                className="tp-num w-full min-w-0 bg-transparent text-xl text-base-content outline-none placeholder:text-base-content/30 disabled:opacity-50"
+                className="tp-num w-full min-w-0 bg-transparent text-xl text-fg outline-none placeholder:text-faint disabled:opacity-50"
                 inputMode="decimal"
                 placeholder="0.0"
                 aria-label={`${field.symbol} amount`}
@@ -261,25 +262,25 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
                 disabled={feedback.busy}
                 onChange={e => field.onChange(e.target.value.replace(",", "."))}
               />
-              <span className="shrink-0 rounded-md bg-base-300 px-2 py-1 text-sm font-medium">{field.symbol}</span>
+              <span className="shrink-0 rounded-md bg-line px-2 py-1 text-sm font-medium">{field.symbol}</span>
             </span>
           </label>
         ))}
       </div>
-      <p className="text-xs text-base-content/55">
+      <p className="text-xs text-muted">
         {firstDeposit ? "First deposit sets the ratio" : "Other amount fills at vault ratio"}
       </p>
 
-      <div className="rounded-lg bg-base-200 px-3 py-2 text-sm">
+      <div className="rounded-lg bg-bg px-3 py-2 text-sm">
         {amount0 + amount1 === 0n ? (
-          <span className="text-base-content/55">Enter an amount</span>
+          <span className="text-muted">Enter an amount</span>
         ) : exact.data ? (
           <div className="flex flex-col gap-1">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="text-base-content/60">You receive</span>
+              <span className="text-muted">You receive</span>
               <span className="tp-num font-medium">{formatAmount(exact.data.shares, SHARE_DECIMALS)} shares</span>
             </span>
-            <span className="tp-num text-xs text-base-content/55">
+            <span className="tp-num text-xs text-muted">
               Uses {formatAmount(exact.data.used0, decimals0)} {symbol0} + {formatAmount(exact.data.used1, decimals1)}{" "}
               {symbol1} · min {formatAmount(withSlippage(exact.data.shares), SHARE_DECIMALS)}
             </span>
@@ -289,10 +290,10 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
         ) : (
           <div className="flex flex-col gap-1">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="text-base-content/60">About</span>
+              <span className="text-muted">About</span>
               <span className="tp-num font-medium">{formatAmount(estimate, SHARE_DECIMALS)} shares</span>
             </span>
-            <span className="text-xs text-base-content/55">Estimate · 1% slippage</span>
+            <span className="text-xs text-muted">Estimate · 1% slippage</span>
           </div>
         )}
       </div>
@@ -324,24 +325,19 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
           ]}
         />
       )}
-      <button
-        type="button"
-        className="btn btn-primary h-11 w-full rounded-lg text-sm font-medium shadow-none"
-        disabled={Boolean(blockReason) || feedback.busy}
-        onClick={deposit}
-      >
+      <button type="button" className={btn.action} disabled={Boolean(blockReason) || feedback.busy} onClick={deposit}>
         {feedback.busy && <span className="loading loading-spinner loading-sm" />}
         {needs0 || needs1 ? "Approve & deposit" : "Deposit"}
       </button>
-      {blockReason && !feedback.busy && <p className="-mt-2 text-center text-xs text-base-content/55">{blockReason}</p>}
+      {blockReason && !feedback.busy && <p className="-mt-2 text-center text-xs text-muted">{blockReason}</p>}
       <TxFeedback state={feedback.state} />
 
-      <div className="flex flex-col gap-2 border-t border-base-300 pt-4 text-xs text-base-content/60">
+      <div className="flex flex-col gap-2 border-t border-line pt-4 text-xs text-muted">
         {whbarInPool && (
           <details id="wrap-hbar" className="tp-details group">
-            <summary className="flex select-none items-center justify-between hover:text-base-content/80">
+            <summary className="flex select-none items-center justify-between hover:text-fg">
               Wrap HBAR to WHBAR
-              <span className="tp-chevron text-base-content/50" aria-hidden>
+              <span className="tp-chevron text-muted" aria-hidden>
                 ▾
               </span>
             </summary>
@@ -350,7 +346,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
                 <span>HBAR to wrap</span>
                 <input
                   id="wrap-input"
-                  className="input input-sm tp-num w-full border-base-300 bg-base-200"
+                  className="tp-num h-9 w-full rounded-lg border border-line bg-bg px-3 text-sm text-fg outline-none placeholder:text-faint focus:border-neon/50"
                   inputMode="decimal"
                   placeholder="0.0"
                   value={wrapInput}
@@ -360,7 +356,7 @@ export const DepositCard = ({ vault, user }: { vault: VaultState; user: UserPosi
               </label>
               <button
                 type="button"
-                className="btn btn-sm border-base-300 bg-base-300 shadow-none"
+                className={btn.small}
                 disabled={!gate.canTransact || wrapWeibar === 0n || feedback.busy}
                 onClick={wrap}
               >

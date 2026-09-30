@@ -27,7 +27,7 @@ export const PageHero = ({
         <Eyebrow>{eyebrow}</Eyebrow>
       </div>
       <h1
-        className={`m-0 mt-4 max-w-4xl font-bold leading-[1.02] tracking-[-0.04em] text-fg ${
+        className={`m-0 mt-4 max-w-4xl font-extrabold leading-[0.98] tracking-[-0.045em] text-fg ${
           compact ? "text-[clamp(32px,4vw,52px)]" : "text-[clamp(40px,5vw,72px)]"
         }`}
       >

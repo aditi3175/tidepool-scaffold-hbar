@@ -1,4 +1,5 @@
 import { Card, StatusBadge, TxFeedback } from "~~/app/_components/tidepool/ui";
+import { btn } from "~~/components/pulse";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-hbar";
 import { type ActionStatus, useKeeperQuotes, useKeeperStatus } from "~~/hooks/tidepool/useKeeperStatus";
 import { useTxFeedback } from "~~/hooks/tidepool/useTxFeedback";
@@ -75,7 +76,7 @@ const KeeperAction = ({
       </p>
       <button
         type="button"
-        className="btn btn-primary h-10 w-full rounded-lg text-sm font-medium shadow-none"
+        className={btn.action}
         disabled={!status.ready || Boolean(disabledReason) || feedback.busy}
         onClick={onRun}
       >

@@ -9,12 +9,13 @@ import { KeeperCard } from "~~/app/_components/tidepool/KeeperPanel";
 import { VaultStatusPill } from "~~/app/_components/tidepool/PositionCard";
 import { VaultSelector } from "~~/app/_components/tidepool/VaultSelector";
 import { Card, Skeleton } from "~~/app/_components/tidepool/ui";
-import { Eyebrow, Tile } from "~~/components/pulse";
+import { Eyebrow, Tile, btn } from "~~/components/pulse";
 import { Reveal } from "~~/components/pulse/Reveal";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 import { useSelectedVault } from "~~/hooks/tidepool/useSelectedVault";
 import { useUserPosition } from "~~/hooks/tidepool/useUserPosition";
 import { useVault } from "~~/hooks/tidepool/useVault";
+import { useVaultActivity } from "~~/hooks/tidepool/useVaultActivity";
 import type { TidepoolVaultConfig, TidepoolVaultId } from "~~/utils/tidepool/vaults";
 
 const Dashboard: NextPage = () => {
@@ -40,6 +41,8 @@ const VaultDashboard = ({
   const { targetNetwork } = useTargetNetwork();
   const vault = useVault(config);
   const user = useUserPosition(vault);
+  // Start the mirror-node history with the chain reads (the stats and activity cards share this query).
+  useVaultActivity(vault.address, vault.abi);
   const ready = !vault.isLoading && !vault.notFound;
 
   // Keep the placeholder until the first values are in (tokens, holdings and a price, or an error to show), so the
@@ -80,6 +83,12 @@ const VaultDashboard = ({
           {ready && !settling && (
             <span className="tp-in" style={{ "--d": 300 } as CSSProperties}>
               <VaultStatusPill vault={vault} />
+            </span>
+          )}
+          {vault.cached && (
+            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted motion-safe:animate-pulse" aria-hidden />
+              Updating
             </span>
           )}
         </div>
@@ -147,7 +156,7 @@ const VaultDashboard = ({
           className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/10 px-4 py-2 text-sm"
         >
           <span>Could not read the vault: {vault.readError}</span>
-          <button type="button" className="btn btn-xs rounded-lg" onClick={() => void vault.refetch()}>
+          <button type="button" className={btn.small} onClick={() => void vault.refetch()}>
             Retry
           </button>
         </div>

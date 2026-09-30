@@ -1,8 +1,11 @@
+import { useEffect } from "react";
 import { zeroAddress } from "viem";
 import { useBlock, useReadContract, useReadContracts } from "wagmi";
 import { useDeployedContractInfo, useTargetNetwork } from "~~/hooks/scaffold-hbar";
+import { contracts } from "~~/utils/scaffold-hbar/contract";
 import { HTS_TOKEN_ABI, POLL_INTERVAL_MS, POSITION_MANAGER_ABI } from "~~/utils/tidepool/constants";
 import { friendlyError } from "~~/utils/tidepool/errors";
+import { useSnapshot, writeSnapshot } from "~~/utils/tidepool/snapshot";
 import { type TidepoolVaultConfig, VAULT_ABI } from "~~/utils/tidepool/vaults";
 
 type Address = `0x${string}`;
@@ -12,12 +15,21 @@ type Address = `0x${string}`;
  * - immutable settings (read once per vault),
  * - live vault state, the vault's idle balances, its SaucerSwap position and the latest block (polled),
  * - token metadata (read once).
- * viem's Hedera chains define no multicall3 contract, so wagmi sends each read as its own eth_call.
+ * viem's Hedera chains define no multicall3 contract, so each read is its own eth_call; the transport sends the calls
+ * of one render together as a JSON-RPC batch (services/web3/wagmiConfig.tsx).
+ *
+ * The reads start from the address in the generated deployedContracts.ts, alongside the deployment (bytecode) check
+ * rather than after it. A return visit shows this browser's last values (utils/tidepool/snapshot.ts) as placeholder
+ * data until the fresh reads land; `cached` is true meanwhile, and the keeper checks wait for fresh data.
  */
 export function useVault(config: TidepoolVaultConfig) {
   const { targetNetwork } = useTargetNetwork();
   const { data: info, isLoading: infoLoading } = useDeployedContractInfo({ contractName: config.contractName });
-  const address = info?.address as Address | undefined;
+  const listed = contracts?.[targetNetwork.id]?.[config.contractName]?.address as Address | undefined;
+  // Read from the listed address straight away; stop once the bytecode check says nothing is deployed there.
+  const address = infoLoading ? listed : (info?.address as Address | undefined);
+  const snapshotKey = `${targetNetwork.id}.${config.contractName}`;
+  const snap = useSnapshot<Snapshot>(snapshotKey);
   const base = address ? ({ address, abi: VAULT_ABI } as const) : undefined;
 
   const settings = useReadContracts({
@@ -38,7 +50,7 @@ export function useVault(config: TidepoolVaultConfig) {
           { ...base, functionName: "positionNft" },
         ]
       : [],
-    query: { enabled: Boolean(base), staleTime: Infinity },
+    query: { enabled: Boolean(base), staleTime: Infinity, placeholderData: snap?.settings as never },
   });
   const s = settings.data;
   const token0 = s?.[0]?.result as Address | undefined;
@@ -59,7 +71,7 @@ export function useVault(config: TidepoolVaultConfig) {
           { ...base, functionName: "lastRebalance" },
         ]
       : [],
-    query: { enabled: Boolean(base), refetchInterval: POLL_INTERVAL_MS },
+    query: { enabled: Boolean(base), refetchInterval: POLL_INTERVAL_MS, placeholderData: snap?.live as never },
   });
   const l = live.data;
   const positionSerial = l?.[3]?.result as bigint | undefined;
@@ -74,7 +86,11 @@ export function useVault(config: TidepoolVaultConfig) {
             { address: token1, abi: HTS_TOKEN_ABI, functionName: "balanceOf", args: [address] },
           ]
         : [],
-    query: { enabled: Boolean(address && token0 && token1), refetchInterval: POLL_INTERVAL_MS },
+    query: {
+      enabled: Boolean(address && token0 && token1),
+      refetchInterval: POLL_INTERVAL_MS,
+      placeholderData: snap?.holdings as never,
+    },
   });
 
   // The vault's SaucerSwap position, straight from the position manager.
@@ -83,7 +99,11 @@ export function useVault(config: TidepoolVaultConfig) {
     abi: POSITION_MANAGER_ABI,
     functionName: "positions",
     args: positionSerial ? [positionSerial] : undefined,
-    query: { enabled: Boolean(positionManager && positionSerial), refetchInterval: POLL_INTERVAL_MS },
+    query: {
+      enabled: Boolean(positionManager && positionSerial),
+      refetchInterval: POLL_INTERVAL_MS,
+      placeholderData: snap?.position as never,
+    },
   });
   const position = positionRead.data;
 
@@ -101,7 +121,7 @@ export function useVault(config: TidepoolVaultConfig) {
             { address: token1, abi: HTS_TOKEN_ABI, functionName: "decimals" },
           ]
         : [],
-    query: { enabled: Boolean(token0 && token1), staleTime: Infinity },
+    query: { enabled: Boolean(token0 && token1), staleTime: Infinity, placeholderData: snap?.meta as never },
   });
 
   const shareSymbol = useReadContract({
@@ -121,6 +141,35 @@ export function useVault(config: TidepoolVaultConfig) {
   const priceState = l?.[6]?.result as readonly [number, number, boolean] | undefined;
   const priceFailure = l?.[6]?.status === "failure" ? friendlyError(l[6].error, VAULT_ABI) : undefined;
 
+  // Save the latest fresh reads for the next visit (never placeholder data).
+  const fresh =
+    live.data !== undefined &&
+    !live.isPlaceholderData &&
+    settings.data !== undefined &&
+    !settings.isPlaceholderData &&
+    meta.data !== undefined &&
+    !meta.isPlaceholderData;
+  useEffect(() => {
+    if (!fresh) return;
+    writeSnapshot(snapshotKey, {
+      settings: settings.data,
+      live: live.data,
+      meta: meta.data,
+      holdings: holdings.isPlaceholderData ? undefined : holdings.data,
+      position: positionRead.isPlaceholderData ? undefined : positionRead.data,
+    } satisfies Snapshot);
+  }, [
+    fresh,
+    snapshotKey,
+    settings.data,
+    live.data,
+    meta.data,
+    holdings.data,
+    holdings.isPlaceholderData,
+    positionRead.data,
+    positionRead.isPlaceholderData,
+  ]);
+
   const refetch = async () => {
     await Promise.all([live.refetch(), holdings.refetch(), positionRead.refetch(), block.refetch()]);
   };
@@ -129,7 +178,9 @@ export function useVault(config: TidepoolVaultConfig) {
     config,
     address,
     abi: VAULT_ABI,
-    isLoading: infoLoading || (Boolean(address) && (live.isLoading || settings.isLoading)),
+    isLoading: address ? live.isLoading || settings.isLoading : infoLoading,
+    /** Showing this browser's last values while fresh reads are in flight. */
+    cached: live.isPlaceholderData || settings.isPlaceholderData || meta.isPlaceholderData,
     /** No contract code at the configured address on the target network. */
     notFound: !infoLoading && !address,
     /** The core reads failed (RPC or network trouble), as opposed to a contract revert. */
@@ -194,3 +245,12 @@ export function useVault(config: TidepoolVaultConfig) {
 }
 
 export type VaultState = ReturnType<typeof useVault>;
+
+/** What useVault keeps in the browser between visits: the raw read results. */
+type Snapshot = {
+  settings?: unknown;
+  live?: unknown;
+  meta?: unknown;
+  holdings?: unknown;
+  position?: unknown;
+};

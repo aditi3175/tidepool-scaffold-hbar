@@ -14,16 +14,16 @@ type RailStep = {
 type Phase = "todo" | "done" | "current" | "failed";
 
 const BAR: Record<Phase, string> = {
-  todo: "bg-base-300",
+  todo: "bg-line",
   done: "bg-success",
   current: "bg-primary",
   failed: "bg-error",
 };
 
 const TEXT: Record<Phase, string> = {
-  todo: "text-base-content/50",
+  todo: "text-muted",
   done: "text-success",
-  current: "text-base-content",
+  current: "text-fg",
   failed: "text-error",
 };
 

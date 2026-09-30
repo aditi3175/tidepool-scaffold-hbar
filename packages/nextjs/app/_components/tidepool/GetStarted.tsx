@@ -60,7 +60,11 @@ export const GetStarted = ({ vault, user }: { vault: VaultState; user: UserPosit
       title: "Get WHBAR",
       done: (whbar.balance ?? 0n) > 0n,
       action: (
-        <button type="button" className="btn btn-primary btn-sm rounded-lg" onClick={() => openDepositPanel("wrap")}>
+        <button
+          type="button"
+          className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-neon px-4 text-sm font-semibold text-ink transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110"
+          onClick={() => openDepositPanel("wrap")}
+        >
           Wrap HBAR
         </button>
       ),
@@ -78,7 +82,11 @@ export const GetStarted = ({ vault, user }: { vault: VaultState; user: UserPosit
       title: "Deposit",
       done: (user.shares ?? 0n) > 0n,
       action: (
-        <button type="button" className="btn btn-primary btn-sm rounded-lg" onClick={() => openDepositPanel("deposit")}>
+        <button
+          type="button"
+          className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-neon px-4 text-sm font-semibold text-ink transition-[filter,transform] duration-200 hover:-translate-y-0.5 hover:brightness-110"
+          onClick={() => openDepositPanel("deposit")}
+        >
           Enter amounts
         </button>
       ),

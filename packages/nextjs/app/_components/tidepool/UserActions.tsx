@@ -5,6 +5,7 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { DepositCard } from "~~/app/_components/tidepool/DepositCard";
 import { WithdrawCard } from "~~/app/_components/tidepool/WithdrawCard";
 import { Card } from "~~/app/_components/tidepool/ui";
+import { btn } from "~~/components/pulse";
 import type { UserPosition } from "~~/hooks/tidepool/useUserPosition";
 import type { VaultState } from "~~/hooks/tidepool/useVault";
 
@@ -56,11 +57,7 @@ export const UserActions = ({
       <div id="deposit-panel" className={className}>
         <Card title="Deposit or withdraw" className="flex-1">
           <p className="text-sm text-muted">Connect a wallet to deposit tokens for shares or withdraw them.</p>
-          <button
-            type="button"
-            className="btn btn-primary mt-4 h-10 min-h-10 w-full rounded-lg text-sm font-medium"
-            onClick={openConnectModal}
-          >
+          <button type="button" className={`mt-4 ${btn.action}`} onClick={openConnectModal}>
             Connect wallet
           </button>
         </Card>

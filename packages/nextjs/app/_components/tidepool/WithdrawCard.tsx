@@ -4,6 +4,7 @@ import { formatUnits } from "viem";
 import { usePublicClient, useWriteContract } from "wagmi";
 import { TxRail } from "~~/app/_components/tidepool/TxRail";
 import { TokenAmount, TxFeedback } from "~~/app/_components/tidepool/ui";
+import { btn } from "~~/components/pulse";
 import { useScaffoldWriteContract, useTargetNetwork, useTransactor } from "~~/hooks/scaffold-hbar";
 import { useTxFeedback } from "~~/hooks/tidepool/useTxFeedback";
 import type { UserPosition } from "~~/hooks/tidepool/useUserPosition";
@@ -116,8 +117,8 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2 focus-within:border-primary/60">
-        <span className="flex items-center justify-between text-xs text-base-content/55">
+      <label className="flex flex-col gap-2 rounded-lg border border-line bg-bg px-3 py-2 focus-within:border-primary/60">
+        <span className="flex items-center justify-between text-xs text-muted">
           <span>Shares to burn</span>
           <span className="tp-num">
             Balance {balance === undefined ? "–" : formatAmount(balance, SHARE_DECIMALS)}
@@ -126,7 +127,7 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
         </span>
         <span className="flex items-center gap-3">
           <input
-            className="tp-num w-full min-w-0 bg-transparent text-xl text-base-content outline-none placeholder:text-base-content/30 disabled:opacity-50"
+            className="tp-num w-full min-w-0 bg-transparent text-xl text-fg outline-none placeholder:text-faint disabled:opacity-50"
             inputMode="decimal"
             placeholder="0.0"
             aria-label="Shares to burn"
@@ -136,7 +137,7 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
           />
           <button
             type="button"
-            className="shrink-0 rounded-md bg-base-300 px-2 py-1 text-xs font-medium text-primary disabled:opacity-40"
+            className="shrink-0 rounded-md bg-line px-2 py-1 text-xs font-medium text-primary disabled:opacity-40"
             disabled={!balance || feedback.busy}
             onClick={() => setInput(formatUnits(balance ?? 0n, SHARE_DECIMALS))}
           >
@@ -145,28 +146,28 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
         </span>
       </label>
 
-      <div className="rounded-lg bg-base-200 px-3 py-2 text-sm">
+      <div className="rounded-lg bg-bg px-3 py-2 text-sm">
         {amount === 0n ? (
-          <span className="text-base-content/55">Enter shares</span>
+          <span className="text-muted">Enter shares</span>
         ) : exact.data ? (
           <div className="flex flex-col gap-1.5">
-            <span className="text-base-content/60">You receive</span>
+            <span className="text-muted">You receive</span>
             <span className="flex flex-col gap-0.5 font-medium">
               <TokenAmount amount={formatAmount(exact.data.out0, decimals0)} symbol={symbol0} />
               <TokenAmount amount={formatAmount(exact.data.out1, decimals1)} symbol={symbol1} />
             </span>
-            <span className="text-xs text-base-content/55">Min 1% below</span>
+            <span className="text-xs text-muted">Min 1% below</span>
           </div>
         ) : exact.error ? (
           <span className="text-error">{friendlyError(exact.error, vault.abi).message}</span>
         ) : (
           <div className="flex flex-col gap-1.5">
-            <span className="text-base-content/60">About</span>
+            <span className="text-muted">About</span>
             <span className="flex flex-col gap-0.5 font-medium">
               <TokenAmount amount={formatAmount(est0, decimals0)} symbol={symbol0} />
               <TokenAmount amount={formatAmount(est1, decimals1)} symbol={symbol1} />
             </span>
-            <span className="text-xs text-base-content/55">Estimate</span>
+            <span className="text-xs text-muted">Estimate</span>
           </div>
         )}
       </div>
@@ -181,18 +182,13 @@ export const WithdrawCard = ({ vault, user }: { vault: VaultState; user: UserPos
           ]}
         />
       )}
-      <button
-        type="button"
-        className="btn btn-primary h-11 w-full rounded-lg text-sm font-medium shadow-none"
-        disabled={Boolean(blockReason) || feedback.busy}
-        onClick={withdraw}
-      >
+      <button type="button" className={btn.action} disabled={Boolean(blockReason) || feedback.busy} onClick={withdraw}>
         {feedback.busy && <span className="loading loading-spinner loading-sm" />}
         {needsApproval && amount > 0n ? "Approve & withdraw" : "Withdraw"}
       </button>
-      {blockReason && !feedback.busy && <p className="-mt-2 text-center text-xs text-base-content/55">{blockReason}</p>}
+      {blockReason && !feedback.busy && <p className="-mt-2 text-center text-xs text-muted">{blockReason}</p>}
       <TxFeedback state={feedback.state} />
-      <p className="border-t border-base-300 pt-4 text-xs text-base-content/55">
+      <p className="border-t border-line pt-4 text-xs text-muted">
         Always available · paid in {symbol0} and {symbol1}
       </p>
     </div>

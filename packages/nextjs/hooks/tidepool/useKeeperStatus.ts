@@ -106,6 +106,11 @@ export function useKeeperStatus(vault: VaultState, quotes: KeeperQuotes) {
   const chainNow = useChainNow(vault.chainTime, vault.chainTimeReadAt);
   const { symbol0, symbol1, decimals0, decimals1 } = vault;
 
+  // Last-visit values are on screen until the first fresh reads land; never enable a keeper call on them.
+  const liveData: Check[] = vault.cached
+    ? [{ label: "Live data", status: "loading", detail: "Refreshing from Hedera testnet." }]
+    : [];
+
   const initialized: Check =
     vault.initialized === undefined
       ? { label: "Vault initialized", status: "loading", detail: "" }
@@ -190,7 +195,7 @@ export function useKeeperStatus(vault: VaultState, quotes: KeeperQuotes) {
     };
   }
   // Same order as the contract: price checks, then the range (OutOfRange), then the tokens to add.
-  const compoundChecks: Check[] = [initialized, priceGuard];
+  const compoundChecks: Check[] = [...liveData, initialized, priceGuard];
   if (
     vault.hasPosition &&
     vault.twapTick !== undefined &&
@@ -258,7 +263,15 @@ export function useKeeperStatus(vault: VaultState, quotes: KeeperQuotes) {
   }
 
   // Same order as the contract: position, cooldown, then the price checks.
-  const rebalanceChecks: Check[] = [initialized, positionCheck, cooldownCheck, priceGuard, rangeCheck, feeCheck];
+  const rebalanceChecks: Check[] = [
+    ...liveData,
+    initialized,
+    positionCheck,
+    cooldownCheck,
+    priceGuard,
+    rangeCheck,
+    feeCheck,
+  ];
 
   return {
     compound: summarize(compoundChecks),

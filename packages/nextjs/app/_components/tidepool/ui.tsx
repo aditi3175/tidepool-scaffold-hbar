@@ -17,7 +17,7 @@ export const ExternalLink = ({
   className?: string;
 }) => (
   <a
-    className={`inline-flex items-center gap-0.5 hover:text-base-content hover:underline ${className}`}
+    className={`inline-flex items-center gap-0.5 hover:text-fg hover:underline ${className}`}
     href={href}
     target="_blank"
     rel="noreferrer"
@@ -90,7 +90,7 @@ export const TokenAmount = ({
 }) => (
   <span className={`inline-flex items-baseline gap-1 tabular-nums ${className}`}>
     <span>{amount}</span>
-    {symbol && <span className="text-[0.75em] font-normal text-base-content/55">{symbol}</span>}
+    {symbol && <span className="text-[0.75em] font-normal text-muted">{symbol}</span>}
   </span>
 );
 
@@ -104,7 +104,7 @@ const TONES: Record<Tone, { text: string; dot: string; ring: string }> = {
   success: { text: "text-success", dot: "bg-success", ring: "border-success/30 bg-success/10" },
   warning: { text: "text-warning", dot: "bg-warning", ring: "border-warning/30 bg-warning/10" },
   error: { text: "text-error", dot: "bg-error", ring: "border-error/30 bg-error/10" },
-  neutral: { text: "text-base-content/65", dot: "bg-base-content/40", ring: "border-base-300 bg-base-200" },
+  neutral: { text: "text-muted", dot: "bg-faint", ring: "border-line bg-bg" },
   accent: { text: "text-primary", dot: "bg-primary", ring: "border-primary/30 bg-primary/10" },
 };
 
@@ -151,9 +151,9 @@ export const TxFeedback = ({ state }: { state: TxFeedbackState }) => {
       return null;
     case "running":
       return (
-        <div className="flex items-center gap-2 rounded-lg bg-base-200 px-3 py-2 text-sm" role="status">
+        <div className="flex items-center gap-2 rounded-lg bg-bg px-3 py-2 text-sm" role="status">
           <span className="loading loading-spinner loading-xs text-primary" />
-          <span className="text-base-content/80">{state.step}</span>
+          <span className="text-fg/90">{state.step}</span>
         </div>
       );
     case "success":
@@ -164,7 +164,7 @@ export const TxFeedback = ({ state }: { state: TxFeedbackState }) => {
         >
           <span className="text-success">{state.label} confirmed.</span>
           {state.hash && (
-            <ExternalLink className="text-xs text-base-content/65" href={hashscan.tx(state.hash)}>
+            <ExternalLink className="text-xs text-muted" href={hashscan.tx(state.hash)}>
               HashScan
             </ExternalLink>
           )}
@@ -172,16 +172,16 @@ export const TxFeedback = ({ state }: { state: TxFeedbackState }) => {
       );
     case "cancelled":
       return (
-        <div className="rounded-lg bg-base-200 px-3 py-2 text-sm text-base-content/65" role="status">
+        <div className="rounded-lg bg-bg px-3 py-2 text-sm text-muted" role="status">
           Cancelled in the wallet. Nothing was sent.
         </div>
       );
     case "failed":
       return (
         <div className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm" role="alert">
-          <p className="text-base-content/85">{state.message}</p>
+          <p className="text-fg/90">{state.message}</p>
           {state.hash && (
-            <ExternalLink className="mt-1 text-xs text-base-content/65" href={hashscan.tx(state.hash)}>
+            <ExternalLink className="mt-1 text-xs text-muted" href={hashscan.tx(state.hash)}>
               HashScan
             </ExternalLink>
           )}
