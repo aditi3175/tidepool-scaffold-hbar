@@ -15,18 +15,36 @@ import { entityIdFromAddress, formatAmount, shortAddress, tickToPrice } from "~~
 export const VaultHoldingsCard = ({ vault }: { vault: VaultState }) => {
   const { symbol0, symbol1, decimals0, decimals1 } = vault;
   const ready = decimals0 !== undefined && decimals1 !== undefined && vault.total0 !== undefined;
+  // Out of range, the LP position is entirely one token (the spot price decides which); anything else is idle.
+  const { spotTick, tickLower, tickUpper } = vault;
+  const side =
+    vault.hasPosition && spotTick !== undefined && tickLower !== undefined && tickUpper !== undefined
+      ? spotTick < tickLower
+        ? { where: "below", token: symbol0 }
+        : spotTick >= tickUpper
+          ? { where: "above", token: symbol1 }
+          : undefined
+      : undefined;
 
   return (
     <Card title="Vault holdings">
       {ready ? (
-        <div className="flex flex-col gap-1 text-xl font-medium">
-          <span title={formatFull(vault.total0, decimals0)}>
-            <TokenAmount amount={formatTokenUnits(vault.total0, decimals0)} symbol={symbol0} />
-          </span>
-          <span title={formatFull(vault.total1, decimals1)}>
-            <TokenAmount amount={formatTokenUnits(vault.total1, decimals1)} symbol={symbol1} />
-          </span>
-        </div>
+        <>
+          <div className="flex flex-col gap-1 text-xl font-medium">
+            <span title={formatFull(vault.total0, decimals0)}>
+              <TokenAmount amount={formatTokenUnits(vault.total0, decimals0)} symbol={symbol0} />
+            </span>
+            <span title={formatFull(vault.total1, decimals1)}>
+              <TokenAmount amount={formatTokenUnits(vault.total1, decimals1)} symbol={symbol1} />
+            </span>
+          </div>
+          {side && side.token && (
+            <p className="m-0 mt-3 text-sm leading-relaxed text-muted">
+              The price is {side.where} the range, so the position holds only {side.token} until it is re-centred. The
+              rest sits idle in the vault.
+            </p>
+          )}
+        </>
       ) : vault.readError ? (
         <p className="text-sm text-muted">Holdings could not be read. Retrying.</p>
       ) : (

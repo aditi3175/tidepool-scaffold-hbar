@@ -53,6 +53,23 @@ export const RangeGraph = ({
     const flagW = 118;
     const flagX = Math.max(0, Math.min(width - flagW, xs - flagW / 2));
     const plateauTop = 82;
+
+    // Labels: estimated widths at 12px; a label is dropped or shortened rather than allowed to overlap another.
+    const textW = (t: string, size = 12) => t.length * size * 0.56;
+    const span = x1 - x0;
+    const rangeText = earning
+      ? span > 190
+        ? "In range (earning fees)"
+        : "In range"
+      : span > 250
+        ? "The range (earns while price is inside)"
+        : "Range";
+    const rangeHalf = textW(rangeText) / 2;
+    const rangeMid = (x0 + x1) / 2;
+    const oorFits = (centre: number, room: number) =>
+      room > textW("Out of range") + 16 && Math.abs(centre - rangeMid) > rangeHalf + textW("Out of range") / 2 + 12;
+    // Lower and Upper side by side need room for both numbers; otherwise one centred "low – high" figure.
+    const handleLabelsFit = span > (textW(formatPriceSig(lower), 19) + textW(formatPriceSig(upper), 19)) / 2 + 24;
     const soft = Math.max(24, (x1 - x0) * 0.12);
     const plateau = `M ${x0 - soft * 2} ${barY - 10} C ${x0 - soft} ${barY - 10}, ${x0 - soft * 0.4} ${plateauTop}, ${x0 + soft} ${plateauTop} L ${x1 - soft} ${plateauTop} C ${x1 + soft * 0.4} ${plateauTop}, ${x1 + soft} ${barY - 10}, ${x1 + soft * 2} ${barY - 10} Z`;
 
@@ -94,12 +111,12 @@ export const RangeGraph = ({
         {/* Out-of-range zones */}
         <rect x={0} y={barY - barH / 2} width={x0} height={barH} rx={barH / 2} fill={`url(#lz${uid})`} />
         <rect x={x1} y={barY - barH / 2} width={width - x1} height={barH} rx={barH / 2} fill={`url(#rz${uid})`} />
-        {x0 > 110 && (
+        {oorFits(x0 / 2, x0) && (
           <text x={x0 / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
             Out of range
           </text>
         )}
-        {width - x1 > 110 && (
+        {oorFits((x1 + width) / 2, width - x1) && (
           <text x={(x1 + width) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={RED} fillOpacity={0.9}>
             Out of range
           </text>
@@ -116,8 +133,8 @@ export const RangeGraph = ({
           filter={`url(#gl${uid})`}
         />
         <rect x={x0} y={barY - barH / 2} width={x1 - x0} height={barH} rx={3} fill={`url(#in${uid})`} />
-        <text x={(x0 + x1) / 2} y={barY + 32} textAnchor="middle" fontSize={12} fill={earning ? TEAL : MUTED}>
-          {earning ? "In range (earning fees)" : "The range (earns while price is inside)"}
+        <text x={rangeMid} y={barY + 32} textAnchor="middle" fontSize={12} fill={earning ? TEAL : MUTED}>
+          {rangeText}
         </text>
 
         {/* Handles and their prices */}
@@ -127,11 +144,39 @@ export const RangeGraph = ({
         ].map(h => (
           <g key={h.label}>
             <rect x={h.at - 5} y={barY - 17} width={10} height={34} rx={5} fill={FG} />
-            <text x={h.at} y={barY + 58} textAnchor="middle" fontSize={12} fill={MUTED}>
-              {h.label}
+            {handleLabelsFit && (
+              <>
+                <text x={h.at} y={barY + 58} textAnchor="middle" fontSize={12} fill={MUTED}>
+                  {h.label}
+                </text>
+                <text
+                  x={h.at}
+                  y={barY + 80}
+                  textAnchor="middle"
+                  fontSize={19}
+                  fontWeight={700}
+                  fill={FG}
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {formatPriceSig(h.value)}
+                </text>
+              </>
+            )}
+          </g>
+        ))}
+        {!handleLabelsFit && (
+          <g>
+            <text
+              x={Math.max(80, Math.min(width - 80, rangeMid))}
+              y={barY + 58}
+              textAnchor="middle"
+              fontSize={12}
+              fill={MUTED}
+            >
+              Lower – Upper
             </text>
             <text
-              x={h.at}
+              x={Math.max(80, Math.min(width - 80, rangeMid))}
               y={barY + 80}
               textAnchor="middle"
               fontSize={19}
@@ -139,10 +184,10 @@ export const RangeGraph = ({
               fill={FG}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {formatPriceSig(h.value)}
+              {formatPriceSig(lower)} – {formatPriceSig(upper)}
             </text>
           </g>
-        ))}
+        )}
 
         {/* Current price */}
         <line x1={xs} x2={xs} y1={62} y2={barY} stroke={FG} strokeOpacity={0.8} strokeDasharray="3 4" />
