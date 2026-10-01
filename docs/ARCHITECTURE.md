@@ -719,7 +719,7 @@ mirror node's transaction IDs carry the relay's operator account as payer). Pool
 fee, 0.64079562 HBAR (exactly `tinycentsToTinybars(fee) + 1`), and the vault refunds the 1 HBAR headroom sent with it.
 
 **Main vault** `TidepoolVault`: 0.0.10743961 / `0x3BfC02f414956E66fB3B722fC935500B946ac181`; share token
-0.0.10743964; LP NFT 0.0.1310436 #392. Standing allowances read on chain: WHBAR `approvalCap0` = `type(int64).max`,
+0.0.10743964; LP NFT 0.0.1310436 #392, #396 since the 1 Oct 2026 rebalance. Standing allowances read on chain: WHBAR `approvalCap0` = `type(int64).max`,
 SAUCE `approvalCap1` = 1,000,000,000,000,000 (its max supply).
 
 | Step | Tx hash | Result | Gas used / limit | Fee (HBAR) | Notes |

@@ -253,14 +253,16 @@ The rebalance above is [`0xf55864c1…0654`](https://hashscan.io/testnet/transac
 | Main: deposit from the dashboard | [`0xbcfc48e9…d82f`](https://hashscan.io/testnet/transaction/0xbcfc48e9cee0edcb1610f430ce150e85152c9677f5a77811375cbc4bf18fd82f) | 0.99988942 WHBAR + 38.245393 SAUCE in; 1.00966568 shares out |
 | Main: withdraw from the dashboard | [`0xb8132ee0…f7b4`](https://hashscan.io/testnet/transaction/0xb8132ee09d555da31bab3a66daf33e305269eda8b808a6e2b2de8b78cee6f7b4) | 0.001 shares burned; 0.0009903 WHBAR + 0.037879 SAUCE out |
 | Narrow: rebalance (#393 → #394) | [`0xf55864c1…0654`](https://hashscan.io/testnet/transaction/0xf55864c1fc7bdd54ae9597ecae2f8f70e534c0af4c0c7fb14da31065ceda0654) | TWAP tick −7899: [−7860, −7740) → [−7980, −7860) |
+| Main: rebalance, sent from the dashboard (#392 → #396) | [`0xbf698e4c…ccb6`](https://hashscan.io/testnet/transaction/0xbf698e4c105e67d5cdefcb7adc76da48629501f8813dc4bc24898f69af37ccb6) | TWAP tick −8920: [−8340, −7140) → [−9540, −8340) |
+| Narrow: rebalance, sent from the dashboard (#394 → #397) | [`0xceeb9dcb…13d0`](https://hashscan.io/testnet/transaction/0xceeb9dcbbe430a5af77754b6b19de6ee5c8260f33be42fa45c3ce03e883113d0) | TWAP tick −9046: [−7980, −7860) → [−9120, −9000) |
 
 <details>
 <summary><b>Full evidence log: contracts, every transaction, gas and fees</b></summary>
 
 | Item | Reference |
 |---|---|
-| Main vault | [`0x3BfC02f414956E66fB3B722fC935500B946ac181`](https://hashscan.io/testnet/contract/0x3BfC02f414956E66fB3B722fC935500B946ac181) (0.0.10743961) · share token 0.0.10743964 · LP NFT 0.0.1310436 #392 · source verified on Sourcify (exact match) |
-| Narrow demo vault | [`0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244`](https://hashscan.io/testnet/contract/0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244) (0.0.10744069) · share token 0.0.10744072 · LP NFT 0.0.1310436 #394 (#393 emptied by the rebalance) · source verified on Sourcify (exact match) |
+| Main vault | [`0x3BfC02f414956E66fB3B722fC935500B946ac181`](https://hashscan.io/testnet/contract/0x3BfC02f414956E66fB3B722fC935500B946ac181) (0.0.10743961) · share token 0.0.10743964 · LP NFT 0.0.1310436 #396 (#392 emptied by the rebalance) · source verified on Sourcify (exact match) |
+| Narrow demo vault | [`0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244`](https://hashscan.io/testnet/contract/0x7bBfa539173e44aA41aFe7aB9D9Dd52edd42D244) (0.0.10744069) · share token 0.0.10744072 · LP NFT 0.0.1310436 #397 (#393 and #394 emptied by the rebalances) · source verified on Sourcify (exact match) |
 | Pool, WHBAR/SAUCE 0.30% | [`0x37814eDc1ae88cf27c0C346648721FB04e7E0AE7`](https://hashscan.io/testnet/contract/0x37814eDc1ae88cf27c0C346648721FB04e7E0AE7) (0.0.2661057) |
 
 | Step | Transaction | Result |
@@ -276,9 +278,13 @@ The rebalance above is [`0xf55864c1…0654`](https://hashscan.io/testnet/transac
 | Price move down | [`0xd3afb662…c658`](https://hashscan.io/testnet/transaction/0xd3afb662d0c7d96af20fa625d337f715cfb2d61b7116960fa70feff31017c658) | 120 WHBAR → 5,459.99313 SAUCE; spot tick −7793 → −7899 |
 | Narrow: rebalance (#393 → #394) | [`0xf55864c1…0654`](https://hashscan.io/testnet/transaction/0xf55864c1fc7bdd54ae9597ecae2f8f70e534c0af4c0c7fb14da31065ceda0654) | TWAP tick −7899: [−7860, −7740) → [−7980, −7860); #393 liquidity now 0; 982,492 gas; 1.07 HBAR fee + 0.64 HBAR position fee |
 | Price restored | [`0xac066a24…5a06`](https://hashscan.io/testnet/transaction/0xac066a24749c6d70f9f278d2de2cf80a3c31d38cbf530f22aa551ef1a9d35a06) | 5,459 SAUCE → 119.29406227 WHBAR; spot tick −7902 → −7794 |
+| Main: rebalance, sent from the dashboard (#392 → #396) | [`0xbf698e4c…ccb6`](https://hashscan.io/testnet/transaction/0xbf698e4c105e67d5cdefcb7adc76da48629501f8813dc4bc24898f69af37ccb6) | TWAP tick −8920: [−8340, −7140) → [−9540, −8340); `FeesCollected` 0.21283843 WHBAR + 0.007141 SAUCE; #392 liquidity now 0; 1,043,853 gas; 0.85 HBAR fee + 0.48 HBAR position fee |
+| Narrow: rebalance, sent from the dashboard (#394 → #397) | [`0xceeb9dcb…13d0`](https://hashscan.io/testnet/transaction/0xceeb9dcbbe430a5af77754b6b19de6ee5c8260f33be42fa45c3ce03e883113d0) | TWAP tick −9046: [−7980, −7860) → [−9120, −9000); #394 liquidity now 0; 1,000,182 gas; 0.81 HBAR fee + 0.48 HBAR position fee |
 
-Fees are the network fee charged for each transaction; the SaucerSwap position fee (0.64079562 HBAR) is paid on top by
-every compound and rebalance, from the HBAR sent with the call. The full log, including the two failed `initialize`
+Fees are the network fee charged for each transaction; the SaucerSwap position fee is paid on top by every compound and
+rebalance, from the HBAR sent with the call. It is 5 US cents converted at the current exchange rate: 0.64079562 HBAR
+in September, 0.47746676 HBAR on 1 October (the amount the vault forwarded to the position manager, from the mirror
+node's contract actions). The full log, including the two failed `initialize`
 attempts (association gas, then an allowance above SAUCE's max supply), is in `docs/ARCHITECTURE.md` §13.
 
 </details>
