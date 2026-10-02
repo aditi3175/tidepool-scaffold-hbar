@@ -20,6 +20,8 @@ Hardhat contracts, a Next.js dashboard, and everything running on Hedera testnet
 
 **Live demo:** https://tidepool-scaffold.vercel.app
 
+**Demo video:** https://youtu.be/_esfymRfGso
+
 > [!WARNING]
 > Testnet reference code. Not audited, not production-ready, no yield implied. Testnet pool prices are set by testnet
 > traders and do not track real markets.
