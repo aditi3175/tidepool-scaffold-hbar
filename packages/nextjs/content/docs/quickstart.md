@@ -11,18 +11,18 @@ This page takes you from nothing to the live testnet vault running on your machi
 ## Scaffold it
 
 ```bash
-npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar
+npm create scaffold-hbar@latest "--" --template aditi3175/tidepool-scaffold-hbar
 ```
 
-> Keep the `--` before `--template`. npm 7+ swallows `--template` without it and the CLI falls back to its
-> built-in templates. Alternative: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`.
+> Keep the quotes around `--`: npm 7+ swallows `--template` without the `--`, and Windows PowerShell strips a bare
+> `--`. Or use: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`
 
 The CLI asks for a project name, the Hedera network (choose testnet), whether to install Hedera Skills (optional), and a package manager (npm is the default).
 
 > **If GitHub is slow or rate-limits you, pin the framework.** The CLI reads this template's `template.json` through the GitHub API. If that request fails, it quietly falls back to its own defaults, which offer Foundry first; choosing it deletes `packages/hardhat`, where the vault lives. Passing the choices yourself makes the request irrelevant (in PowerShell, write it on one line without the `\`):
 >
 > ```bash
-> npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar \
+> npm create scaffold-hbar@latest "--" --template aditi3175/tidepool-scaffold-hbar \
 >   -s hardhat -f nextjs-app --package-manager npm
 > ```
 

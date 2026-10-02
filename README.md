@@ -36,14 +36,14 @@ Hardhat contracts, a Next.js dashboard, and everything running on Hedera testnet
 Prerequisites: Node.js 20.18.3 or later, and Git with `user.name` and `user.email` set.
 
 ```bash
-npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar
+npm create scaffold-hbar@latest "--" --template aditi3175/tidepool-scaffold-hbar
 cd <your-project>
 npm run next:dev
 ```
 
 > [!NOTE]
-> Keep the `--` before `--template`. npm 7+ swallows `--template` without it and the CLI falls back to its
-> built-in templates. Alternative: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`.
+> Keep the quotes around `--`: npm 7+ swallows `--template` without the `--`, and Windows PowerShell strips a bare
+> `--`. Or use: `npx create-scaffold-hbar@latest --template aditi3175/tidepool-scaffold-hbar`
 
 The CLI asks for the Hedera network (choose testnet) and whether to install Hedera Skills (optional). Then open
 http://localhost:3000/dashboard and connect a wallet on Hedera Testnet (chain 296).

@@ -201,6 +201,15 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+/* JetBrains Mono joins "--" and "->" into single glyphs; commands must show the characters you type. */
+code,
+pre,
+kbd,
+samp,
+.font-mono,
+.tp-num {
+  font-variant-ligatures: none;
+}
 
 /* Motion. Subtle, one-time entrances and small hover responses; all off with reduced motion. */
 .tp-reveal {

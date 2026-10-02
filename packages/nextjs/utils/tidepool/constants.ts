@@ -12,7 +12,7 @@ export const HASHSCAN_URL = "https://hashscan.io/testnet";
 export const SAUCERSWAP_TESTNET_URL = "https://testnet.saucerswap.finance";
 /** The template's GitHub repository and the command that scaffolds a new project from it. */
 export const GITHUB_URL = "https://github.com/aditi3175/tidepool-scaffold-hbar";
-export const SCAFFOLD_COMMAND = "npm create scaffold-hbar@latest -- --template aditi3175/tidepool-scaffold-hbar";
+export const SCAFFOLD_COMMAND = 'npm create scaffold-hbar@latest "--" --template aditi3175/tidepool-scaffold-hbar';
 
 /** Vault share token decimals (TidepoolVault.SHARE_DECIMALS). */
 export const SHARE_DECIMALS = 8;

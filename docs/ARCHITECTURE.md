@@ -690,7 +690,7 @@ live testnet evidence, known limitations, licence. The original outline was:
 
 
 1. **Tidepool in one paragraph** + screenshot + testnet HashScan links (vault, share token, first compound).
-2. **60-second path:** `npm create scaffold-hbar@latest --template <you>/tidepool` → `npm run next:dev` → open the live vault.
+2. **60-second path:** `npm create scaffold-hbar@latest "--" --template <you>/tidepool` → `npm run next:dev` → open the live vault.
 3. **What you learn:** owning a SaucerSwap V2 position from a contract; HTS share tokens from a contract; TWAP guards; HBAR fee handling.
 4. **Architecture** (section 3 diagram) and the state machine.
 5. **Range maths in plain words** (section 4) with the WHBAR/SAUCE example (tick −7665 ≈ 46.5 SAUCE/HBAR on testnet).
